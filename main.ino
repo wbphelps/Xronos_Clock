@@ -234,7 +234,10 @@ void sayTime(){
          playcomplete(myString); // Play Hours
        }
      if (minute()<20) {
-       if (minute()==0) { playcomplete("100.WAV"); } // We are at hh:00
+       if (minute()==0) {
+         if (!time12hr)  // only say "hundred" if in 24 hour mode (wbp)
+           playcomplete("100.WAV");  // We are at hh:00
+       }
        else {
          if (( (minute()/10)%10) == 0) playcomplete ("OH.WAV"); // If first digit of minute is 0, say "oh"
          snprintf(myString,sizeof(myString), "%d.WAV",minute()); // Make Minutes string

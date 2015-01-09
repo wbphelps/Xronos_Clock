@@ -1,6 +1,6 @@
 /***********************************************************************
 * December 2014, January 2015 - mods by WBPHELPS
-* Ver 2.13 (01/04/2015)
+* Ver 2.14 (01/09/2015)
 * logarithmic brightness levels
 * bugfix: brightness set to auto by error
 * auto bright - adjust at 1 second intervals (was 10)
@@ -9,6 +9,8 @@
 * "Temp In:" instead of "In Temp"
 * "Temp:" (no In/Out) if no radio
 * GPS support
+* change colon display & offset
+* audio: if 12hr mode & minute == 0, don't say "hundred"
 ***********************************************************************/
 /***********************************************************************
 * July 11, 2013 LensDigital 
@@ -44,7 +46,7 @@
 #include "myIR_Remote.h" // IR Codes defintion file (comment out if IR receiver not present)
 
 //#define firmware_ver 209 // Current Firmware version
-#define firmware_ver 213 // Current Firmware version (wbp)
+#define firmware_ver 214 // Current Firmware version (wbp)
 
 // ============================================================================================
 // Importante User Hardware config settings, modify as needed
