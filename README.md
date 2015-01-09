@@ -13,4 +13,6 @@ Latest update Jan 4, 2015 - William Phelps - wm (at) usa.net
 * Display "Temp In:" instead of "In Temp"
 * Display only "Temp:" (no In/Out) if no radio
 * GPS support using Serial port
+* audio: if 12hr mode & minute == 0, don't say "hundred"
+
 
