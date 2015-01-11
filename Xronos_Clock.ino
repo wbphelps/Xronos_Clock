@@ -1,6 +1,6 @@
 /***********************************************************************
 * December 2014, January 2015 - mods by WBPHELPS
-* Ver 2.14 (01/09/2015)
+* Ver 2.15 (01/10/2015)
 * logarithmic brightness levels
 * bugfix: brightness set to auto by error
 * auto bright - adjust at 1 second intervals (was 10)
@@ -11,6 +11,10 @@
 * GPS support
 * change colon display & offset
 * audio: if 12hr mode & minute == 0, don't say "hundred"
+* fix bug in brightness averaging
+* DST setting: Off, On, Auto
+* AUTO DST working!
+*
 ***********************************************************************/
 /***********************************************************************
 * July 11, 2013 LensDigital 
@@ -44,9 +48,10 @@
 #include <RFM12B.h>
 #include <IRremote.h> // Comment out if IR receiver not present
 #include "myIR_Remote.h" // IR Codes defintion file (comment out if IR receiver not present)
+//#include "adst.h" // wbp
 
 //#define firmware_ver 209 // Current Firmware version
-#define firmware_ver 214 // Current Firmware version (wbp)
+#define firmware_ver 215 // Current Firmware version (wbp)
 
 // ============================================================================================
 // Importante User Hardware config settings, modify as needed
@@ -96,16 +101,23 @@ RFM12B radio;
 // ===================================================================================
 #define MAX_MENUS 5 // Maximum number of menus
 #define MAX_SUBMENUS 8 // Maximum number of menus
+#define MAX_SETTINGS 6 // Maximum number of settings menu items
 
 //#ifdef HAVE_GPS
-volatile uint8_t g_gps_enabled = 2;  // zero = off, 2 = 9600 bps
+volatile uint8_t g_gps_enabled = 2;  // zero == off, 2 == 9600 bps
 volatile int8_t g_TZ_hour = -8;
 volatile int8_t g_TZ_minute = 0;
-volatile int8_t g_DST_offset = 0;
-volatile bool g_DST_updated = false;  // DST update flag = allow update only once per day
 //volatile bool g_gps_signal = false;  // GPRMC message received
 volatile bool g_gps_updating = false;  // for signalling GPS update on some displays
 volatile unsigned long g_gps_timer = 0;  // for tracking how long since GPS last updated
+volatile uint8_t g_DST_mode = 0;  // off: 0, on: 1, auto: 2
+volatile int8_t g_DST_offset = 0;
+volatile bool g_DST_updated = false;  // DST update flag = allow update only once per day
+uint8_t g_DST_Rules[9] = {3,1,2,2,11,1,1,2,1};   // initial values from US DST rules as of 2011
+// DST Rules: Start(month, dotw, n, hour), End(month, dotw, n, hour), Offset
+// DOTW is Day of the Week, 1=Sunday, 7=Saturday
+// N is which occurrence of DOTW
+// Current US Rules:  March, Sunday, 2nd, 2am, November, Sunday, 1st, 2 am, 1 hour
 //#endif
 
 boolean isSettingTime = false;
@@ -223,6 +235,7 @@ const byte alarmToneLoc[2]={7,12};                    // Alarm  Tone storage loc
 #define infoOptionsLoc 21               // Info Display frequency and what to show
 #define radioOnLoc 22          // Defines if RF receiver is enabled
 #define IROnLoc 23          // Defines if IR receiver is enabled
+#define DSTmodeLoc 24   // DST mode in EE
 
 // Wave Shield Declarations
 SdReader card;    // This object holds the information for the card
@@ -266,6 +279,7 @@ void StreamPrint_progmem(Print &out,PGM_P format,...)
 #define Streamprint(stream,format, ...) StreamPrint_progmem(stream,PSTR(format),##__VA_ARGS__)
 
 */
+
 
 // ===================================================================
 // * DS18B20 Temperature sensor iniitialization *
@@ -319,6 +333,7 @@ void getEEPROMSettings () {
   sayOptions=EEPROM.read(sayOptionsLoc); // Read say prompt options
   doStartup=EEPROM.read(doStartupLoc); // Read say prompt options
   tmpOffset=EEPROM.read (tmpOffsetLoc); // Read Temperature offset
+  g_DST_mode=EEPROM.read (DSTmodeLoc); // Read DST mode
   if ( RFM12B_Enabled ) isRadioPresent=EEPROM.read (radioOnLoc);
   else isRadioPresent=false;
   
@@ -432,10 +447,27 @@ void checkGPS() {
   }
 }
 
+void checkDST() {
+//#ifdef HAVE_AUTO_DST
+time_t t;
+tmElements_t tm;
+  if (isInMenu) return;
+  if (g_DST_mode < 2) return; // nothing to do if DST not set to AUTO
+  t = now();
+  if ((hour(t) == 0) && (minute(t) == 0) && (second(t) == 0)) {  // MIDNIGHT!
+    g_DST_updated = false;
+    breakTime(t, tm);
+    DSTinit(&tm, g_DST_Rules);  // re-compute DST start, end
+  }
+  if (second(t) % 10 == 0) { // check DST Offset every 10 seconds (60?)
+    setDSToffset(g_DST_mode);
+  }
+//#endif // HAVE_AUTO_DST
+}
+
 void setup ()  
 {
 //  Serial.begin(9600); // (115200); (wbp)
-  gpsInit(2);  // init GPS & Serial port 9600 
   //initEPROM();
   
   // Print FW Version
@@ -470,10 +502,17 @@ void setup ()
   // Initialize Radio module 
   if (isRadioPresent) radio.Initialize(NODEID, RF12_915MHZ, NETWORKID);  
   if (isIRPresent)  irrecv.enableIRIn(); // Start the IR receiver. Comment out if IR not present
+
+  gpsInit(2);  // init GPS & Serial port 9600 
+//	if (g_DST_mode == 2)  // DST set to AUTO?
+tmElements_t tm;
+  breakTime(now(), tm);
+  DSTinit(&tm, g_DST_Rules);  // compute DST start, end	
+
   startup(); // Show welcoming screen
 //  Serial.println (FreeRam());
 //  radio.Sleep();
-  initTimer();
+  initTimer();  // start timer interrupt running for GPS read (wbp)
 }
 
 
@@ -494,6 +533,8 @@ void loop ()
   receiveTemp();
   IR_process();
   checkGPS();  // wbp
+  checkDST();  // wbp
+	
  //  Serial.println (brightness);
 
 }

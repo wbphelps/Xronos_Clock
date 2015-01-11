@@ -1,7 +1,7 @@
 # Xronos_Clock
 Custom firmware for the Xronos Clock from LensDigital
 
-Latest update Jan 4, 2015 - William Phelps - wm (at) usa.net 
+Latest update Jan 10, 2015 - William Phelps - wm (at) usa.net 
  
 ## **Includes the following modifications:** ##
 
@@ -15,4 +15,8 @@ Latest update Jan 4, 2015 - William Phelps - wm (at) usa.net
 * GPS support using Serial port
 * audio: if 12hr mode & minute == 0, don't say "hundred"
 
+* fix for bug in auto brightness that was crashing clock
+* Changed DST setting to "Off, On, Auto"
+* Changed date setting order: Month, Day, Year
+* Automatic DST (US rules)
 

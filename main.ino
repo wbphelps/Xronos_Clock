@@ -66,6 +66,8 @@ void initEPROM()
   delay (50);
   EEPROM.write(IROnLoc,false); // Disable IR by default during INIT
   delay (50);
+  EEPROM.write(DSTmodeLoc,false); // Disable DST by default
+  delay (50);
   
   //wave.volume=sndVol; // Change System Sound Volume
 }
@@ -725,7 +727,7 @@ void quickDisplay()
 }
 
 // ====================================================================================================
-// ---- Talking menu (show and anounse Date/Temperature/Clock, etc.) used by quickDisplay function ----
+// ---- Talking menu (show and announce Date/Temperature/Clock, etc.) used by quickDisplay function ----
 // ---- Pass TRUE to go thru all items (i.e. button was held), or FALSE to go thru each item with press of a button
 // ---- by LensDigital
 // ====================================================================================================
@@ -926,25 +928,24 @@ boolean hoursMode(byte hrs) {
 
 // =======================================================================================
 // ---- calc running average of last n readings
-// ---- from Arduino playground (with errors fixed)
 // =======================================================================================
-#define LRSIZE 3
-byte runningAverage(byte r)
+#define LRSIZE 3  // average of 3 readings
+static int LR[LRSIZE] = {2,2,2}; // previous values
+static byte LRindex = 0;
+byte runningAverage(int r)
 {
-  static byte LR[LRSIZE] = {2,2,2}; // previous values
-  static byte index = 0;
-  static long sum = 0;
-//  static byte count = 0;
-  sum -= LR[index];  // subtract oldest value from sum
-  LR[index] = r; // replace oldest value with new
-  sum += r; // add new value to sum
-  index = ++index % LRSIZE; // move to new slot
-//  if (count < LRSIZE) count++;
+  int sum = 0;
+  LR[LRindex] = r; // replace oldest value with new
+  if (++LRindex == LRSIZE) // increment index 
+    LRindex = 0; // and wrap
+  for (byte i = 0; i<LRSIZE; i++) {
+    sum += LR[i];
+  }
   return sum / LRSIZE; // return average
 }
 
 // =======================================================================================
-// ---- Checks Ambient Light leve and adjust brightness ----
+// ---- Checks Ambient Light level and adjust brightness ----
 // ---- by LensDigital & William Phelps
 // =======================================================================================
 static unsigned long lastRun = 0;
@@ -955,14 +956,11 @@ void autoBrightness () {
   if ((millis()-lastRun) < 500) return; // take two readings per second
   lastRun = millis();
   //Serial.println ("Changing Brightness");
-  if (prevBrightness==0) {  // Initialized previous Brightness setting only if Brightness was reset
-    //prevBrightness=map(analogRead(photoCellPin), PHOTOCELL_MIN, PHOTOCELL_MAX, 1, 5); // Get Ambient Light Reading
-    prevBrightness=map( constrain (analogRead(photoCellPin), PHOTOCELL_MIN, PHOTOCELL_MAX), PHOTOCELL_MIN, PHOTOCELL_MAX, 1, 5); // Get Ambient Light Reading
-    setBrightness(prevBrightness); // Set LED brightness
-  }
-//  lightLevel = map(analogRead(photoCellPin), PHOTOCELL_MIN, PHOTOCELL_MAX, 1, 5); // Get Ambient Light Reading
   lightLevel = map( constrain (analogRead(photoCellPin), PHOTOCELL_MIN, PHOTOCELL_MAX), PHOTOCELL_MIN, PHOTOCELL_MAX, 1, 5); // Get Ambient Light Reading
   lightLevel = runningAverage(lightLevel); // calc running average 
+  if (prevBrightness==0) {  // Initialized previous Brightness setting only if Brightness was reset
+    prevBrightness=lightLevel;
+  }
   if (lightLevel != prevBrightness) { // Set LED brightness only if light changed
     setBrightness(lightLevel);
     prevBrightness=lightLevel;

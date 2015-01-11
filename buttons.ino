@@ -47,6 +47,7 @@ void buttonProc(){
     isSettingAlarm = false;
     isSettingSys=false;
     isSettingOptions=false;
+    isSettingDST=false; // wbp
     blinking = false;
     isSettingHours   = false;
     isSettingMinutes = false;

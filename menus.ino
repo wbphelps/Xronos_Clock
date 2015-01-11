@@ -139,8 +139,6 @@ void setAlarm(byte alrmNum) {
         else alrmMM[alrmNum]++;
         if (alrmMM[alrmNum] ==255) alrmMM[alrmNum] = 59; // Negative number (byte) will be 255
         else if (alrmMM[alrmNum] > 59) alrmMM[alrmNum] = 0;
-        
-        
         break;
     case 6: // Set Alarm melody  
         if (decrement) alrmToneNum[alrmNum]--;
@@ -323,21 +321,22 @@ void alrmBlink(byte color) {
 
 // =======================================================================================
 // ---- Show  DST Menu (Daylight Savings Time) ----
-// ---- by LensDigital
+// ---- by wbphelps
 // =======================================================================================
 void showDST(byte color) {
-  if (!isSettingDST) return; // Exit if not setting system
-   switch (subMenu[2]){
-    case 6:// +1 DST 
-    showText(0,8,"DST+1",1,color);
-    showSmTime(0,clockColor); // Show time on the bottom
+  if (!isSettingDST) return; // Exit if not setting DST
+  showText(6,0,"DST",1,color);
+  switch (g_DST_mode) {
+    case 0: // DST off
+    showText(6,8,"Off ",1,color);
     break;
-    case 7:// -1 DST 
-    showText(0,8,"DST-1",1,color);
-    showSmTime(0,clockColor); // Show time on the bottom
+    case 1: // DST on
+    showText(6,8,"On  ",1,color);
+    break;
+    case 2: // DST Auto
+    showText(6,8,"Auto",1,color);
     break;
    }
-  
 }
 
 // =======================================================================================
@@ -365,17 +364,17 @@ void setTimeDate() {
       else if (minutes > 59) minutes = 0;
       seconds=0; // Reset seconds to 0 with each minute change
       break;
-    case 3: // Set Days
-      if (decrement) days--;
-      else  days++;
-      if (days == 255) days = 31;
-      else if (days >31) days = 0;
-      break;
-    case 4: // Set months
+    case 3: // Set months
        if (decrement) months--;
        else months++;
        if (months == 0) months=12;
       else if (months > 12) months=1;
+      break;
+    case 4: // Set Days
+      if (decrement) days--;
+      else  days++;
+      if (days == 255) days = 31;
+      else if (days >31) days = 0;
       break;
     case 5: // Set Years 
       if (decrement) years--;
@@ -383,19 +382,37 @@ void setTimeDate() {
       if (years < 13 ) years = 40;
       else if (years > 40) years = 13; // Default to 2013
       break;
-    case 6: // Set DST +1 hours 
+//    case 6: // Set DST +1 hours 
+//      playSFX(1);
+//      hours++;
+//      if (hours == 255) hours = 23;
+//      else if (hours > 23) hours = 0;
+//      break;
+//   case 7: // Set DST -1 hours 
+//      playSFX(1);
+//      hours--;
+//      if (hours == 255) hours = 23;
+//      else if (hours > 23) hours = 0;
+//      break;
+    case 6: // DST
       playSFX(1);
-      hours++;
-      if (hours == 255) hours = 23;
-      else if (hours > 23) hours = 0;
+      g_DST_mode = ++g_DST_mode % 3;  // off, on, Auto
+      if (g_DST_mode == 1) { // on
+        hours++;  // spring ahead
+        g_DST_offset = 1;  // remember offset
+      }
+      else { // off or Auto
+        if (g_DST_offset) { // was it set?
+          hours--;  // fall back
+          g_DST_offset = 0;
+        }
+      }
+      if (hours == 255)  hours = 23;  // handle wrap
+      else if (hours > 23)  hours = 0;
+//      g_DST_updated = false; // re-init & re-calc DST for today
+      EEPROM.write(DSTmodeLoc,g_DST_mode);
       break;
-   case 7: // Set DST -1 hours 
-      playSFX(1);
-      hours--;
-      if (hours == 255) hours = 23;
-      else if (hours > 23) hours = 0;
-      break;
-  }  
+    }  
    // IMPORTANT! This will keep track of seconds for better time setting! 
    if ( millis()-last_ms > 1000) { // Has it been over 1 second since Set button was pressed?
       seconds++;
@@ -415,6 +432,7 @@ void setTimeDate() {
     }
     setTime(hours,minutes,seconds,days,months,years); // Sets System time (and converts year string to integer)
     RTC.set(now()); // Writes time change to RTC chip     
+    g_DST_updated = false; // re-init & re-calc DST for today
 }
 
 
@@ -542,7 +560,7 @@ void showSys(){
   switch (subMenu[3]){ 
     case 1: // We are setting 12/24 Hour mode
       showText(1,0,"Mode:",1,color);
-      if (time12hr)showText(1,8,"12 HR ",1,hhColor);
+      if (time12hr) showText(1,8,"12 HR ",1,hhColor);
       else showText(1,8,"24 HR",1,hhColor);
       break;
     case 2:  // Adjust Brightness Level
@@ -579,7 +597,7 @@ void showSys(){
          showText(8,8,"Red",1,RED);
          break;  
        case 3:  
-         showText(1,8,"Orang",1,ORANGE);
+         showText(1,8,"Yello",1,ORANGE);
          break;
       }
     break;
@@ -944,6 +962,7 @@ void quickMenu(){
     isIncrementing = false;
     blinking = false;
     isSettingAlarm=false;
+    isSettingDST=false; // wbp
     menuItem=0; 
     subMenu[0]=0;
     subMenu[1]=0;
@@ -1033,9 +1052,10 @@ void butSetClock() {
         isSettingTime   = true;
         isSettingSys=false;
         subMenu[2]++; // Increment button press count
-        if (subMenu[2] > 7) subMenu[2]=1; // Goes back to first menu item
+//        if (subMenu[2] > 7) subMenu[2]=1; // Goes back to first menu item
+        if (subMenu[2] > MAX_SETTINGS) subMenu[2]=1; // Goes back to first menu item (wbp)
       	switch (subMenu[2]) {
-          case 1: // Set hours
+         case 1: // Set hours
           //putstring_nl ("SET: Hours");
           cls();
           okClock=true;
@@ -1048,7 +1068,7 @@ void butSetClock() {
 	  isSettingYear   = false;
           isSettingDST = false;
           break;
-          case 2: // Set Minutes
+         case 2: // Set Minutes
           //putstring_nl ("SET: Mins");
           isSettingHours   = false;
 	  isSettingMinutes = true;
@@ -1056,18 +1076,10 @@ void butSetClock() {
 	  isSettingDay   = false;
 	  isSettingYear   = false;
           break;
-          case 3: // Set Day
-          //putstring_nl ("SET: Day");
+         case 3: // Set Month  (wbp)
+          isSettingDate = true;
           okClock=false;
           cls();
-          isSettingDate = true;
-          isSettingHours   = false;
-	  isSettingMinutes = false;
-	  isSettingMonth   = false;
-	  isSettingDay   = true;
-	  isSettingYear   = false;
-          break;
-          case 4: // Set Month
           //putstring_nl ("SET: Month");
           isSettingHours   = false;
       	  isSettingMinutes = false;
@@ -1075,7 +1087,15 @@ void butSetClock() {
       	  isSettingDay   = false;
       	  isSettingYear   = false;
           break;
-          case 5: // Set year
+         case 4: // Set Day
+          //putstring_nl ("SET: Day");
+          isSettingHours   = false;
+	  isSettingMinutes = false;
+	  isSettingMonth   = false;
+	  isSettingDay   = true;
+	  isSettingYear   = false;
+          break;
+         case 5: // Set year
           //putstring_nl ("SET: Year");
           isSettingHours   = false;
 	  isSettingMinutes = false;
@@ -1083,12 +1103,11 @@ void butSetClock() {
 	  isSettingDay   = false;
 	  isSettingYear   = true;
           break;
-          case 6: // DST +1
+         case 6: // DST on/off/auto
           isSettingDST = true;
           isSettingDate = false;
           isSettingYear   = false;
           break;
-          
         }
 }
 
