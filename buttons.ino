@@ -141,7 +141,7 @@ void processSetButton()
         isSettingTime   = false;
         isSettingSys=true;
         subMenu[3]++; // Increment button press count
-        if (subMenu[3] > 10) subMenu[3]=1; // Goes back to first menu item
+        if (subMenu[3] > MAX_SYSSETTINGS) subMenu[3]=1; // Goes back to first menu item
     break;
     case 5: // User options
         cls();

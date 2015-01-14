@@ -1,6 +1,6 @@
 /***********************************************************************
 * December 2014, January 2015 - mods by WBPHELPS
-* Ver 2.15 (01/10/2015)
+* Ver 2.15 (01/14/2015)
 * logarithmic brightness levels
 * bugfix: brightness set to auto by error
 * auto bright - adjust at 1 second intervals (was 10)
@@ -14,6 +14,7 @@
 * fix bug in brightness averaging
 * DST setting: Off, On, Auto
 * AUTO DST working!
+* Add GPS On/Off in System settings
 *
 ***********************************************************************/
 /***********************************************************************
@@ -59,6 +60,7 @@
 static boolean RFM12B_Enabled=true; // Defines if RFM12B Chip present.  Set to true to enable. Must also have ATMega1284p! Will not work with ATMega644p chip
 #define AUTO_BRIGHTNESS_ON 0  //Set to 1 to disable autobrightness menu feature, 0 to enable if photocell is present.
 static boolean IR_PRESENT=true; // Set to True if IR receiver is present. Must also have ATMega1284p! Will not work with ATMega644p chip
+static boolean GPS_PRESENT=true; // Set to True if IR receiver is present. Must also have ATMega1284p! Will not work with ATMega644p chip
 // ============================End of User Hardware Settings ==================================
 
 // Pins Delcarations
@@ -102,9 +104,10 @@ RFM12B radio;
 #define MAX_MENUS 5 // Maximum number of menus
 #define MAX_SUBMENUS 8 // Maximum number of menus
 #define MAX_SETTINGS 6 // Maximum number of settings menu items
+#define MAX_SYSSETTINGS 11 // Maximum number of System menu items
 
 //#ifdef HAVE_GPS
-volatile uint8_t g_gps_enabled = 2;  // zero == off, 2 == 9600 bps
+///volatile uint8_t g_gps_enabled = 2;  // zero: off, 1: 4800 bps, 2: 9600 bps
 volatile int8_t g_TZ_hour = -8;
 volatile int8_t g_TZ_minute = 0;
 //volatile bool g_gps_signal = false;  // GPRMC message received
@@ -151,6 +154,7 @@ boolean doStartup; // Startup sequence enable/disable
 boolean radioOn=true;
 boolean isRadioPresent; // Defines in RFM12B Chip present. Stored in EEPROM
 boolean isIRPresent; // Defines if IR receiver is present
+boolean isGPSPresent; // Defines if GPS receiver is present
 boolean decrement; // Only used with IR remote to decrement digits (--)
 
 
@@ -236,6 +240,7 @@ const byte alarmToneLoc[2]={7,12};                    // Alarm  Tone storage loc
 #define radioOnLoc 22          // Defines if RF receiver is enabled
 #define IROnLoc 23          // Defines if IR receiver is enabled
 #define DSTmodeLoc 24   // DST mode in EE
+#define GPSOnLoc 25   // GPS receiver enabled in EE
 
 // Wave Shield Declarations
 SdReader card;    // This object holds the information for the card
@@ -348,6 +353,8 @@ void getEEPROMSettings () {
   }
   if ( IR_PRESENT ) isIRPresent=EEPROM.read (IROnLoc); // IR receiver setting
   else isIRPresent=false;
+  if ( GPS_PRESENT ) isGPSPresent=EEPROM.read (GPSOnLoc); // IR receiver setting
+  else isGPSPresent=false;
 }
 
 // ===================================================================
@@ -426,18 +433,19 @@ static uint8_t gps_counter = 0;
 // 1 click = 1us. 
 ISR(TIMER2_OVF_vect)
 {
-//#ifdef FEATURE_GPS
-  if (++gps_counter == 4) {  // every 0.001024 seconds
-    GPSread();  // check for data on the serial port
-    gps_counter = 0;
+  if (isGPSPresent) {
+    if (++gps_counter == 4) {  // every 0.001024 seconds
+      GPSread();  // check for data on the serial port
+      gps_counter = 0;
+    }
   }
-//#endif // HAVE_GPS
 }
 
 void checkGPS() {
 //#ifdef HAVE_GPS
   if (isInMenu) return;
-  if (!g_gps_enabled) return;
+//  if (!g_gps_enabled) return;
+  if (!isGPSPresent) return;
   if (gpsDataReady()) {
     parseGPSdata(gpsNMEA());  // get the GPS serial stream and possibly update the clock 
   }
@@ -503,7 +511,7 @@ void setup ()
   if (isRadioPresent) radio.Initialize(NODEID, RF12_915MHZ, NETWORKID);  
   if (isIRPresent)  irrecv.enableIRIn(); // Start the IR receiver. Comment out if IR not present
 
-  gpsInit(2);  // init GPS & Serial port 9600 
+  gpsInit(2);  // init GPS & Serial port for 9600 BPS
 //	if (g_DST_mode == 2)  // DST set to AUTO?
 tmElements_t tm;
   breakTime(now(), tm);

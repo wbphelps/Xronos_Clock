@@ -1,7 +1,7 @@
 # Xronos_Clock
 Custom firmware for the Xronos Clock from LensDigital
 
-Latest update Jan 10, 2015 - William Phelps - wm (at) usa.net 
+Latest update Jan 14, 2015 - William Phelps - wm (at) usa.net 
  
 ## **Includes the following modifications:** ##
 
@@ -19,4 +19,6 @@ Latest update Jan 10, 2015 - William Phelps - wm (at) usa.net
 * Changed DST setting to "Off, On, Auto"
 * Changed date setting order: Month, Day, Year
 * Automatic DST (US rules)
+
+* add GPS On/Off in System settings
 

@@ -540,6 +540,16 @@ void sysSetting(){
         EEPROM.write(IROnLoc,isIRPresent); 
         delay (5);
       break;
+      case 11: // GPS
+        cls(); 
+        if (GPS_PRESENT) { // If GPS Hardware defined globally
+          if (isGPSPresent) isGPSPresent=false; // Turn off GPS
+          else isGPSPresent=true; // Turn on GPS
+          //playSFX(1);
+        }
+        EEPROM.write(GPSOnLoc,isGPSPresent); 
+        delay (5);
+      break;
   }
 
 }
@@ -640,6 +650,11 @@ void showSys(){
     case 10: // IR Receiver
       showText(2,0,"IR",1,color); 
       if (isIRPresent) showText(10,8,"ON",1,hhColor); 
+      else showText(10,8,"OFF",1,hhColor);  
+    break;
+    case 11: // GPS Receiver
+      showText(2,0,"GPS",1,color); 
+      if (isGPSPresent) showText(10,8,"ON",1,hhColor); 
       else showText(10,8,"OFF",1,hhColor);  
     break;
   }
