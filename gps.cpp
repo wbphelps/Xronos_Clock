@@ -48,6 +48,7 @@ extern bool g_DST_updated;  // DST update flag = allow update only once per day
 extern bool g_gps_updating;  // for signalling GPS update on some displays
 //extern bool g_RHDP;  // GPS signal status indicator
 extern uint16_t g_gps_timer;
+extern byte g_GPS_receive;
 
 // debugging counters 
 int8_t g_gps_cks_errors;  // gps checksum error counter
@@ -176,6 +177,9 @@ void parseGPSdata(char *gpsBuffer) {
 //  char gpsCKS[2];  // Checksum without asterisk
   char *ptr;
   uint32_t tmp;
+  plot(31,3,BLACK);  // clear checksum error LED
+  plot(31,4,BLACK);  // clear parse error LED
+  plot(31,5,BLACK);  // clear time error LED
   if ( strncmp( gpsBuffer, "$GPRMC,", 7 ) == 0 ) {
 //    alarm_status = true;  // wbp - debugging
     //beep(1000, 1);
@@ -210,7 +214,8 @@ void parseGPSdata(char *gpsBuffer) {
       if (gpsFixStat == 'A') {  // if data valid, parse time & date
 //        gpsTimeout = 0;  // reset gps timeout counter
 //        g_RHDP = true; // GPRMC received
-        plot (31,1,GREEN); //Plot Indicator dot (radio signal was received)
+        g_GPS_receive = 1; // indicate GPS signal received
+        plot(31,1,GREEN); //Plot Indicator dot (radio signal was received)
         g_gps_timer = millis(); // reset GPS timeout
         for (uint8_t n=0; n<7; n++) { // skip 6 tokend, find date
           ptr = ntok(ptr);  // Find the next token
@@ -255,19 +260,22 @@ void parseGPSdata(char *gpsBuffer) {
         }
       } // if fix status is A
       else {  // signal, but fix status not A
-        plot (31,1,ORANGE); //Plot Indicator dot 
+        plot(31,1,ORANGE); //Plot Indicator dot 
+        g_GPS_receive = 2;  /// signal but checksum error
       }
     } // if checksums match
-    else  // checksums do not match
-      plot (31,1,RED); // show checksum error
+    else { // checksums do not match
       goto GPSerrorC;
+    }
     return;
 GPSerrorC:
+    plot(31,3,RED);  // show checksum error
     g_gps_cks_errors++;  // increment error count
-    goto GPSerror2a;
+    goto GPSerror2;
 GPSerrorP:
+    plot(31,4,RED);  // show parse error
     g_gps_parse_errors++;  // increment error count
-    goto GPSerror2a;
+    goto GPSerror2;
 GPSerrorT:
 #ifdef HAVE_SERIAL_DEBUG
     tDelta = tNow - tGPSupdate;
@@ -275,11 +283,12 @@ GPSerrorT:
     Serial.print(", tDelta="); Serial.print(tDelta);
     Serial.println(" ");
 #endif
+    plot(31,5,RED);  // show time error
     g_gps_time_errors++;  // increment error count
     tLast = tNow;  // save new time
-GPSerror2a:
-    //beep(2093,1);  // error signal - I'm leaving this in for now /wm
-    //flash_display(200);  // flash display to show GPS error
+GPSerror2:
+    plot(31,1,RED); // show error status
+    g_GPS_receive = 3;  // GPS receive error
 ///    tone(PinMap::piezo, 2093, 100);  // beep to indicate error  
     strcpy(gpsBuffer, "");  // wipe GPS buffer
   }  // if "$GPRMC"
@@ -305,11 +314,11 @@ void gpsInit(uint8_t gps) {
   switch (gps) {
     case(0):  // no GPS
       break;
-    case(1):  // 4800 bps
+    case(4800):  // 4800 bps
 //      uart_init(BRRL_4800);
       Serial.begin(4800);
       break;
-    case(2):  // 9600
+    case(9600):  // 9600
 //      uart_init(BRRL_9600);
       Serial.begin(9600);
       break;

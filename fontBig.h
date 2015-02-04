@@ -505,8 +505,8 @@ unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) e
 // Font 3
 
   {
+    0x00,
     0x1F,    // _XXXXX  	0
-    0x11,    // _X___X
     0x11,    // _X___X
     0x11,    // _X___X
     0x11,    // _X___X
@@ -520,9 +520,9 @@ unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) e
   },
 
   {
+    0x00,
     0x04,    // ___X__		1
     0x04,    // ___X__  	
-    0x04,    // ___X__
     0x04,    // ___X__
     0x04,    // ___X__
     0x04,    // ___X__
@@ -535,6 +535,7 @@ unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) e
   },
 
   {
+    0x00,
     0x1F,    // _XXXXX  	2
     0x01,    // _____X
     0x01,    // _____X
@@ -545,10 +546,10 @@ unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) e
     0x10,    // _X____
     0x10,    // _X____
     0x10,    // _X____
-    0x10,    // _X____
     0x1F     // _XXXXX
   },
   {
+    0x00,
     0x1F,    // _XXXXX  	3
     0x01,    // _____X
     0x01,    // _____X
@@ -559,10 +560,10 @@ unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) e
     0x01,    // _____X
     0x01,    // _____X
     0x01,    // _____X
-    0x01,    // _____X
     0x1F     // _XXXXX
   },
   {
+    0x00,
     0x11,    // _X___X  	4
     0x11,    // _X___X
     0x11,    // _X___X
@@ -573,10 +574,10 @@ unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) e
     0x01,    // _____X
     0x01,    // _____X
     0x01,    // _____X
-    0x01,    // _____X
     0x01     // _____X
   },
   {
+    0x00,
     0x1F,    // _XXXXX  	5
     0x10,    // _X____
     0x10,    // _X____
@@ -587,10 +588,10 @@ unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) e
     0x01,    // _____X
     0x01,    // _____X
     0x01,    // _____X
-    0x01,    // _____X
     0x1F     // _XXXXX
   },
   {
+    0x00,
     0x1F,    // _XXXXX  	6
     0x10,    // _X____
     0x10,    // _X____
@@ -601,12 +602,11 @@ unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) e
     0x11,    // _X___X
     0x11,    // _X___X
     0x11,    // _X___X
-    0x11,    // _X___X
     0x1F    // __XXXXX
   },
   {
+    0x00,
     0x1F,    // _XXXXX  	7
-    0x01,    // _____X
     0x01,    // _____X
     0x01,    // _____X
     0x01,    // _____X
@@ -619,6 +619,7 @@ unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) e
     0x01     // _____X
   },
   {
+    0x00,
     0x1F,    // _XXXXX  	8
     0x11,    // _X___X
     0x11,    // _X___X
@@ -629,17 +630,16 @@ unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) e
     0x11,    // _X___X
     0x11,    // _X___X
     0x11,    // _X___X
-    0x11,    // _X___X
     0x1F     // _XXXXX
   },
   {
+    0x00,
     0x1F,    // _XXXXX  	9
     0x11,    // _X___X
     0x11,    // _X___X
     0x11,    // _X___X
     0x11,    // _X___X
     0x1F,    // _XXXXX
-    0x01,    // _____X
     0x01,    // _____X
     0x01,    // _____X
     0x01,    // _____X
@@ -664,6 +664,7 @@ unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) e
 // Font 4
 
   {
+    0x00,
     0x0E,    // __XXX_  	0
     0x11,    // _X___X
     0x11,    // _X___X
@@ -674,11 +675,11 @@ unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) e
     0x11,    // _X___X
     0x11,    // _X___X
     0x11,    // _X___X
-    0x11,    // _X___X
     0x0E     // __XXX_
   },
 
   {
+    0x00,
     0x04,    // ___X__		1
     0x0C,    // __XX__  	
     0x04,    // ___X__
@@ -689,11 +690,11 @@ unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) e
     0x04,    // ___X__
     0x04,    // ___X__
     0x04,    // ___X__
-    0x04,    // ___X__
     0x1F     // _XXXXX
   },
 
   {
+    0x00,
     0x0E,    // __XXX_  	2
     0x11,    // _X___X
     0x01,    // _____X
@@ -704,10 +705,10 @@ unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) e
     0x08,    // __X___
     0x10,    // _X____
     0x10,    // _X____
-    0x10,    // _X____
     0x1F     // _XXXXX
   },
   {
+    0x00,
     0x0E,    // __XXX_  	3
     0x11,    // _X___X
     0x01,    // _____X
@@ -717,11 +718,11 @@ unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) e
     0x01,    // _____X
     0x01,    // _____X
     0x01,    // _____X
-    0x01,    // _____X
     0x11,    // _X___X
     0x0E     // __XXX_
   },
   {
+    0x00,
     0x11,    // _X___X 	4
     0x11,    // _X___X
     0x11,    // _X___X
@@ -732,10 +733,10 @@ unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) e
     0x01,    // _____X
     0x01,    // _____X
     0x01,    // _____X
-    0x01,    // _____X
     0x01     // _____X
   },
   {
+    0x00,
     0x1F,    // _XXXXX  	5
     0x10,    // _X____
     0x10,    // _X____
@@ -745,11 +746,11 @@ unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) e
     0x01,    // _____X
     0x01,    // _____X
     0x01,    // _____X
-    0x01,    // _____X
     0x11,    // _X___X
     0x0E     // __XXX_
   },
   {
+    0x00,
     0x0E,    // __XXX_  	6
     0x11,    // _X___X
     0x10,    // _X____
@@ -760,13 +761,11 @@ unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) e
     0x11,    // _X___X
     0x11,    // _X___X
     0x11,    // _X___X
-    0x11,    // _X___X
     0x0E    // ___XXX_
   },
   {
+    0x00,
     0x1F,    // _XXXXX  	7
-    0x01,    // _____X
-    0x01,    // _____X
     0x01,    // _____X
     0x01,    // _____X
     0x02,    // ____X_
@@ -775,9 +774,11 @@ unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) e
     0x10,    // _X____
     0x10,    // _X____
     0x10,    // _X____
+    0x10,    // _X____
     0x10     // _X____
   },
   {
+    0x00,
     0x0E,    // __XXX_  	8
     0x11,    // _X___X
     0x11,    // _X___X
@@ -788,17 +789,16 @@ unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) e
     0x11,    // _X___X
     0x11,    // _X___X
     0x11,    // _X___X
-    0x11,    // _X___X
     0x0E     // __XXX_
   },
   {
+    0x00,
     0x0E,    // __XXX_  	9
     0x11,    // _X___X
     0x11,    // _X___X
     0x11,    // _X___X
     0x11,    // _X___X
     0x0F,    // __XXXX
-    0x01,    // _____X
     0x01,    // _____X
     0x01,    // _____X
     0x01,    // _____X

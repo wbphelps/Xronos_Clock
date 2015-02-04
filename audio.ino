@@ -88,7 +88,7 @@ void playalarmfile(char *name, byte alrmnum) {
     putstring_nl("Not a valid WAV");  return;
   }
   // Check if Alarm should be escalated
-  if (alrmToneNum[alrmnum]<6){
+  if (alrmToneNum[alrmnum]<=ALARM_PROGRESSIVE){ // wbp
     // Escalate alarm volume
     if (alrmVol[alrmnum]>0) alrmVol[alrmnum]--;
   }

@@ -41,8 +41,8 @@
 
 // possible values for a pixel;
 #define BLACK  0
-#define GREEN  1
-#define RED    2
+#define RED    1
+#define GREEN  2
 #define ORANGE 3
 #define RANDOMCOLOR 4 // random color for the whole object
 

@@ -28,8 +28,8 @@ void buttonProc(){
       processIncButton();
      }
   }
-  // display the menu option for 6 seconds after menu button was pressed;
-  if ((lastButtonTime > 0) && (millis() - lastButtonTime < 6000)) {
+  // display the menu option for 5 seconds after menu button was pressed;
+  if ((lastButtonTime > 0) && (millis() - lastButtonTime < 5000)) {  // wbp
     if ( millis() - lastButtonTime > 1000 )  { // Start blinking if buttons not touched for a second
        isIncrementing = false;
       if (!isInQMenu) startBlinking();

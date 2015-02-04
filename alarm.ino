@@ -3,18 +3,37 @@
 // By: LensDigital
 // =======================================================================================
 void procAlarm(byte alrmnum) {
+  int blinkDotDuration = 1000; // How frequently dots should blink (wbp)
   if (isInMenu) return; // Do not sound alarm if changing settings
     if (digitalRead(SET_BUTTON_PIN) == HIGH) processSetButton(); // Poll Set Button, that will reArm (cancel for today) alarm
-    if (alarmon[alrmnum] & 128){ // Is global alarm switch on? (1st byte is set)
+    if (alarmon[alrmnum] & 128) { // Is global alarm switch on? (1st byte is set)
       // ==== Begin alarm LED indicator ====
-      if ( snoozeTime[alrmnum]==10) {
-        if ( alarmon[alrmnum] & weekdays[weekday()] ) plot (29*alrmnum+1,15,RED); // Show dot in Orange, indicating that alarm is set for current day
-        else   plot (29*alrmnum+1,15,GREEN); // No alarm today so show green dot in lower right corner 
+      if (soundAlarm[alrmnum]) { // Alarm currently sounding?
+        if ( (millis()-alarmBlinkTime > blinkDotDuration)) { // It's been over blinkDuration time
+          alarmBlinkTime = millis(); // reset offset to current time
+          if ( alarmColor == BLACK )  alarmColor=RED; // Invert color of indicator
+          else alarmColor = BLACK;
+        }
+        plot (31*alrmnum,14,alarmColor); // Show blinking dot in Orange if snoozing  (wbp)
+      }
+      else if ( snoozeTime[alrmnum]==10) { // not snoozing?
+        if ( alarmon[alrmnum] & weekdays[weekday()] )  plot (31*alrmnum,14,RED); // Show dot in Red, indicating that alarm is set for current day  (wbp)
+        else   plot (31*alrmnum,14,GREEN); // No alarm today so show green dot in lower left(right) corner (wbp)
       } 
-      else plot (29*alrmnum+1,15,ORANGE); // Show dot in RED if snoozing (Maybe do blinking in the future too)
+//      else plot (31*alrmnum,14,ORANGE); // Show dot in Orange if snoozing (Maybe do blinking in the future too) (wbp)
+      else  { // snoozing
+        if ( (millis()-alarmBlinkTime > blinkDotDuration)) { // It's been over blinkDuration time
+          alarmBlinkTime = millis(); // reset offset to current time
+          if ( alarmColor == BLACK )  alarmColor=ORANGE; // Invert color of indicator
+          else alarmColor = BLACK;
+        }
+        plot (31*alrmnum,14,alarmColor); // Show blinking dot in Orange if snoozing  (wbp)
+      }
       // ==== END alarm LED indicator ====
       
-      if (soundAlarm[alrmnum]) playAlarm(alrmnum);
+      if (soundAlarm[alrmnum]) {
+        playAlarm(alrmnum);
+      }
       // ==== Begin Snooze Check ====
       else {
         // Are We Snoozing?
@@ -22,7 +41,7 @@ void procAlarm(byte alrmnum) {
          // Is it time reset Snooze?
          if ( (minute()%10) == snoozeTime[alrmnum]) {
            soundAlarm[alrmnum]=true; // Check last digit of current minute
-           if (alrmToneNum[alrmnum]<6) alrmVol[alrmnum]=7; // Reset Alarm Volume
+           if (alrmToneNum[alrmnum]<=ALARM_PROGRESSIVE)  alrmVol[alrmnum]=7; // Reset Alarm Volume
            else alrmVol[alrmnum]=0;
          }
       }
@@ -79,7 +98,8 @@ void rearmAlrm(byte alrmnum){
     if ( ( hour()==alrmHH[alrmnum]+1) && ( minute()==alrmMM[alrmnum]) ) { // It's been 1 hour since Alarm sounded
       soundAlarm[alrmnum]=false;
       interruptAlrm[alrmnum]=false;
-      if (alrmToneNum[alrmnum]<6) alrmVol[alrmnum]=7; //Set low volume for escalating alarms
+//      if (alrmToneNum[alrmnum]<6) alrmVol[alrmnum]=7; //Set low volume for escalating alarms
+      if (alrmToneNum[alrmnum]<=ALARM_PROGRESSIVE) alrmVol[alrmnum]=7; //Set low volume for escalating alarms (wbp)
       else alrmVol[alrmnum]=0; // Set High volume for non-escalating alarms
       snoozeTime[alrmnum]=10; // Turn off snooze
      }
@@ -101,7 +121,7 @@ boolean resetAlrm(byte alrmnum){
     snoozeTime[alrmnum]=10;
     wave.stop();
     playcomplete("alrm_res.WAV");
-    if (alrmToneNum[alrmnum]<6) alrmVol[alrmnum]=7; //Set low volume for escalating alarms
+    if (alrmToneNum[alrmnum]<=ALARM_PROGRESSIVE) alrmVol[alrmnum]=7; //Set low volume for escalating alarms (wbp)
     else alrmVol[alrmnum]=0; // Set High volume for non-escalating alarms
     return true;
     }

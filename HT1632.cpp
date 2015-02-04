@@ -46,6 +46,9 @@
 #define CLK_DELAY
 
 
+extern volatile byte g_GPS_receive;  // flag set to show GPS signal received
+extern volatile byte g_IR_receive;  // flag set to show IR signal received
+
 
 #define HT1632_DATA	14	// Data pin (pin 7 of display connector)
 #define HT1632_CS	13	//  Chip Select (pin 1 of display connnector)
@@ -346,6 +349,18 @@ void ht1632_clear()
     ht1632_senddata(3, i, 0);  // clear the display!
     ht1632_senddata(4, i, 0);  // clear the display!
   }
+  
+  // turn signal LED indicators back on if they were on (wbp)
+  if (g_GPS_receive == 1)
+    plot(31,1,GREEN); //Plot Indicator dot (GPS signal was received)
+  else if (g_GPS_receive == 2)
+    plot(31,1,ORANGE); //Plot Indicator dot (GPS signal was received)
+  else if (g_GPS_receive == 3)
+    plot(31,1,RED); //Plot Indicator dot (GPS signal was received)
+
+  if (g_IR_receive == 1)
+    plot(31,2,GREEN); //Plot Indicator dot (IR signal was received)
+  
 }
 
 
@@ -829,16 +844,16 @@ void setBrightness(byte nLevel)
  * Original functions by Bill Ho
  * modified by LensDigital (added interrupt by buttons)
  ***********************************************************************/
-boolean scrolltextsizexcolor(int y,char Str1[ ], byte color, int delaytime){
+boolean scrolltextsizexcolor(int y, char Str1[ ], byte color, int delaytime){
    int messageLength = strlen(Str1)+ 1;
    byte showcolor,showsecondcolor;
   int xa = 0;
   while (xa<1) {
     int xpos = X_MAX;
-    while (xpos > (-1 * ( 8* messageLength))) {
+    while (xpos > (-1 * ( 7 * messageLength))) {  // wbp: 7 bytes per char instead of 8
       for (int i = 0; i < messageLength; i++) {
         if (color==4) color=random(3)+1;
-        ht1632_putchar(xpos + (8 * i),  y,Str1[i], color);
+        ht1632_putchar(xpos + (7 * i),  y, Str1[i], color);  // wbp: 7 instead of 8
       }
       if ( (digitalRead(SET_BUTTON_PIN) == HIGH) || (digitalRead(MENU_BUTTON_PIN) == HIGH) || (digitalRead(INC_BUTTON_PIN) == HIGH)  ) {cls (); return false; } // Interrupt
       delay(delaytime);// reduce speed of scroll

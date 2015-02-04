@@ -1,6 +1,6 @@
 /***********************************************************************
 * December 2014, January 2015 - mods by WBPHELPS
-* Ver 2.15 (01/14/2015)
+* Ver 2.18 (01/14/2015)
 * logarithmic brightness levels
 * bugfix: brightness set to auto by error
 * auto bright - adjust at 1 second intervals (was 10)
@@ -15,6 +15,17 @@
 * DST setting: Off, On, Auto
 * AUTO DST working!
 * Add GPS On/Off in System settings
+* switch IRRemote to use Timer3 interrupt instead of Timer2
+* small changes to fonts 3 & 4
+* set IR & GPS status LED's after clear
+* adjust some menu spacings
+* auto color, depending on light level
+* move alarm indicators to edges
+* change menu timeout to 5 seconds
+* blink alarm indicators if playing or snoozing
+*
+* Add TZ Hr & TZ Mn to settings?
+* more compact text scrolling
 *
 ***********************************************************************/
 /***********************************************************************
@@ -47,12 +58,11 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <RFM12B.h>
-#include <IRremote.h> // Comment out if IR receiver not present
+#include "IRremote.h" // Comment out if IR receiver not present
 #include "myIR_Remote.h" // IR Codes defintion file (comment out if IR receiver not present)
-//#include "adst.h" // wbp
 
 //#define firmware_ver 209 // Current Firmware version
-#define firmware_ver 215 // Current Firmware version (wbp)
+#define firmware_ver 218 // Current Firmware version (wbp)
 
 // ============================================================================================
 // Importante User Hardware config settings, modify as needed
@@ -60,7 +70,7 @@
 static boolean RFM12B_Enabled=true; // Defines if RFM12B Chip present.  Set to true to enable. Must also have ATMega1284p! Will not work with ATMega644p chip
 #define AUTO_BRIGHTNESS_ON 0  //Set to 1 to disable autobrightness menu feature, 0 to enable if photocell is present.
 static boolean IR_PRESENT=true; // Set to True if IR receiver is present. Must also have ATMega1284p! Will not work with ATMega644p chip
-static boolean GPS_PRESENT=true; // Set to True if IR receiver is present. Must also have ATMega1284p! Will not work with ATMega644p chip
+static boolean GPS_PRESENT=true; // Set to True if GPS receiver is present
 // ============================End of User Hardware Settings ==================================
 
 // Pins Delcarations
@@ -74,8 +84,8 @@ static boolean GPS_PRESENT=true; // Set to True if IR receiver is present. Must 
 #define MENU_BUTTON_PIN A4// "Menu Button" button on analog 4;
 #define SET_BUTTON_PIN A3// "set time" button on digital 17 (analog 3);
 #define INC_BUTTON_PIN A2// "inc time" button on digital 16 (analog 2);
-#define PHOTOCELL_MIN 200 // Minimum reading from Photocell
-#define PHOTOCELL_MAX 880 // Maximum reading from Photocell
+#define PHOTOCELL_MIN 20 // Minimum reading from Photocell (wbp)
+#define PHOTOCELL_MAX 800 // Maximum reading from Photocell (for brightess LED level)
 // ===================================================================================
 
 #define heldTime 1000 // Time after which button is considered held
@@ -106,6 +116,8 @@ RFM12B radio;
 #define MAX_SETTINGS 6 // Maximum number of settings menu items
 #define MAX_SYSSETTINGS 11 // Maximum number of System menu items
 
+#define ALARM_PROGRESSIVE 6 // Number of alarm sounds that have progressive volume
+
 //#ifdef HAVE_GPS
 ///volatile uint8_t g_gps_enabled = 2;  // zero: off, 1: 4800 bps, 2: 9600 bps
 volatile int8_t g_TZ_hour = -8;
@@ -122,6 +134,9 @@ uint8_t g_DST_Rules[9] = {3,1,2,2,11,1,1,2,1};   // initial values from US DST r
 // N is which occurrence of DOTW
 // Current US Rules:  March, Sunday, 2nd, 2am, November, Sunday, 1st, 2 am, 1 hour
 //#endif
+unsigned long g_IR_timer = 0;  // for tracking how long IR signal LED is on
+volatile byte g_GPS_receive = 0;  // flag set to show GPS signal received
+volatile byte g_IR_receive = 0;  // flag set to show IR signal received
 
 boolean isSettingTime = false;
 boolean isInMenu = false;
@@ -169,13 +184,16 @@ byte tmpOffset; // temperature offset (minus)
 const byte weekdays[8]={0,1,64,32,16,8,4,2}; // Lookup table to convert Weekday number to my day code used for Custom Alarm schedule
 
 unsigned long blinkTime=0; // controls blinking of the dots
+unsigned long alarmBlinkTime=0; // controls blinking of alarm indicators
 unsigned long last_ms=0; // for setting seconds, etc.
 unsigned long last_RF=millis(); // Keeps track since last RF signal received
 volatile unsigned long lastButtonTime = 0;// last time a button was pushed; used for debouncing
 
 byte clockColor;
+byte autoColor = true;  // Auto color mode
 byte clockFont; 
 byte blinkColor=BLACK; // Default off
+byte alarmColor=BLACK; // Default off
 byte hhColor=BLACK; // Set color of the 2 hour digits
 byte mmColor=BLACK; // Set color of the 2 minute digits
 byte monColor=BLACK; // Set color of the month
@@ -213,7 +231,7 @@ byte mbutState=1; // Menu button option
 byte subMenu[MAX_SUBMENUS]={0,0,0,0,0,0,0,0}; // 0 = setting Alarm1, 1 = setting Alarm 2, 2 for setting Time/Date, 3 for System Settings, 4 for setting custom alrm 1, 5 = custom alarm 2, 6 = UserOptions, 7= Infodisplay options, 8 = Voice Prompts
 byte brightness; // LED Display Brightness
 byte lightLevel; // Light level from photocensor
-byte prevBrightness =0; // Previous Brightness (to detect brightness level change)
+byte prevBrightness = 0; // Previous Brightness (to detect brightness level change)
 boolean tempUnit; // Temperature units (True=F or False=C)
 byte infoFreq; // Info Display Freq options
 byte sayOptions;  // Say items options
@@ -241,6 +259,7 @@ const byte alarmToneLoc[2]={7,12};                    // Alarm  Tone storage loc
 #define IROnLoc 23          // Defines if IR receiver is enabled
 #define DSTmodeLoc 24   // DST mode in EE
 #define GPSOnLoc 25   // GPS receiver enabled in EE
+#define autoColorLoc 26  // Auto Color enabled in EE
 
 // Wave Shield Declarations
 SdReader card;    // This object holds the information for the card
@@ -329,6 +348,7 @@ void getEEPROMSettings () {
   brightness=EEPROM.read(brightLoc); // Read Brightness setting from EEPROM
   clockColor=EEPROM.read(clockColorLoc); // Read Clock Color from EEPROM
   if (clockColor!=RED && clockColor!=GREEN && clockColor!=ORANGE) clockColor=ORANGE;// Failsafe for when EEPROM location is blank or corrupted, so clock will be visible
+  autoColor=EEPROM.read(autoColorLoc); // Read Auto Color from EEPROM
   clockFont=EEPROM.read(clockFontLoc); // Read Alarm Tone number from EEPROM
   sFX=EEPROM.read(sFXLoc); // Read Sound FX on/of for menu system
   tempUnit=EEPROM.read(tempUnitLoc); // Read temp unit
@@ -363,65 +383,103 @@ void getEEPROMSettings () {
 // ===================================================================
 void IR_process () {
   if (!isIRPresent) return;
+  if ((millis()-g_IR_timer) > 1000) { // leave IR signal indicator on for 1 second
+    g_IR_timer = millis();  // reset timer
+    g_IR_receive = 0;  // no signal
+    plot(31,2,BLACK); // clear IR signal indicator
+  }
   if (irrecv.decode(&results)) {
+//    Serial.println(results.value, HEX);
+    plot(31,2,GREEN); //Plot Indicator dot (IR signal was received)
+    g_IR_receive = 1;  // IR signal received
+    g_IR_timer = millis();  // reset timer
     switch (results.value) {
       case IR_ON:
-      //Serial.println ("Received ON/OFF");
-      lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
-      processMenuButton();
-      break;
+        //Serial.println ("Received ON/OFF");
+        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
+        processMenuButton();
+        break;
       case IR_PLUS:
-      //Serial.println ("Received PLUS");
-      decrement=false;
-      lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
-      processIncButton();
-      break;
+        //Serial.println ("Received PLUS");
+        decrement=false;
+        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
+        processIncButton();
+        break;
       case IR_MINUS:
-      //Serial.println ("Received MINUS");
-      decrement=true;
-      lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
-      processIncButton();
-      break;
+        //Serial.println ("Received MINUS");
+        decrement=true;
+        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
+        processIncButton();
+        break;
       case IR_UP:
-      //Serial.println ("Received UP");
-      lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
-      processSetButton();
-      break;
+        //Serial.println ("Received UP");
+        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
+        processSetButton();
+        break;
       case IR_DOWN:
-      //Serial.println ("Received DOWN");
-      lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
-      processSetButton();
-      break;
+        //Serial.println ("Received DOWN");
+        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
+        processSetButton();
+        break;
       case IR_ENTER: // Talk All Items
-      //Serial.println ("Received ENTER");
-      lastButtonTime=millis()+BOUNCE_TIME_QUICK;
-      buttonReleased=true;
-      last_ms=millis()+heldTime;
-      quickDisplay();
-      break;
+        //Serial.println ("Received ENTER");
+        lastButtonTime=millis()+BOUNCE_TIME_QUICK;
+        buttonReleased=true;
+        last_ms=millis()+heldTime;
+        quickDisplay();
+        break;
       case IR_TALK: // Start Talk function
-      //Serial.println ("Received MUTE");
-      lastButtonTime=millis()+BOUNCE_TIME_QUICK;
-      buttonReleased=true;
-      last_ms=millis();
-      quickDisplay();
-      
-      break;
-
+        //Serial.println ("Received MUTE");
+        lastButtonTime=millis()+BOUNCE_TIME_QUICK;
+        buttonReleased=true;
+        last_ms=millis();
+        quickDisplay();
+        break;
     //Serial.println(results.value, HEX);
-    
     }
     irrecv.resume(); // Receive the next value
   }
 }
 
-void initTimer()
+//// Timer1 16 bits
+//// 16mHz / 16000 = 1000 hZ
+//// 9600 BPS = 960 bytes/second - need to get next char at least once/millisecond
+//void initTimer1()
+//{
+//// Inititalize timer1 interrupt for GPS read (& other things?)
+//// set timer1 interrupt at 1 kHz
+//  TCCR1A = 0; // set entire TCCR1A register to 0
+//  TCCR1B = 0; // same for TCCR1B
+//  TCNT1  = 0; //initialize counter value to 0
+//  // set compare match register for 1 khz interrupts
+//  OCR1A = 15999;// = (16*10^6) / (1*1000) - 1 (must be <65536)
+//  // turn on CTC mode
+//  TCCR1B |= (1 << WGM12);
+//  // Set CS10 bit for 1 prescaler
+//  TCCR1B |= (1 << CS10);  
+//  // enable timer compare interrupt
+//  TIMSK1 |= (1 << OCIE1A);  
+//}
+//
+//// 1 tick = ~4 us 
+//ISR(TIMER1_OVF_vect)
+//{
+//  if (isGPSPresent) {
+//    GPSread();  // check for data on the serial port
+//  }
+//}
+
+// Timer2 8 bits
+// 16mHz / 8 = 2 mHz = 0.5 uS per tick w/ prescaler
+// 2mHz / 256 = 7812.5 Hz overflow frequency
+// Timer2 overflow every 0.000128 seconds 
+void initTimer2()
 {
-  // Inititalize timer interrupt for GPS read (& other things?)
+  // Inititalize timer2 interrupt for GPS read (& other things?)
   TCCR2A &= ~((1<<WGM21) | (1<<WGM20));
   TCCR2B &= ~(1<<WGM22);
   TIMSK2 &= ~(1<<OCIE2A);
-  TCCR2B = (1<<CS21); // Set Prescaler to clk/8 : 1 click = 1us.
+  TCCR2B = (1<<CS21); // Set Prescaler to clk/8 
   TIMSK2 |= (1<<TOIE2); // Enable Overflow Interrupt Enable
   TCNT2 = 0; // Initialize counter
 }
@@ -429,12 +487,11 @@ void initTimer()
 //#ifdef HAVE_GPS
 static uint8_t gps_counter = 0;
 //#endif
-
-// 1 click = 1us. 
+// runs every 0.000128 seconds
 ISR(TIMER2_OVF_vect)
 {
   if (isGPSPresent) {
-    if (++gps_counter == 4) {  // every 0.001024 seconds
+    if (++gps_counter == 4) {  // about once every 0.5 ms
       GPSread();  // check for data on the serial port
       gps_counter = 0;
     }
@@ -451,7 +508,8 @@ void checkGPS() {
   }
   if ((millis()-g_gps_timer) > 15000) { // how long since GPS signal received?
     g_gps_timer = millis();  // reset timer
-    plot (31,1,RED); // set signal received LED to show no signal
+    plot(31,1,RED); // set signal received LED to show no signal
+    g_GPS_receive = 3; // 
   }
 }
 
@@ -475,7 +533,7 @@ tmElements_t tm;
 
 void setup ()  
 {
-//  Serial.begin(9600); // (115200); (wbp)
+  Serial.begin(9600); // (115200); (wbp)
   //initEPROM();
   
   // Print FW Version
@@ -508,10 +566,12 @@ void setup ()
   else
     setBrightness(brightness);
   // Initialize Radio module 
-  if (isRadioPresent) radio.Initialize(NODEID, RF12_915MHZ, NETWORKID);  
-  if (isIRPresent)  irrecv.enableIRIn(); // Start the IR receiver. Comment out if IR not present
+  if (isRadioPresent) radio.Initialize(NODEID, RF12_915MHZ, NETWORKID);
+//  if (isIRPresent) {
+//    irrecv.enableIRIn(); // Start the IR receiver. Comment out if IR not present
+//  }
 
-  gpsInit(2);  // init GPS & Serial port for 9600 BPS
+  gpsInit(9600);  // init GPS & Serial port for 9600 BPS
 //	if (g_DST_mode == 2)  // DST set to AUTO?
 tmElements_t tm;
   breakTime(now(), tm);
@@ -520,15 +580,32 @@ tmElements_t tm;
   startup(); // Show welcoming screen
 //  Serial.println (FreeRam());
 //  radio.Sleep();
-  initTimer();  // start timer interrupt running for GPS read (wbp)
+
+  delay(1000); 
+  if (isIRPresent) {
+    Serial.println("IR Present");
+    irrecv.enableIRIn(); // Start the IR receiver. Comment out if IR not present
+  }
+  else
+    Serial.println("NO IR!");
+
+  initTimer2();  // start timer interrupt running for GPS read (wbp)
+
 }
 
 
 // =====================================================================================
 // >>>>>>>>>>>>>>>>>>>>>>>>> MAIN LOOP <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 // =====================================================================================
+//unsigned long ctr1 = 0;
+//unsigned long time1 = 0;
+//unsigned long time2;
+// each loop takes on average 13.2 ms - loop runs about 75 times a second
 void loop ()
 {
+//  if (time1==0)
+//    time1 = millis();
+
   showBigTime(clockColor);
   procAlarm(0);
   procAlarm(1);
@@ -542,6 +619,14 @@ void loop ()
   IR_process();
   checkGPS();  // wbp
   checkDST();  // wbp
+
+//  ctr1++;
+//  if (ctr1==100) {
+//    time2 = millis();
+//    Serial.print("time: "); Serial.println((double)(time2-time1)/ctr1,1);
+//    time1 = 0;
+//    ctr1 = 0;
+//  }
 	
  //  Serial.println (brightness);
 

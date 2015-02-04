@@ -79,13 +79,13 @@ void showDivider(byte color){
 //  if (clockFont<3) {
     plot (15-x,5,color);
     plot (15-x,6,color);
-    plot (15-x,9,color);
     plot (15-x,10,color);
+    plot (15-x,11,color);
 //  }
   plot (16-x,5,color);
   plot (16-x,6,color);
-  plot (16-x,9,color);
   plot (16-x,10,color);
+  plot (16-x,11,color);
 }
 
 // =======================================================================================
@@ -949,23 +949,34 @@ byte runningAverage(int r)
 // ---- by LensDigital & William Phelps
 // =======================================================================================
 static unsigned long lastRun = 0;
+extern byte autoColor;  // wbp
 void autoBrightness () {
   if (isInMenu) return;
   if (brightness) return; // Brightness is not set to 0 (auto)
 //  if (second()%10) return; // Take readings every 10th second only
-  if ((millis()-lastRun) < 500) return; // take two readings per second
+  if ((millis()-lastRun) < 1000) return; // take one reading per second
   lastRun = millis();
   //Serial.println ("Changing Brightness");
-  lightLevel = map( constrain (analogRead(photoCellPin), PHOTOCELL_MIN, PHOTOCELL_MAX), PHOTOCELL_MIN, PHOTOCELL_MAX, 1, 5); // Get Ambient Light Reading
+  int pCell = analogRead(photoCellPin);
+//  Serial.print("pCell:"); Serial.println(pCell);
+  lightLevel = map( constrain (pCell, PHOTOCELL_MIN, PHOTOCELL_MAX), PHOTOCELL_MIN, PHOTOCELL_MAX, 1, 5); // Get Ambient Light Reading
   lightLevel = runningAverage(lightLevel); // calc running average 
-  if (prevBrightness==0) {  // Initialized previous Brightness setting only if Brightness was reset
-    prevBrightness=lightLevel;
-  }
+//  if (prevBrightness==0) {  // Initialized previous Brightness setting only if Brightness was reset
+//    prevBrightness=lightLevel;
+//  }
   if (lightLevel != prevBrightness) { // Set LED brightness only if light changed
     setBrightness(lightLevel);
     prevBrightness=lightLevel;
     //Serial.println (lightLevel);
     //Serial.println (FreeRam());
+    if (autoColor) {
+      if (lightLevel < 3)
+        clockColor = RED;
+      else if (lightLevel < 4)
+        clockColor = ORANGE;
+      else
+        clockColor = GREEN;
+    }
   }
 }
 

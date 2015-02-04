@@ -12,45 +12,45 @@ void showMenu()
      
   switch (menuItem) {
     case 1: // Set Alarm 1 Menu Item (Display Only)
-          putstring_nl ("Display Alrm 1 Menu");
-         okClock=false;
-         isSettingSys=false;
-         isSettingOptions=false;
-         cls();
-        showText(7,0,"Set",1,ORANGE);
-        showText(0,8,"Alrm1",1,ORANGE);
-        break;
+      putstring_nl ("Display Alrm 1 Menu");
+      okClock=false;
+      isSettingSys=false;
+      isSettingOptions=false;
+      cls();
+      showText(1,0,"Set",1,ORANGE);
+      showText(3,8,"Alrm1",1,ORANGE);
+      break;
     case 2: // Set Alarm 2 Menu Item (Display Only)
-         putstring_nl ("Display Alrm 2 Menu");
-         okClock=false;
-         isSettingSys=false;
-         cls();
-        showText(7,0,"Set",1,ORANGE);
-        showText(0,8,"Alrm2",1,ORANGE);
-        break;
+      putstring_nl ("Display Alrm 2 Menu");
+      okClock=false;
+      isSettingSys=false;
+      cls();
+      showText(1,0,"Set",1,ORANGE);
+      showText(3,8,"Alrm2",1,ORANGE);
+      break;
     case 3: // Time and Date setting menu
-        putstring_nl ("Display Date/Time Menu");
-        okClock=false;
-        isSettingSys=false;
-        cls();
-        showText(3,0,"Time/",1,ORANGE);
-        showText(3,8,"Date",1,ORANGE);
-        break;
+      putstring_nl ("Display Date/Time Menu");
+      okClock=false;
+      isSettingSys=false;
+      cls();
+      showText(1,0,"Time/",1,ORANGE);
+      showText(5,8,"Date",1,ORANGE);
+      break;
    case 4: // System Settings (preferences/setup)
-        putstring_nl ("Display System Menu");
-        okClock=false;
-        cls();
-        showText(7,0,"Sys",1,ORANGE);
-        showText(1,8,"Setup",1,ORANGE);
-        break;
+      putstring_nl ("Display System Menu");
+      okClock=false;
+      cls();
+      showText(1,0,"Sys",1,ORANGE);
+      showText(3,8,"Setup",1,ORANGE);
+      break;
    case 5: // User Options menu
-       putstring_nl ("Display Options Menu");
-       okClock=false;
-       isSettingSys=false;
-       cls();
-       showText(3,0,"User",1,ORANGE);
-       showText(3,8,"Menu",1,ORANGE);
-       break;
+      putstring_nl ("Display Options Menu");
+      okClock=false;
+      isSettingSys=false;
+      cls();
+      showText(1,0,"User",1,ORANGE);
+      showText(3,8,"Menu",1,ORANGE);
+      break;
   } 
 }
 
@@ -64,7 +64,7 @@ void setAlarm(byte alrmNum) {
   interruptAlrm[alrmNum]=false; //Rearm Button interrupt
   soundAlarm[alrmNum]=false; // Make sure alarm that just sounded doesn't resume
   snoozeTime[alrmNum]=10; // Disable Snooze
-  if (alrmToneNum[alrmNum]<6) alrmVol[alrmNum]=7; // Set initial alarm volume (for escalating alarms)
+  if (alrmToneNum[alrmNum]<=ALARM_PROGRESSIVE) alrmVol[alrmNum]=7; // Set initial alarm volume (for escalating alarms)
   if (subMenu[alrmNum] >0 && subMenu[alrmNum] <4) playSFX(1); // Don't play sound if not setting anything, i.e. submenu=0 or setting hrs, minutes, tone
   switch (subMenu[alrmNum]) {
     case 1: // Alarm On/off
@@ -458,18 +458,34 @@ void sysSetting(){
         else if (brightness > 5) brightness = AUTO_BRIGHTNESS_ON;  // 0 if photocell present, else 1
         EEPROM.write(brightLoc,brightness);
         delay (15);
-        prevBrightness=0; 
+        prevBrightness=0; // force an update
         if (brightness==0) autoBrightness();
         else
           setBrightness(brightness);
         break;
      case 3: // Set Clock Color
        cls();
-       if (decrement) clockColor--;
-       else clockColor++;
-       if (clockColor == 0) clockColor=3;
-       else if (clockColor>3) clockColor=1;
+       if (autoColor)
+         autoColor = false;
+       else if (decrement) {
+         if (clockColor>1)
+           clockColor--;
+         else {
+           clockColor = 3;
+           autoColor = true;
+         }
+       }
+       else {
+         if (clockColor<3)
+           clockColor++;
+         else {
+           clockColor = 1;
+           autoColor = true;
+         }
+       }
        EEPROM.write(clockColorLoc,clockColor);
+       delay (5);
+       EEPROM.write(autoColorLoc,autoColor);
        delay (5);
        break;
      case 4: // Set Clock Font (0-5)
@@ -578,34 +594,36 @@ void showSys(){
       //Serial.println (brightness);
       switch (brightness) {
       case 0:
-        showText(1,8,"Auto",1,hhColor);
+        showText(3,8,"Auto",1,hhColor);
         break;
       case 1:
-        showText(1,8,"Night",1,hhColor);
+        showText(3,8,"Night",1,hhColor);
         break;
       case 2:
-        showText(8,8,"Low",1,hhColor);
+        showText(3,8,"Low",1,hhColor);
         break;
       case 3:
-        showText(8,8,"Med",1,hhColor);
+        showText(3,8,"Med",1,hhColor);
         break;
       case 4: 
-        showText(5,8,"High",1,hhColor);
+        showText(3,8,"High",1,hhColor);
         break;
       case 5: 
-        showText(8,8,"Max",1,hhColor);
+        showText(3,8,"Max",1,hhColor);
         break;
       }
     break;
     case 3: // Set Clock Color
       showText(1,0,"Color",1,color);
-      switch ( clockColor) {
+      if (autoColor)
+        showText(1,8,"Auto",1,ORANGE);
+      else switch ( clockColor) {
        case 1:  
-         showText(1,8,"Green",1,GREEN);
-         break;
-       case 2:  
          showText(8,8,"Red",1,RED);
          break;  
+       case 2:  
+         showText(1,8,"Green",1,GREEN);
+         break;
        case 3:  
          showText(1,8,"Yello",1,ORANGE);
          break;
@@ -962,8 +980,8 @@ void quickMenu(){
        lastButtonTime = 0; // Exit Quick Menu if any button other than INC was pres
       //processSetButton(); // Only to control alarm
     }
-   // display the menu option for 15 sec after menu button was pressed;
-  if ((lastButtonTime > 0) && (millis() - lastButtonTime < 15000))
+   // display the menu option for 10 sec after menu button was pressed;
+  if ((lastButtonTime > 0) && (millis() - lastButtonTime < 10000))  // wbp
     return;
   
   // Finished with menus, return to normal operations
