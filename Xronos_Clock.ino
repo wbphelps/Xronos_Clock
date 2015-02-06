@@ -25,6 +25,7 @@
 * blink alarm indicators if playing or snoozing
 * add progressive alarm volume on/off option for alarm setting
 * set alarm LED color if alarm is due within next 24 hours
+* atomic (single fetch) time/date
 *
 * Add TZ Hr & TZ Mn to settings?
 * more compact text scrolling

@@ -4,7 +4,8 @@
 // =======================================================================================
 void procAlarm(byte alrmnum) {
   int blinkDotDuration = 1000; // How frequently dots should blink (wbp)
-  int tAlrm, tNow, wd;
+  int iAlrm, iNow, wd;
+  unsigned long tNow = now();
   if (isInMenu) return; // Do not sound alarm if changing settings
   if (digitalRead(SET_BUTTON_PIN) == HIGH) processSetButton(); // Poll Set Button, that will reArm (cancel for today) alarm
   if (alarmon[alrmnum] & 128) { // Is global alarm switch on? (1st byte is set)
@@ -26,24 +27,21 @@ void procAlarm(byte alrmnum) {
 
       // check to see if alarm will sound again within 24 hours
       alarmColor=GREEN;  // assume it won't
-      if (alarmon[alrmnum] & 128) {  // is alarm on?
-        tAlrm = alrmHH[alrmnum]*60 + alrmMM[alrmnum];  // time of alarm in minutes
-        time_t t = now(); // get date/time atomicly (wbp)
-        tNow = hour(t)*60 + minute(t);  // time now in minutes
-        if (tNow>tAlrm) { // is tAlrm in the past?
-          tAlrm+=1440;  // set tAlrm ahead by one day
-          wd = weekday()+1;  // tomorrow's weekday number
-          if (wd>7)  wd=1;  // wrap if necessary
-          if (!(alarmon[alrmnum] & weekdays[wd]))  // if alarm isn't set for tomorrow,
-            tAlrm+=1440;  // set it past 24 hours so next test fails
-        }
-        if ((tAlrm-tNow)<=1440)  // is alarm set to go off in next 24  hours?
-          alarmColor=RED;  // change LED to red
+      iAlrm = alrmHH[alrmnum]*60 + alrmMM[alrmnum];  // time of alarm in minutes
+      iNow = hour(tNow)*60 + minute(tNow);  // time now in minutes
+      if (iNow>iAlrm) { // is tAlrm in the past?
+        iAlrm+=1440;  // set tAlrm ahead by one day
+        wd = weekday(tNow)+1;  // tomorrow's weekday number
+        if (wd>7)  wd=1;  // wrap if necessary
+        if (!(alarmon[alrmnum] & weekdays[wd]))  // if alarm isn't set for tomorrow,
+          iAlrm+=1440;  // set it past 24 hours so next test fails
       }
+      if ((iAlrm-iNow)<=1440)  // is alarm set to go off in next 24 hours?
+        alarmColor=RED;  // change LED to red
       plot (31*alrmnum,14,alarmColor); // show alarm status
       
     } 
-//    else plot (31*alrmnum,14,ORANGE); // Show dot in Orange if snoozing (Maybe do blinking in the future too) (wbp)
+
     else  { // snoozing
       if ( (millis()-alarmBlinkTime > blinkDotDuration)) { // It's been over blinkDuration time
         alarmBlinkTime = millis(); // reset offset to current time
@@ -62,11 +60,11 @@ void procAlarm(byte alrmnum) {
       // Are We Snoozing?
       if ( snoozeTime[alrmnum]!=10 ) { // Snooze was pressed
         // Is it time reset Snooze?
-        if ( (minute()%10) == snoozeTime[alrmnum]) {
+        if ( (minute(tNow)%10) == snoozeTime[alrmnum]) {
           soundAlarm[alrmnum]=true; // Check last digit of current minute
 //        if (alrmToneNum[alrmnum]<=ALARM_PROGRESSIVE)  alrmVol[alrmnum]=7; // Reset Alarm Volume
           if (alrmProgVol[alrmnum])  alrmVol[alrmnum]=7; // Reset Alarm Volume
-          else alrmVol[alrmnum]=0;
+          else  alrmVol[alrmnum]=0;
         }
       }
       // ==== End Snooze Check ====
@@ -77,7 +75,7 @@ void procAlarm(byte alrmnum) {
         else // It's Either Daily alarm or we are in Mon-Fri range
          */
           if ( alarmon[alrmnum] & weekdays[weekday()] ) { // Alarm is scheduled for this day!
-            if ( (hour()==alrmHH[alrmnum]) && ( minute()==alrmMM[alrmnum]) ) {
+            if ( (hour(tNow)==alrmHH[alrmnum]) && ( minute(tNow)==alrmMM[alrmnum]) ) {
               if (alrmnum==0) { // It's first alarm processor
                 soundAlarm[1]=false; // Interrupts 2nd alarm if it's playing
                 snoozeTime[1]=10; // Disable snooze for 2nd alarm
@@ -119,8 +117,9 @@ void playAlarm(byte alrmnum) {
 // By: LensDigital
 // =======================================================================================
 void rearmAlrm(byte alrmnum){
+  unsigned long tNow = now();
   if (alarmon[alrmnum] & 128) { // Is global alarm switch on? (1st bit is set?)
-    if ( ( hour()==alrmHH[alrmnum]+1) && ( minute()==alrmMM[alrmnum]) ) { // It's been 1 hour since Alarm sounded
+    if ( ( hour(tNow)==alrmHH[alrmnum]+1) && ( minute(tNow)==alrmMM[alrmnum]) ) { // It's been 1 hour since Alarm sounded
       soundAlarm[alrmnum]=false;
       interruptAlrm[alrmnum]=false;
 //      if (alrmToneNum[alrmnum]<6) alrmVol[alrmnum]=7; //Set low volume for escalating alarms
@@ -162,16 +161,14 @@ boolean resetAlrm(byte alrmnum){
 void snoozeProc(byte alrmnum){
   if (!soundAlarm[alrmnum]) return; // Alarm wasn't sounding so we are not doing snoozing
   //Serial.println ("Snooze was pressed!");
-  if ((minute()%10)==0) snoozeTime[alrmnum]=9;
-  else
-  snoozeTime[alrmnum]=(minute()%10)-1;
+  if ((minute()%10)==0)  snoozeTime[alrmnum]=9;
+  else  snoozeTime[alrmnum]=(minute()%10)-1;
   soundAlarm[alrmnum]=false; 
   interruptAlrm[alrmnum]=true;
   wave.stop();
   interruptAlrm[alrmnum]=false;
   isInQMenu=false;
   delay(1000);
-
 }
 
 

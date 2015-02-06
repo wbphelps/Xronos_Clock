@@ -75,7 +75,7 @@ void initEPROM()
 // Display divider colon :
 void showDivider(byte color){
   int x=0; //offset
-  if(time12hr) x=1; // Offset divider by 2 dots left for 12 hr mode
+//  if(time12hr) x=1; // Offset divider by 2 dots left for 12 hr mode
 //  if (clockFont<3) {
     plot (15-x,5,color);
     plot (15-x,6,color);
@@ -219,35 +219,39 @@ boolean alarmInfo(byte alrmNum){
 // By: LensDigital
 // ---------------------------------------------------------------------------------------
 void sayTime(){
+  unsigned long tNow = now();  // time now 
      playcomplete("TIME_IS.WAV");
      char myString[9];
+     myhours = hour(tNow);
      if(time12hr) { // == 12 Hour Mode ====
-       snprintf(myString,sizeof(myString), "%d.WAV",hourFormat12()); // Make Hours string
+       if (myhours>12)  myhours-=12;
+       if (myhours==0)  myhours=12;
+       snprintf(myString,sizeof(myString), "%d.WAV",myhours); // Make Hours string
        playcomplete(myString); // Play Hours
      }
      else // == 24 Hour Mode ====
-       if (hour() > 20) { // Make complex 2 digit sound
+       if (hour(tNow) > 20) { // Make complex 2 digit sound
          playcomplete("20.WAV"); // Play Hours 1st digit
-         snprintf(myString,sizeof(myString), "%d.WAV",hour()%10); // Make Hours 2nd digit string
+         snprintf(myString,sizeof(myString), "%d.WAV",hour(tNow)%10); // Make Hours 2nd digit string
          playcomplete(myString); // Play Hours 2nd digit
        }
        else { // Simple
-         snprintf(myString,sizeof(myString), "%d.WAV",hour()); // Make Hours string
+         snprintf(myString,sizeof(myString), "%d.WAV",hour(tNow)); // Make Hours string
          playcomplete(myString); // Play Hours
        }
-     if (minute()<20) {
-       if (minute()==0) {
+     if (minute(tNow)<20) {
+       if (minute(tNow)==0) {
          if (!time12hr)  // only say "hundred" if in 24 hour mode (wbp)
            playcomplete("100.WAV");  // We are at hh:00
        }
        else {
-         if (( (minute()/10)%10) == 0) playcomplete ("OH.WAV"); // If first digit of minute is 0, say "oh"
-         snprintf(myString,sizeof(myString), "%d.WAV",minute()); // Make Minutes string
+         if (( (minute(tNow)/10)%10) == 0) playcomplete ("OH.WAV"); // If first digit of minute is 0, say "oh"
+         snprintf(myString,sizeof(myString), "%d.WAV",minute(tNow)); // Make Minutes string
          playcomplete(myString);
          }
        }
      else { // Make complex 2 digit sound
-       minutes=(minute()/10)%10;
+       minutes=(minute(tNow)/10)%10;
        switch (minutes){ // Create 1st digit sound
          case 2:
            playcomplete ("20.WAV");
@@ -262,14 +266,14 @@ void sayTime(){
            playcomplete ("50.WAV");
            break;
        }
-       if ((minute()%10)!=0) { // Don't say if last digit is 0
-         snprintf(myString,sizeof(myString), "%d.WAV",minute()%10); // Make 2nd digit
+       if ((minute(tNow)%10)!=0) { // Don't say if last digit is 0
+         snprintf(myString,sizeof(myString), "%d.WAV",minute(tNow)%10); // Make 2nd digit
          playcomplete(myString); // Play 
        }
      }
      // If needed say AM or PM
      if(time12hr) { // == 12 Hour Mode ====
-       if (isAM() ) playcomplete("AM.WAV");
+       if (isAM(tNow) ) playcomplete("AM.WAV");
        else playcomplete("PM.WAV");
      }
    
@@ -456,7 +460,7 @@ void showBigTime(byte color){
   if (!okClock) return; // Date setting is in progress. Do not show clock
   int blinkDotDuration = 1000; // How frequently dots should blink (wbp)
   int blinkDigDuration = 500; // Frequencey of digit blinking during time setting
-  int x=0; //offset
+//  int x=0; //offset
   if (color==4)color=random(3)+1; // Select random color
   
   // Blinker processor (used to blink divider and/or digits during time setting
@@ -490,28 +494,31 @@ void showBigTime(byte color){
   else { hhColor=color; mmColor=color;} // We are not setting time, so show digits as usual
   // --- END OF BLINK PROCESSOR
     
+  unsigned long tNow = now();  // wbp
+  myhours = hour(tNow);
   // Check if we are running in 12 Hour Mode:
   if(time12hr) {
   // == BEGIN 12 Hour Mode ====
-    x=2; //offset hours by 2 dots
-    myhours=hourFormat12();
+//    x=2; //offset hours by 2 dots
+//    myhours=hourFormat12();
 //    if (isAM()) plot (0,1,hhColor); // Show AM Dot
-    if (isPM()) plot (0,1,hhColor); // Show Dot for PM
+    if (isPM(tNow)) plot (0,1,hhColor); // Show Dot for PM
     else plot (0,1,BLACK); // Hide Dot
-    if ( (myhours/10)%10 == 0 ) showDigit(0-x,2,1,5,clockFont,BLACK); // Hide first digit 
-    else showDigit(0-x,2,(myhours/10)%10,5,clockFont,hhColor);
+    if (myhours>12)  myhours-=12;
+    if (myhours==0)  myhours=12;  
+    if ( (myhours/10)%10 == 0 ) showDigit(-1,2,0,5,clockFont,BLACK); // Hide first digit 
+    else showDigit(-1,2,(myhours/10)%10,5,clockFont,hhColor);
   }
   // === END 12 Hour Mode ===
   else {
   // 24 Hour Mode
-   myhours=hour();
     //plot (0,1,BLACK); // Hide PM Dot (wbp)
-    showDigit(0,2,(hour()/10)%10,5,clockFont,hhColor); // Show 1st digit of hour
+    showDigit(-1,2,(myhours/10)%10,5,clockFont,hhColor); // Show 1st digit of hour
   }
-  showDigit(6-x,2,myhours%10,5,clockFont,hhColor); // Always Show 2nd digit of hour
+  showDigit(5,2,myhours%10,5,clockFont,hhColor); // Show 2nd digit of hour
   showDivider (blinkColor);
-  showDigit(15,2,(minute()/10)%10,5,clockFont,mmColor); // Show 1st digit of minute
-  showDigit(22,2,minute()%10,5,clockFont,mmColor); // Show 2nd digit of minute
+  showDigit(16,2,(minute(tNow)/10)%10,5,clockFont,mmColor); // Show 1st digit of minute
+  showDigit(22,2,minute(tNow)%10,5,clockFont,mmColor); // Show 2nd digit of minute
   
 }
 
@@ -523,33 +530,34 @@ void showBigTime(byte color){
 // ---------------------------------------------------------------------------------------
 void showSmTime (byte location,byte color){
   char myString[6];
+  unsigned long tNow = now();
   location=location*8; // Shift to bottom row if 1
   // Check if we are running in 12 Hour Mode:
+  myhours = hour(tNow);
   if(time12hr) {
   // == BEGIN 12 Hour Mode ====
-    myhours=hourFormat12();
+//    myhours=hourFormat12();
+    if (myhours>12)  myhours-=12;  // 12 hour time
+    if (myhours==0)  myhours=12;  // midnight
 //    if (isAM()) plot (0,1,color); // Show AM Dot
-    if (isPM()) plot (0,1,color); // Show Dot for PM
+    if (isPM(tNow)) plot (0,1,color); // Show Dot for PM
     else plot (0,1,BLACK); // Hide Dot
     snprintf(myString,sizeof(myString), "%d",myhours); // Make hour string
     if ( (myhours/10)%10 == 0 )  // It's one digit hour so need to shift it to the right
       showText(7,location,myString,1,color); // Shift hour to the right since it's sigle digit
     else 
       showText(1,location,myString,1,color); // Show hour at normal position
-    
   }
   // === END 12 Hour Mode ===
   else {
   // 24 Hour Mode
-   snprintf(myString,sizeof(myString), "%02d",hour()); // make 2 digit hours
+   snprintf(myString,sizeof(myString), "%02d",myhours); // make 2 digit hours
    showText(1,location,myString,1,color);
     //plot (0,1,BLACK); // Hide PM Dot
   }
-  snprintf(myString,sizeof(myString), "%02d",minute());
-  showText(12,location,":",1,color); // Show colum :
+  showText(12,location,":",1,color); // Show colon :
+  snprintf(myString,sizeof(myString), "%02d",minute(tNow));
   showText(18,location,myString,1,color); // Show minutes
-  
-  
 }
 
 // =======================================================================================
