@@ -23,6 +23,8 @@
 * move alarm indicators to edges
 * change menu timeout to 5 seconds
 * blink alarm indicators if playing or snoozing
+* add progressive alarm volume on/off option for alarm setting
+* set alarm LED color if alarm is due within next 24 hours
 *
 * Add TZ Hr & TZ Mn to settings?
 * more compact text scrolling
@@ -116,7 +118,7 @@ RFM12B radio;
 #define MAX_SETTINGS 6 // Maximum number of settings menu items
 #define MAX_SYSSETTINGS 11 // Maximum number of System menu items
 
-#define ALARM_PROGRESSIVE 6 // Number of alarm sounds that have progressive volume
+//#define ALARM_PROGRESSIVE 6 // Number of alarm sounds that have progressive volume
 
 //#ifdef HAVE_GPS
 ///volatile uint8_t g_gps_enabled = 2;  // zero: off, 1: 4800 bps, 2: 9600 bps
@@ -175,11 +177,14 @@ boolean decrement; // Only used with IR remote to decrement digits (--)
 
 byte alrmHH[2]; // Alarm Hours
 byte alrmMM[2]; // Alarm Minutes
-byte alarmon[2]; // Alarm Freq. Controlled by 8 bits. If first bit is 0 alarm is off. Example in in decimal (not counting 1st bit): Mon=64,Tue=32,Wed=16,Thu=8,Fri=4,Sat=2,Sun=1,Daily =127,Weekday on =124,Custom=126
+byte alarmon[2]; // Alarm Freq. Controlled by 8 bits. If first bit is 0 alarm is off. Example in in decimal (not counting 1st bit):
+                 // Mon=64, Tue=32, Wed=16, Thu=8, Fri=4, Sat=2, Sun=1, Daily=127, Weekdays=124, Custom=126
 byte alrmVol[2]={7,7}; // Alarm Volume (0-12, smaller = louder)
-byte sndVol=0; //Normal Sounds volume (0-12, smaller = louder)
+byte alrmProgVol[2]={1,1}; //Progressive volume?
 byte alrmToneNum[2]; // Number of alarm tone
+
 byte tmpOffset; // temperature offset (minus)
+byte sndVol=0; // Normal Sounds volume (0-12, smaller = louder)
 
 const byte weekdays[8]={0,1,64,32,16,8,4,2}; // Lookup table to convert Weekday number to my day code used for Custom Alarm schedule
 
@@ -260,6 +265,7 @@ const byte alarmToneLoc[2]={7,12};                    // Alarm  Tone storage loc
 #define DSTmodeLoc 24   // DST mode in EE
 #define GPSOnLoc 25   // GPS receiver enabled in EE
 #define autoColorLoc 26  // Auto Color enabled in EE
+const byte alarmProgVolLoc[2]={3,11};		        // alarm Off/Daily/Weekday/Custom storage locations
 
 // Wave Shield Declarations
 SdReader card;    // This object holds the information for the card

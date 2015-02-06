@@ -64,7 +64,8 @@ void setAlarm(byte alrmNum) {
   interruptAlrm[alrmNum]=false; //Rearm Button interrupt
   soundAlarm[alrmNum]=false; // Make sure alarm that just sounded doesn't resume
   snoozeTime[alrmNum]=10; // Disable Snooze
-  if (alrmToneNum[alrmNum]<=ALARM_PROGRESSIVE) alrmVol[alrmNum]=7; // Set initial alarm volume (for escalating alarms)
+//  if (alrmToneNum[alrmNum]<=ALARM_PROGRESSIVE) alrmVol[alrmNum]=7; // Set initial alarm volume (for escalating alarms)
+  if (alrmProgVol[alrmNum]) alrmVol[alrmNum]=7; // Set initial alarm volume (for escalating alarms)
   if (subMenu[alrmNum] >0 && subMenu[alrmNum] <4) playSFX(1); // Don't play sound if not setting anything, i.e. submenu=0 or setting hrs, minutes, tone
   switch (subMenu[alrmNum]) {
     case 1: // Alarm On/off
@@ -74,84 +75,90 @@ void setAlarm(byte alrmNum) {
       cls();
       break;
     case 2: // Set Alarm frequency to off/daily/weekday/custom
-          switch (alarmon[alrmNum]){
-          case 255:
+      switch (alarmon[alrmNum]){
+        case 255:
           alarmon[alrmNum]=252; // Was Daily, now Workday
           isSettingAlrmCust[alrmNum] =false;
           break; 
-          case 252:
+        case 252:
           alarmon[alrmNum]=254; // Was Workday, now custom
           isSettingAlrmCust[alrmNum] =true;
           break;
-          default:
+        default:
           alarmon[alrmNum]=255; // Was custom, now Daily
           isSettingAlrmCust[alrmNum] =false; // Remove if want to keep custom Menu setting even if alarm is off (need to tweak to make cusotm right after OFF so it will remember day settings 
         }
-        EEPROM.write (alarmOnOffLoc[alrmNum],alarmon[alrmNum]);
-        delay (5);
-        playSFX(1);
-        cls();
-        break;
-     case 3: // Custom Day selection
-       // Check if Custom Seeting was picked, if not skip this option
-       switch (subMenu[4+alrmNum]) {
+      EEPROM.write (alarmOnOffLoc[alrmNum],alarmon[alrmNum]);
+      delay (5);
+      playSFX(1);
+      cls();
+      break;
+    case 3: // Custom Day selection
+      // Check if Custom Seeting was picked, if not skip this option
+      switch (subMenu[4+alrmNum]) {
         case 1: // Mon
-        alarmon[alrmNum]=alarmon[alrmNum] ^ 64; //Toggle
-        break;
+          alarmon[alrmNum]=alarmon[alrmNum] ^ 64; //Toggle
+          break;
         case 2: // Tue
-        alarmon[alrmNum]=alarmon[alrmNum] ^ 32; //Toggle 
-        break;
+          alarmon[alrmNum]=alarmon[alrmNum] ^ 32; //Toggle 
+          break;
         case 3: // Wed
-        alarmon[alrmNum]=alarmon[alrmNum] ^ 16; //Toggle 
-        break;
+          alarmon[alrmNum]=alarmon[alrmNum] ^ 16; //Toggle 
+          break;
         case 4: // Thu
-        alarmon[alrmNum]=alarmon[alrmNum] ^ 8; //Toggle 
-        break;
+          alarmon[alrmNum]=alarmon[alrmNum] ^ 8; //Toggle 
+          break;
         case 5: // Fri
-        alarmon[alrmNum]=alarmon[alrmNum] ^ 4; //Toggle 
-        break;
+          alarmon[alrmNum]=alarmon[alrmNum] ^ 4; //Toggle 
+          break;
         case 6: // Sat
-        alarmon[alrmNum]=alarmon[alrmNum] ^ 2; //Toggle 
-        break;
+          alarmon[alrmNum]=alarmon[alrmNum] ^ 2; //Toggle 
+          break;
         case 7: // Sun
-        alarmon[alrmNum]=alarmon[alrmNum] ^ 1; //Toggle 
-        break;
+          alarmon[alrmNum]=alarmon[alrmNum] ^ 1; //Toggle 
+          break;
         case 8: // Exit
-        subMenu[4+alrmNum]=0;
-        subMenu[alrmNum]=4;//Move to next menu item
-        cls();
-        break;
-       }
-        EEPROM.write (alarmOnOffLoc[alrmNum],alarmon[alrmNum]);
-        playSFX(1);
-        cls();
-     break;
-     case 4: // Set Alarm hours
-        isAlarmModified[alrmNum]=true; // Set to True so when exiting changes will be written to EEProm
-        if (decrement) alrmHH[alrmNum]--; 
-        else alrmHH[alrmNum]++;
-        if (alrmHH[alrmNum]==255) alrmHH[alrmNum] = 23; // Negative number (byte) will be 255
-        else if (alrmHH[alrmNum] > 23) alrmHH[alrmNum] = 0;      
-        break;
-     case 5: // Set Alarm minutes  
-        isAlarmModified[alrmNum]=true; // Set to True so when exiting changes will be written to EEProm
-        if (decrement) alrmMM[alrmNum]--; 
-        else alrmMM[alrmNum]++;
-        if (alrmMM[alrmNum] ==255) alrmMM[alrmNum] = 59; // Negative number (byte) will be 255
-        else if (alrmMM[alrmNum] > 59) alrmMM[alrmNum] = 0;
-        break;
+          subMenu[4+alrmNum]=0;
+          subMenu[alrmNum]=4;//Move to next menu item
+          cls();
+          break;
+      }
+      EEPROM.write (alarmOnOffLoc[alrmNum],alarmon[alrmNum]);
+      playSFX(1);
+      cls();
+      break;
+    case 4: // Set Alarm hours
+      isAlarmModified[alrmNum]=true; // Set to True so when exiting changes will be written to EEProm
+      if (decrement) alrmHH[alrmNum]--; 
+      else alrmHH[alrmNum]++;
+      if (alrmHH[alrmNum]==255) alrmHH[alrmNum] = 23; // Negative number (byte) will be 255
+      else if (alrmHH[alrmNum] > 23) alrmHH[alrmNum] = 0;      
+      break;
+    case 5: // Set Alarm minutes  
+      isAlarmModified[alrmNum]=true; // Set to True so when exiting changes will be written to EEProm
+      if (decrement) alrmMM[alrmNum]--; 
+      else alrmMM[alrmNum]++;
+      if (alrmMM[alrmNum] ==255) alrmMM[alrmNum] = 59; // Negative number (byte) will be 255
+      else if (alrmMM[alrmNum] > 59) alrmMM[alrmNum] = 0;
+      break;
     case 6: // Set Alarm melody  
-        if (decrement) alrmToneNum[alrmNum]--;
-        else alrmToneNum[alrmNum]++;
-        wave.stop();
-        if (alrmToneNum[alrmNum] == 255) alrmToneNum[alrmNum] = 10; // Negative number (byte) will be 255
-        else if (alrmToneNum[alrmNum] > 10) alrmToneNum[alrmNum] = 1;
-        snprintf(myString,sizeof(myString), "ALRM%d.WAV",alrmToneNum[alrmNum]); // Make Alarm Filename
-        playfile(myString);
-        EEPROM.write(alarmToneLoc[alrmNum],alrmToneNum[alrmNum]);
-        delay (5);
-        cls();
-        break;
+      if (decrement) alrmToneNum[alrmNum]--;
+      else alrmToneNum[alrmNum]++;
+      wave.stop();
+      if (alrmToneNum[alrmNum] == 255) alrmToneNum[alrmNum] = 10; // Negative number (byte) will be 255
+      else if (alrmToneNum[alrmNum] > 10) alrmToneNum[alrmNum] = 1;
+      snprintf(myString,sizeof(myString), "ALRM%d.WAV",alrmToneNum[alrmNum]); // Make Alarm Filename
+      playfile(myString);
+      EEPROM.write(alarmToneLoc[alrmNum],alrmToneNum[alrmNum]);
+      delay (5);
+      cls();
+      break;
+    case 7: // Alarm Progressive On/off
+      alrmProgVol[alrmNum]=!alrmProgVol[alrmNum]; //Toggle Progressive Alarm Vol
+      delay (5);
+      EEPROM.write (alarmProgVolLoc[alrmNum],alrmProgVol[alrmNum]);
+      cls();
+      break;
   }
 
 }
@@ -169,92 +176,94 @@ void showAlarm(byte color){
   else alrmNum=1;
   switch (subMenu[alrmNum]) { 
     
-   case 1: // Alarm On/off
-     snprintf(myString,sizeof(myString),"Alrm%d",alrmNum+1);
-     showText(1,8,myString,1,color);
-     if (alarmon[alrmNum] & 128) showText(10,0,"ON",1,hhColor); 
-     else showText(10,0,"OFF",1,hhColor); 
-     break;
+    case 1: // Alarm On/off
+      snprintf(myString,sizeof(myString),"Alrm%d",alrmNum+1);
+      showText(1,8,myString,1,color);
+      if (alarmon[alrmNum] & 128) showText(10,0,"ON",1,hhColor); 
+      else showText(10,0,"OFF",1,hhColor); 
+      break;
+
     case 2:  // Alarm Frequency Setup (Off/Daily/Weekday/Custom)
-     snprintf(myString,sizeof(myString),"Alrm%d",alrmNum+1);
-     showText(1,8,myString,1,color);
-     switch (alarmon[alrmNum]) {
-      case 0:
-      showText(10,0,"ERR",1,hhColor); // Should never come here!
-      break;
-      case 255:
-      showText(0,0,"Daily",1,hhColor);
-      break;
-      case 252:
-      showText(1,0,"WKDAY",1,hhColor);
-      break;
-      default:
-      showText(0,0,"Custm",1,hhColor);
+      snprintf(myString,sizeof(myString),"Alrm%d",alrmNum+1);
+      showText(1,8,myString,1,color);
+      switch (alarmon[alrmNum]) {
+        case 0:
+          showText(10,0,"ERR",1,hhColor); // Should never come here!
+          break;
+          case 255:
+          showText(0,0,"Daily",1,hhColor);
+          break;
+        case 252:
+          showText(1,0,"WKDAY",1,hhColor);
+          break;
+        default:
+          showText(0,0,"Custm",1,hhColor);
      }
-     
-   case 3: // Custom Alarm day setting
-     snprintf(myString,sizeof(myString),"Alrm%d",alrmNum+1);
-     showText(1,8,myString,1,color);
+  
+    case 3: // Custom Alarm day setting
+      snprintf(myString,sizeof(myString),"Alrm%d",alrmNum+1);
+      showText(1,8,myString,1,color);
       switch (subMenu[4+alrmNum]){
-         case 1: // Monday
-         showText(0,0,"Mon:",1,color);
-         if (alarmon[alrmNum] & 64) showText(25,0,"Y",1,hhColor) ;
-         else showText(25,0,"N",1,hhColor); 
-         break;
-         case 2: // Tue
-         showText(0,0,"Tue:",1,color);
-         if (alarmon[alrmNum] & 32) showText(25,0,"Y",1,hhColor);
-         else showText(25,0,"N",1,hhColor);
-         break;
-         case 3: // Wed
-         showText(0,0,"Wed:",1,color);
-         if (alarmon[alrmNum] & 16) showText(25,0,"Y",1,hhColor);
-         else showText(25,0,"N",1,hhColor);
-         break;
-         case 4: // Thu
-         showText(0,0,"Thu:",1,color);
-         if (alarmon[alrmNum] & 8) showText(25,0,"Y",1,hhColor);
-         else showText(25,0,"N",1,hhColor);
-         break;
-         case 5: // Fri
-         showText(0,0,"Fri:",1,color);
-         if (alarmon[alrmNum] & 4) showText(25,0,"Y",1,hhColor);
-         else showText(25,0,"N",1,hhColor);
-         break;
-         case 6: // Sat
-         showText(0,0,"Sat:",1,color);
-         if (alarmon[alrmNum] & 2) showText(25,0,"Y",1,hhColor);
-         else showText(25,0,"N",1,hhColor);
-         break;
-         case 7: // Sun
-         showText(0,0,"Sun:",1,color);
-         if (alarmon[alrmNum] & 1) showText(25,0,"Y",1,hhColor);
-         else showText(25,0,"N",1,hhColor);
-         break;
-         case 8: // Exit
-         showText(0,0,"Exit",1,color);
-         break;
+        case 1: // Monday
+          showText(0,0,"Mon:",1,color);
+          if (alarmon[alrmNum] & 64) showText(25,0,"Y",1,hhColor) ;
+          else showText(25,0,"N",1,hhColor); 
+          break;
+        case 2: // Tue
+          showText(0,0,"Tue:",1,color);
+          if (alarmon[alrmNum] & 32) showText(25,0,"Y",1,hhColor);
+          else showText(25,0,"N",1,hhColor);
+          break;
+        case 3: // Wed
+          showText(0,0,"Wed:",1,color);
+          if (alarmon[alrmNum] & 16) showText(25,0,"Y",1,hhColor);
+          else showText(25,0,"N",1,hhColor);
+          break;
+        case 4: // Thu
+          showText(0,0,"Thu:",1,color);
+          if (alarmon[alrmNum] & 8) showText(25,0,"Y",1,hhColor);
+          else showText(25,0,"N",1,hhColor);
+          break;
+        case 5: // Fri
+          showText(0,0,"Fri:",1,color);
+          if (alarmon[alrmNum] & 4) showText(25,0,"Y",1,hhColor);
+          else showText(25,0,"N",1,hhColor);
+          break;
+        case 6: // Sat
+          showText(0,0,"Sat:",1,color);
+          if (alarmon[alrmNum] & 2) showText(25,0,"Y",1,hhColor);
+          else showText(25,0,"N",1,hhColor);
+          break;
+        case 7: // Sun
+          showText(0,0,"Sun:",1,color);
+          if (alarmon[alrmNum] & 1) showText(25,0,"Y",1,hhColor);
+          else showText(25,0,"N",1,hhColor);
+          break;
+        case 8: // Exit
+          showText(0,0,"Exit",1,color);
+          break;
       }
-   break;
-   case 4: // Setting Alarm hours and minutes
-   case 5:
-     snprintf(myString,sizeof(myString),"Alrm%d",alrmNum+1);
-     showText(1,8,myString,1,color);
-     if(time12hr) {
-       // == BEGIN 12 Hour Mode ====
-       myhours=alrmHH[alrmNum]; // Get Alarm Hours from EEPROM
-       if (myhours==0) myhours=12; // Midnight
-       else if (myhours >12) myhours=myhours-12;
-//       if (alrmHH[alrmNum]<12)  plot (0,1,hhColor); // Show AM Dot
-       if (alrmHH[alrmNum]>=12)  plot (0,1,hhColor); // Show PM Dot (wbp)
-       else plot (0,1,BLACK); // Hide PM Dot
-       snprintf(myString,sizeof(myString), "%d",myhours);
-       if ( (myhours/10)%10 ==0) {// It's one digit hour so need to hide first digit
-         showText(1,0," ",1,hhColor);
-         showText(7,0,myString,1,hhColor);
-       }
-       else
-         showText(1,0,myString,1,hhColor);
+      break;
+
+    case 4: // Setting Alarm hours and minutes
+    case 5:
+      snprintf(myString,sizeof(myString),"Alrm%d",alrmNum+1);
+      showText(1,8,myString,1,color);
+      if(time12hr) {
+        // == BEGIN 12 Hour Mode ====
+        myhours=alrmHH[alrmNum]; // Get Alarm Hours from EEPROM
+        if (myhours==0) myhours=12; // Midnight
+        else if (myhours >12) myhours=myhours-12;
+//        if (alrmHH[alrmNum]<12)  plot (0,1,hhColor); // Show AM Dot
+        if (alrmHH[alrmNum]>=12)  plot (0,1,hhColor); // Show PM Dot (wbp)
+        else plot (0,1,BLACK); // Hide PM Dot
+        snprintf(myString,sizeof(myString), "%d",myhours);
+        if ( (myhours/10)%10 ==0) {// It's one digit hour so need to hide first digit
+          showText(1,0," ",1,hhColor);
+          showText(7,0,myString,1,hhColor);
+        }
+        else
+          showText(1,0,myString,1,hhColor);
       }
       // === END 12 Hour Mode ===
       else {
@@ -268,12 +277,19 @@ void showAlarm(byte color){
       showText(12,0,":",1,color); // Show colum :
       showText(18,0,myString,1,mmColor);
       
-    break;
+      break;
+
     case 6: // Alarm Tone selection
       showText(1,0,"Tone:",1,color);
       snprintf(myString,sizeof(myString), "ALRM%d",alrmToneNum[alrmNum]); // Make Alarm Filename
       showText(0,8,myString,1,hhColor); 
-    break;
+      break;
+
+    case 7: // Alarm Progressive Volume On/off
+      showText(1,0,"P.Vol:",1,color);
+      if (alrmProgVol[alrmNum]) showText(10,8,"ON",1,hhColor); 
+      else showText(10,8,"OFF",1,hhColor); 
+      break;
     
   }
   
@@ -339,17 +355,37 @@ void showDST(byte color) {
    }
 }
 
+bool isLeapYear(int year)
+{
+  bool ly = false;
+  if ((year % 4) == 0) {
+    if ((year % 100) == 0) {
+      ly = ((year % 400) == 0);
+     }
+    else {
+      ly = true;
+    }
+  }
+  return(ly);
+}
+
 // =======================================================================================
 // ---- Set TimeDate ----
 // ---- by LensDigital
 // =======================================================================================
+//const uint8_t mDays[]={31,28,31,30,31,30,31,31,30,31,30,31};
 void setTimeDate() {
-  hours=hour(); // Store current hour value from clock
-  minutes=minute(); // Store current minute value from clock
-  seconds=second();
-  months=month(); // Store current month value from clock  
-  days=day();// Store current day value from clock  
-  years=year() %100; // Store current year (last 2 digits) from clock  
+  time_t t = now(); // get date/time atomicly (wbp)
+  hours=hour(t); // Store current hour value from clock
+  minutes=minute(t); // Store current minute value from clock
+  seconds=second(t);
+  months=month(t); // Store current month value from clock
+  days=day(t);// Store current day value from clock
+  years=year(t) %100; // Store current year (last 2 digits) from clock
+  byte mdays = mDays[months-1];  // number of days in current month
+  if (months == 2)
+    if (isLeapYear(year(t)))
+      mdays = 29;
   switch (subMenu[2]) {
     case 1: // Set hours
       if (decrement) hours--;
@@ -374,13 +410,13 @@ void setTimeDate() {
       if (decrement) days--;
       else  days++;
       if (days == 255) days = 31;
-      else if (days >31) days = 0;
+      else if (days > mdays)  days = 1;
       break;
     case 5: // Set Years 
       if (decrement) years--;
       else years++;
-      if (years < 13 ) years = 40;
-      else if (years > 40) years = 13; // Default to 2013
+      if (years < 10 ) years = 40;
+      else if (years > 40) years = 10; // Default to 2010
       break;
 //    case 6: // Set DST +1 hours 
 //      playSFX(1);
@@ -1156,7 +1192,7 @@ void butSetAlarm (byte alrmNum) {
      isSettingSys=false;
      if (subMenu[alrmNum]==3) ; // Do not increment
      else subMenu[alrmNum]++; // Increment button press count
-     if (subMenu[alrmNum] > 6) subMenu[alrmNum]=1; // Goes back to first menu item
+     if (subMenu[alrmNum] > 7) subMenu[alrmNum]=1; // Goes back to first menu item  (wbp)
      if (!(alarmon[alrmNum] & 128) && subMenu[alrmNum]==2)  subMenu[alrmNum]=4; // ALarm is off so we need to skip 4nd menu
      if (!isSettingAlrmCust[alrmNum] && subMenu[alrmNum]==3) subMenu[alrmNum]=4; // Custom Alarm is not set so skip to 4th menu
       switch (subMenu[alrmNum]) {

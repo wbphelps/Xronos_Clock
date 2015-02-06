@@ -4,68 +4,93 @@
 // =======================================================================================
 void procAlarm(byte alrmnum) {
   int blinkDotDuration = 1000; // How frequently dots should blink (wbp)
+  int tAlrm, tNow, wd;
   if (isInMenu) return; // Do not sound alarm if changing settings
-    if (digitalRead(SET_BUTTON_PIN) == HIGH) processSetButton(); // Poll Set Button, that will reArm (cancel for today) alarm
-    if (alarmon[alrmnum] & 128) { // Is global alarm switch on? (1st byte is set)
-      // ==== Begin alarm LED indicator ====
-      if (soundAlarm[alrmnum]) { // Alarm currently sounding?
-        if ( (millis()-alarmBlinkTime > blinkDotDuration)) { // It's been over blinkDuration time
-          alarmBlinkTime = millis(); // reset offset to current time
-          if ( alarmColor == BLACK )  alarmColor=RED; // Invert color of indicator
-          else alarmColor = BLACK;
-        }
-        plot (31*alrmnum,14,alarmColor); // Show blinking dot in Orange if snoozing  (wbp)
+  if (digitalRead(SET_BUTTON_PIN) == HIGH) processSetButton(); // Poll Set Button, that will reArm (cancel for today) alarm
+  if (alarmon[alrmnum] & 128) { // Is global alarm switch on? (1st byte is set)
+    // ==== Begin alarm LED indicator ====
+    if (soundAlarm[alrmnum]) { // Alarm currently sounding?
+      if ( (millis()-alarmBlinkTime > blinkDotDuration)) { // It's been over blinkDuration time
+        alarmBlinkTime = millis(); // reset offset to current time
+        if ( alarmColor == BLACK )  alarmColor=RED; // Invert color of indicator
+        else alarmColor = BLACK;
       }
-      else if ( snoozeTime[alrmnum]==10) { // not snoozing?
-        if ( alarmon[alrmnum] & weekdays[weekday()] )  plot (31*alrmnum,14,RED); // Show dot in Red, indicating that alarm is set for current day  (wbp)
-        else   plot (31*alrmnum,14,GREEN); // No alarm today so show green dot in lower left(right) corner (wbp)
-      } 
-//      else plot (31*alrmnum,14,ORANGE); // Show dot in Orange if snoozing (Maybe do blinking in the future too) (wbp)
-      else  { // snoozing
-        if ( (millis()-alarmBlinkTime > blinkDotDuration)) { // It's been over blinkDuration time
-          alarmBlinkTime = millis(); // reset offset to current time
-          if ( alarmColor == BLACK )  alarmColor=ORANGE; // Invert color of indicator
-          else alarmColor = BLACK;
+      plot (31*alrmnum,14,alarmColor); // Show blinking dot in Orange if snoozing  (wbp)
+    }
+    else if ( snoozeTime[alrmnum]==10 ) { // not snoozing?
+
+//      if ( alarmon[alrmnum] & weekdays[weekday()] )  // Is alarm on and set for today?
+//        plot (31*alrmnum,14,RED); // Show dot in Red, indicating that alarm is set for current day  (wbp)
+//      else
+//        plot (31*alrmnum,14,GREEN); // No alarm today so show green dot in lower left(right) corner (wbp)
+
+      // check to see if alarm will sound again within 24 hours
+      alarmColor=GREEN;  // assume it won't
+      if (alarmon[alrmnum] & 128) {  // is alarm on?
+        tAlrm = alrmHH[alrmnum]*60 + alrmMM[alrmnum];  // time of alarm in minutes
+        time_t t = now(); // get date/time atomicly (wbp)
+        tNow = hour(t)*60 + minute(t);  // time now in minutes
+        if (tNow>tAlrm) { // is tAlrm in the past?
+          tAlrm+=1440;  // set tAlrm ahead by one day
+          wd = weekday()+1;  // tomorrow's weekday number
+          if (wd>7)  wd=1;  // wrap if necessary
+          if (!(alarmon[alrmnum] & weekdays[wd]))  // if alarm isn't set for tomorrow,
+            tAlrm+=1440;  // set it past 24 hours so next test fails
         }
-        plot (31*alrmnum,14,alarmColor); // Show blinking dot in Orange if snoozing  (wbp)
+        if ((tAlrm-tNow)<=1440)  // is alarm set to go off in next 24  hours?
+          alarmColor=RED;  // change LED to red
       }
-      // ==== END alarm LED indicator ====
+      plot (31*alrmnum,14,alarmColor); // show alarm status
       
-      if (soundAlarm[alrmnum]) {
-        playAlarm(alrmnum);
+    } 
+//    else plot (31*alrmnum,14,ORANGE); // Show dot in Orange if snoozing (Maybe do blinking in the future too) (wbp)
+    else  { // snoozing
+      if ( (millis()-alarmBlinkTime > blinkDotDuration)) { // It's been over blinkDuration time
+        alarmBlinkTime = millis(); // reset offset to current time
+        if ( alarmColor == BLACK )  alarmColor=ORANGE; // Invert color of indicator
+        else alarmColor = BLACK;
       }
-      // ==== Begin Snooze Check ====
-      else {
-        // Are We Snoozing?
-        if ( snoozeTime[alrmnum]!=10 ) { // Snooze was pressed
-         // Is it time reset Snooze?
-         if ( (minute()%10) == snoozeTime[alrmnum]) {
-           soundAlarm[alrmnum]=true; // Check last digit of current minute
-           if (alrmToneNum[alrmnum]<=ALARM_PROGRESSIVE)  alrmVol[alrmnum]=7; // Reset Alarm Volume
-           else alrmVol[alrmnum]=0;
-         }
+      plot (31*alrmnum,14,alarmColor); // Show blinking dot in Orange if snoozing  (wbp)
+    }
+    // ==== END alarm LED indicator ====
+      
+    if (soundAlarm[alrmnum]) {  // already sounding alarm?
+      playAlarm(alrmnum);
+    }
+    // ==== Begin Snooze Check ====
+    else {
+      // Are We Snoozing?
+      if ( snoozeTime[alrmnum]!=10 ) { // Snooze was pressed
+        // Is it time reset Snooze?
+        if ( (minute()%10) == snoozeTime[alrmnum]) {
+          soundAlarm[alrmnum]=true; // Check last digit of current minute
+//        if (alrmToneNum[alrmnum]<=ALARM_PROGRESSIVE)  alrmVol[alrmnum]=7; // Reset Alarm Volume
+          if (alrmProgVol[alrmnum])  alrmVol[alrmnum]=7; // Reset Alarm Volume
+          else alrmVol[alrmnum]=0;
+        }
       }
-       // ==== End Snooze Check ====
+      // ==== End Snooze Check ====
       // Maybe it's time to sound alarm for the first time at specified time?
-      else
-       if (!interruptAlrm[alrmnum]) // Has not been interrupted, takes care if alarm was canceled within 1st minute
+      else if (!interruptAlrm[alrmnum]) { // Has not been interrupted, takes care if alarm was canceled within 1st minute
          /*
-         if ( (alarmon[alrmnum] == 2) && ( (weekday() == 1) || (weekday () == 7) ) ) ;// Do nothing, cause it's weekend and alarm was set to weekday
-         else // It's Either Daily alarm or we are in Mon-Fri range
+        if ( (alarmon[alrmnum] == 2) && ( (weekday() == 1) || (weekday () == 7) ) ) ;// Do nothing, cause it's weekend and alarm was set to weekday
+        else // It's Either Daily alarm or we are in Mon-Fri range
          */
-         if ( alarmon[alrmnum] & weekdays[weekday()] ) // Alarm is scheduled for this day!
-          if ( (hour()==alrmHH[alrmnum]) && ( minute()==alrmMM[alrmnum])  ) {
-            if (alrmnum==0) { // It's first alarm processor
-              soundAlarm[1]=false; //Innterrupts 2nd alarm if it's playing
-              snoozeTime[1]=10; // Disable snooze for 2nd alarm
-            }
-            else { // It's first alarm processor
-              soundAlarm[0]=false; //Innterrupts 1st alarm if it's playing
+          if ( alarmon[alrmnum] & weekdays[weekday()] ) { // Alarm is scheduled for this day!
+            if ( (hour()==alrmHH[alrmnum]) && ( minute()==alrmMM[alrmnum]) ) {
+              if (alrmnum==0) { // It's first alarm processor
+                soundAlarm[1]=false; // Interrupts 2nd alarm if it's playing
+                snoozeTime[1]=10; // Disable snooze for 2nd alarm
+              }
+            else { // It's second alarm processor
+              soundAlarm[0]=false; // Interrupts 1st alarm if it's playing
               snoozeTime[0]=10; // Disable snooze for 1st alarm
             }
-           soundAlarm[alrmnum]=true; // If it's time to sound alarm!
+            soundAlarm[alrmnum]=true; // If it's time to sound alarm!
+            }
           }
       }
+    }
   }
 }
 
@@ -99,7 +124,7 @@ void rearmAlrm(byte alrmnum){
       soundAlarm[alrmnum]=false;
       interruptAlrm[alrmnum]=false;
 //      if (alrmToneNum[alrmnum]<6) alrmVol[alrmnum]=7; //Set low volume for escalating alarms
-      if (alrmToneNum[alrmnum]<=ALARM_PROGRESSIVE) alrmVol[alrmnum]=7; //Set low volume for escalating alarms (wbp)
+      if (alrmProgVol[alrmnum]) alrmVol[alrmnum]=7; //Set low volume for escalating alarms (wbp)
       else alrmVol[alrmnum]=0; // Set High volume for non-escalating alarms
       snoozeTime[alrmnum]=10; // Turn off snooze
      }
@@ -121,7 +146,7 @@ boolean resetAlrm(byte alrmnum){
     snoozeTime[alrmnum]=10;
     wave.stop();
     playcomplete("alrm_res.WAV");
-    if (alrmToneNum[alrmnum]<=ALARM_PROGRESSIVE) alrmVol[alrmnum]=7; //Set low volume for escalating alarms (wbp)
+    if (alrmProgVol[alrmnum]) alrmVol[alrmnum]=7; //Set low volume for escalating alarms (wbp)
     else alrmVol[alrmnum]=0; // Set High volume for non-escalating alarms
     return true;
     }

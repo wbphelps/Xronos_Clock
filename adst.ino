@@ -31,8 +31,7 @@ extern volatile bool g_DST_updated;  // DST update flag = allow update only once
 extern volatile uint8_t g_DST_mode;  // off: 0, on: 1, auto: 2
 extern uint8_t g_DST_Rules[];
 
-const uint8_t mDays[]={
-  31,28,31,30,31,30,31,31,30,31,30,31};
+const uint8_t mDays[]={31,28,31,30,31,30,31,31,30,31,30,31};
 const uint16_t tmDays[]={
   0,31,59,90,120,151,181,212,243,273,304,334}; // Number days at beginning of month if not leap year
 
