@@ -26,18 +26,19 @@ void procAlarm(byte alrmnum) {
 //        plot (31*alrmnum,14,GREEN); // No alarm today so show green dot in lower left(right) corner (wbp)
 
       // check to see if alarm will sound again within 24 hours
-      alarmColor=GREEN;  // assume it won't
+      alarmColor=RED;  // assume it won't
+      wd = weekday(tNow);  // today's weekday number
       iAlrm = alrmHH[alrmnum]*60 + alrmMM[alrmnum];  // time of alarm in minutes
       iNow = hour(tNow)*60 + minute(tNow);  // time now in minutes
       if (iNow>iAlrm) { // is tAlrm in the past?
         iAlrm+=1440;  // set tAlrm ahead by one day
-        wd = weekday(tNow)+1;  // tomorrow's weekday number
+        wd+=1;  // let's look at tomorrow
         if (wd>7)  wd=1;  // wrap if necessary
-        if (!(alarmon[alrmnum] & weekdays[wd]))  // if alarm isn't set for tomorrow,
-          iAlrm+=1440;  // set it past 24 hours so next test fails
       }
-      if ((iAlrm-iNow)<=1440)  // is alarm set to go off in next 24 hours?
-        alarmColor=RED;  // change LED to red
+      if (alarmon[alrmnum] & weekdays[wd]) {  // is alarm on and set for the day in question?
+        if ((iAlrm-iNow)<=1440)  // is alarm set to go off in next 24 hours?
+          alarmColor=GREEN;  // change LED to red
+      }
       plot (31*alrmnum,14,alarmColor); // show alarm status
       
     } 

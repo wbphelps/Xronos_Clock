@@ -26,6 +26,9 @@
 * add progressive alarm volume on/off option for alarm setting
 * set alarm LED color if alarm is due within next 24 hours
 * atomic (single fetch) time/date
+* flip alarm LED colors - green=alarm in next 24 hours, red if not
+* add display & set for photocell levels (min, max)
+*  BrtLo (0 to 100 by 10) and BrtHi (200 to 750 by 50)
 *
 * Add TZ Hr & TZ Mn to settings?
 * more compact text scrolling
@@ -65,7 +68,7 @@
 #include "myIR_Remote.h" // IR Codes defintion file (comment out if IR receiver not present)
 
 //#define firmware_ver 209 // Current Firmware version
-#define firmware_ver 218 // Current Firmware version (wbp)
+#define firmware_ver 219 // Current Firmware version (wbp)
 
 // ============================================================================================
 // Importante User Hardware config settings, modify as needed
@@ -87,8 +90,9 @@ static boolean GPS_PRESENT=true; // Set to True if GPS receiver is present
 #define MENU_BUTTON_PIN A4// "Menu Button" button on analog 4;
 #define SET_BUTTON_PIN A3// "set time" button on digital 17 (analog 3);
 #define INC_BUTTON_PIN A2// "inc time" button on digital 16 (analog 2);
-#define PHOTOCELL_MIN 20 // Minimum reading from Photocell (wbp)
-#define PHOTOCELL_MAX 800 // Maximum reading from Photocell (for brightess LED level)
+//#define PHOTOCELL_MIN 20 // Minimum reading from Photocell (wbp)
+//#define PHOTOCELL_MAX 500 // Maximum reading from Photocell (for brightess LED level)
+
 // ===================================================================================
 
 #define heldTime 1000 // Time after which button is considered held
@@ -115,9 +119,10 @@ RFM12B radio;
 // MISC declarations
 // ===================================================================================
 #define MAX_MENUS 5 // Maximum number of menus
-#define MAX_SUBMENUS 8 // Maximum number of menus
+#define MAX_SUBMENUS 10 // Maximum number of submenus
 #define MAX_SETTINGS 6 // Maximum number of settings menu items
 #define MAX_SYSSETTINGS 11 // Maximum number of System menu items
+#define MAX_OPTIONS 4 // Max number of options menu items 
 
 //#define ALARM_PROGRESSIVE 6 // Number of alarm sounds that have progressive volume
 
@@ -181,7 +186,7 @@ byte alrmMM[2]; // Alarm Minutes
 byte alarmon[2]; // Alarm Freq. Controlled by 8 bits. If first bit is 0 alarm is off. Example in in decimal (not counting 1st bit):
                  // Mon=64, Tue=32, Wed=16, Thu=8, Fri=4, Sat=2, Sun=1, Daily=127, Weekdays=124, Custom=126
 byte alrmVol[2]={7,7}; // Alarm Volume (0-12, smaller = louder)
-byte alrmProgVol[2]={1,1}; //Progressive volume?
+byte alrmProgVol[2]; //Progressive volume?
 byte alrmToneNum[2]; // Number of alarm tone
 
 byte tmpOffset; // temperature offset (minus)
@@ -213,6 +218,10 @@ byte snoozeTime[2]={10,10}; // Keeps last digit of minutes for snooze
 int  extTemp=300; // External Temperature in C
 int  extHum=300; // External Humidity
 
+unsigned int Photocell_Min = 20;  // low reading expected from photocell
+unsigned int Photocell_Max = 500; // high reading from photocell
+unsigned int photoCell = 0; // last reading from photocell
+
 byte currStatusInc=LOW; // Current Status of Incremental button
 byte lastStatusInc=LOW; // Last Status of Incremental button
 boolean buttonReleased=false; 
@@ -234,7 +243,8 @@ byte days;
 byte years; //Last 2 digits of a year
 byte menuItem=0; // Counts presses of the Set button 
 byte mbutState=1; // Menu button option 
-byte subMenu[MAX_SUBMENUS]={0,0,0,0,0,0,0,0}; // 0 = setting Alarm1, 1 = setting Alarm 2, 2 for setting Time/Date, 3 for System Settings, 4 for setting custom alrm 1, 5 = custom alarm 2, 6 = UserOptions, 7= Infodisplay options, 8 = Voice Prompts
+byte subMenu[MAX_SUBMENUS]={0,0,0,0,0,0,0,0,0,0}; // 0 = setting Alarm1, 1 = setting Alarm 2, 2 for setting Time/Date, 3 for System Settings,
+//   4 for setting custom alrm 1, 5 = custom alarm 2, 6 = UserOptions, 7= Infodisplay options, 8 = Voice Prompts, 9 = Photocell
 byte brightness; // LED Display Brightness
 byte lightLevel; // Light level from photocensor
 byte prevBrightness = 0; // Previous Brightness (to detect brightness level change)
@@ -266,7 +276,9 @@ const byte alarmToneLoc[2]={7,12};                    // Alarm  Tone storage loc
 #define DSTmodeLoc 24   // DST mode in EE
 #define GPSOnLoc 25   // GPS receiver enabled in EE
 #define autoColorLoc 26  // Auto Color enabled in EE
-const byte alarmProgVolLoc[2]={3,11};		        // alarm Off/Daily/Weekday/Custom storage locations
+const byte alarmProgVolLoc[2]={27,28};	// alarm progressive voluem storage locations
+#define pCellMinLoc 29  // Photocell min storage loc
+#define pCellMaxLoc 30  // Photocell max storage loc
 
 // Wave Shield Declarations
 SdReader card;    // This object holds the information for the card
@@ -345,6 +357,7 @@ void getEEPROMSettings () {
     alrmHH[i]=EEPROM.read(alarmHHLoc[i]);  // Read Alarm Hours from EEPROM
     alrmMM[i]=EEPROM.read(alarmMMLoc[i]); // Read Alarm Minutes from EEPROM
     alrmToneNum[i]=EEPROM.read(alarmToneLoc[i]); // Read Alarm Tone number from EEPROM
+    alrmProgVol[i]=EEPROM.read(alarmProgVolLoc[i]); // Read Alarm Progressive Vol from EEPROM
     // Check if custom alarm schdule is set
     alrmTst=alarmon[i]<<1; // Shift left one to get rid of 1st bit
     alrmTst=alrmTst>>1; // Shift right one to get rid of 1st bit
@@ -366,6 +379,8 @@ void getEEPROMSettings () {
   doStartup=EEPROM.read(doStartupLoc); // Read say prompt options
   tmpOffset=EEPROM.read (tmpOffsetLoc); // Read Temperature offset
   g_DST_mode=EEPROM.read (DSTmodeLoc); // Read DST mode
+  Photocell_Min = EEPROM.read(pCellMinLoc);  // photocell min
+  Photocell_Max = EEPROM.read(pCellMaxLoc);  // photocell min
   if ( RFM12B_Enabled ) isRadioPresent=EEPROM.read (radioOnLoc);
   else isRadioPresent=false;
   

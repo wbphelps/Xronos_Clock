@@ -56,7 +56,6 @@ void buttonProc(){
     isSettingYear   = false;
     menuItem=0;
     decrement=false;
-//   for (int i=0;i<MAX_SUBMENUS+1;i++) { // Initialize SubMenus
    for (int i=0;i<MAX_SUBMENUS;i++) { // Initialize SubMenus (wbp)
       subMenu[i]=0;
    }

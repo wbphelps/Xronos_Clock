@@ -35,6 +35,8 @@ void initEPROM()
     delay (50);
     EEPROM.write(alarmToneLoc[i],1); // Write Alarm Tone number
     delay (50);
+    EEPROM.write(alarmProgVolLoc[i],0); // Write Alarm Progressive Vol setting
+    delay (50);
  }
   EEPROM.write (mode24HRLoc,false); // Write time mode (12/24 hours)
   delay (50);
@@ -67,6 +69,10 @@ void initEPROM()
   EEPROM.write(IROnLoc,false); // Disable IR by default during INIT
   delay (50);
   EEPROM.write(DSTmodeLoc,false); // Disable DST by default
+  delay (50);
+  EEPROM.write(pCellMinLoc,10); // Default photocell minimum reading
+  delay (50);
+  EEPROM.write(pCellMaxLoc,400); // Default photocell maximum reading
   delay (50);
   
   //wave.volume=sndVol; // Change System Sound Volume
@@ -959,15 +965,15 @@ byte runningAverage(int r)
 static unsigned long lastRun = 0;
 extern byte autoColor;  // wbp
 void autoBrightness () {
-  if (isInMenu) return;
+//  if (isInMenu) return;
   if (brightness) return; // Brightness is not set to 0 (auto)
 //  if (second()%10) return; // Take readings every 10th second only
   if ((millis()-lastRun) < 1000) return; // take one reading per second
   lastRun = millis();
   //Serial.println ("Changing Brightness");
-  int pCell = analogRead(photoCellPin);
-//  Serial.print("pCell:"); Serial.println(pCell);
-  lightLevel = map( constrain (pCell, PHOTOCELL_MIN, PHOTOCELL_MAX), PHOTOCELL_MIN, PHOTOCELL_MAX, 1, 5); // Get Ambient Light Reading
+  photoCell = analogRead(photoCellPin);
+  Serial.print("pCell:"); Serial.println(photoCell);
+  lightLevel = map( constrain (photoCell, Photocell_Min, Photocell_Max), Photocell_Min, Photocell_Max, 1, 5); // Get Ambient Light Reading
   lightLevel = runningAverage(lightLevel); // calc running average 
 //  if (prevBrightness==0) {  // Initialized previous Brightness setting only if Brightness was reset
 //    prevBrightness=lightLevel;

@@ -5,7 +5,6 @@
 void showMenu() 
 {
  playSFX(2);
-//  for (int i=0;i<MAX_SUBMENUS+1;i++) { // Initialize SubMenus
   for (int i=0;i<MAX_SUBMENUS;i++) { // Initialize SubMenus  (wbp)
       subMenu[i]=0;
    }
@@ -274,7 +273,7 @@ void showAlarm(byte color){
         showText(1,0,myString,1,hhColor);
       }
       snprintf(myString,sizeof(myString), "%02d",alrmMM[alrmNum]);
-      showText(12,0,":",1,color); // Show colum :
+      showText(12,0,":",1,color); // Show colon :
       showText(18,0,myString,1,mmColor);
       
       break;
@@ -783,8 +782,8 @@ void optSetting(){
          subMenu[7]=0;
        break;
      }
-     
    break;
+   
    case 2: // Say Items Toggle
      switch (subMenu[8]) {
        case 0: // Enter Menu
@@ -816,7 +815,7 @@ void optSetting(){
          }
          else playSFX(4);
          break;
-     case 5: // Say External Humidity
+      case 5: // Say External Humidity
          if ( RFM12B_Enabled ) {
            sayOptions = sayOptions ^ 2; //Toggle
            EEPROM.write (sayOptionsLoc,sayOptions);
@@ -825,7 +824,6 @@ void optSetting(){
          else playSFX(4);
          break;
       case 6: // Say  Alarm
-         
          sayOptions = sayOptions ^ 8; //Toggle
          EEPROM.write (sayOptionsLoc,sayOptions);
          delay (10);   
@@ -835,6 +833,7 @@ void optSetting(){
          break;
      }
   break;
+  
   case 3: // temperature offset
      if (decrement) tmpOffset--;
      else tmpOffset++;
@@ -843,6 +842,31 @@ void optSetting(){
      EEPROM.write (tmpOffsetLoc,tmpOffset);
      delay (5);
      cls();
+   break;
+   
+  case 4: // pcell display/set
+     switch (subMenu[9]) {
+       case 0: // Enter Menu
+         cls();
+         subMenu[9]=1;
+         //putstring_nl ("Enter pcell Submenu");
+         break;
+       case 1:  // just displaying pcell reading, nothing to adjust
+         break;
+       case 2:
+         Photocell_Min += 10;
+         if (Photocell_Min > 100)  Photocell_Min = 0;
+         EEPROM.write (pCellMinLoc,Photocell_Min);
+         break;
+       case 3:
+         Photocell_Max += 50;
+         if (Photocell_Max > 750)  Photocell_Max = 200;
+         EEPROM.write (pCellMaxLoc,Photocell_Max);
+         break;
+       case 4:
+         subMenu[9]=0;  // exit from pcell submenu
+         break;
+     }
    break;
  
  }
@@ -858,6 +882,7 @@ void showOpt(){
   byte color=clockColor;
   char myString[2]; 
   int blinkDigDuration =500;
+  int pcell;
   if ( (millis()-blinkTime > blinkDigDuration)) { // It's been over blinkDuration time
       blinkTime = millis(); // reset offset to current time
       if ( hhColor == BLACK ) hhColor = color; // Inverse color  
@@ -928,7 +953,7 @@ void showOpt(){
        else showText(25,8,"N",1,hhColor);
       break;
       case 8: // Exit
-      showText(0,0,"Exit",1,color);
+       showText(0,0,"Exit",1,color);
       break;
      }
    break;
@@ -994,6 +1019,41 @@ void showOpt(){
      snprintf(myString,sizeof(myString), "%d",tmpOffset); // Make string
      showText(25,8,myString,1,hhColor);
    break;
+
+   case 4: // Photocell sub menu
+     if (subMenu[9]==0) { // Will skip showing this text if we are deeper in submenu
+       showText(0,0,"Photo",1,color);
+       showText(4,8,"cell",1,color);
+     }
+     switch (subMenu[9]) {
+      case 1: // show pcell reading
+       if (brightness)  // if brightness not auto,
+         photoCell = (photoCell + analogRead(photoCellPin))/2;  // average of 2 readings
+       else
+         autoBrightness();  // read photocell & set brightness
+       showText(0,0,"Pcell",1,color);
+       snprintf(myString,4, "%3d",photoCell); // Make string
+       showText(10,8,myString,1,hhColor);
+       blinkTime = millis();  // don't blink until you see the whites of their eyes
+       hhColor = color;
+       lastButtonTime = millis()-500;  // don't exit either
+      break;
+      case 2: // Brightness Low
+       showText(0,0,"BrtLo",1,color);
+       snprintf(myString,4, "%3d",Photocell_Min); // Make string
+       showText(10,8,myString,1,hhColor);
+      break;
+      case 3: // Brightness High
+       showText(0,0,"BrtHi",1,color);
+       snprintf(myString,4, "%3d",Photocell_Max); // Make string
+       showText(10,8,myString,1,hhColor);
+      break;
+      case 4: // Exit
+       showText(0,0,"Exit",1,color);
+      break;
+     }
+   break;
+
   }
 }
 
@@ -1035,6 +1095,7 @@ void quickMenu(){
     menuItem=0; 
     subMenu[0]=0;
     subMenu[1]=0;
+    subMenu[9]=0; // wbp
     mbutState=1;
     cls();
   }
@@ -1098,15 +1159,25 @@ void userMenu () {
        }
      }
      else if (subMenu[6]==2) { // Do not increment this submenu (we are in Talking Options menu)
-              //putstring_nl ("In subMenu");
-             if (subMenu[8] == 0) subMenu[6]++; // Go to next item, we are not enterying this submenu tree
-             else {
-               subMenu[8]++;
-               if (subMenu[8] > 7) subMenu[8]=1; // Goes back to first item of this submenu 
-             }
+       //putstring_nl ("In subMenu");
+       if (subMenu[8] == 0) subMenu[6]++; // Go to next item, we are not enterying this submenu tree
+       else {
+         subMenu[8]++;
+         if (subMenu[8] > 7) subMenu[8]=1; // Goes back to first item of this submenu 
+       }
      } 
+// added for pcell sub menu
+     else if (subMenu[6]==4) { // Do not increment this submenu (we are in Pcell Options menu)
+       //putstring_nl ("In subMenu");
+       if (subMenu[9] == 0) subMenu[6]++; // Go to next item, we are not enterying this submenu tree
+       else {
+         subMenu[9]++;
+         if (subMenu[9] > 4) subMenu[9]=1; // Goes back to first item of this submenu 
+       }
+     } 
+
      else subMenu[6]++; // Increment button press count
-     if (subMenu[6] > 3) subMenu[6]=1; // Goes back to first menu item
+     if (subMenu[6] > MAX_OPTIONS) subMenu[6]=1; // Goes back to first menu item
      cls ();
 }
 
