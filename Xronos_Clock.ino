@@ -1,5 +1,5 @@
 /***********************************************************************
-* December 2014, January 2015 - mods by WBPHELPS
+* December 2014 - February 2015 - mods by WBPHELPS
 * Ver 2.18 (01/14/2015)
 * logarithmic brightness levels
 * bugfix: brightness set to auto by error
