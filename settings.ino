@@ -24,10 +24,11 @@
 __Settings Settings = {
   EE_VERSION, // EE version;
 
-  false, // 24 hour
-  3, // brightness
+  FIRMWARE_VER, // firmware version - why is this in EE?
+  true, // 12 hour
+  0, // brightness (auto)
   GREEN, // clock color
-  firmware_ver, // firmware version
+  true, // auto color
   1, // clock font
   true, // SFX
   true, // temperature units
@@ -41,13 +42,12 @@ __Settings Settings = {
   false, // IR receiver
   false, // DST mode
   false, // GPS on
-  false, // auto color
-  { 0,0 }, // alarm hours
-  { 0,0 }, // alarm minutes
-  { 0,0 }, // alarm on/off etc
-  { 0,0 }, // alarm custom schedule
-  { 1,1 }, // alarm tone
-  { false,false }, // alarm progressive volume
+  {0,0}, // alarm hours
+  {0,0}, // alarm minutes
+  {127,127}, // alarm on/off etc - default: off, daily 
+  {0,0}, // alarm custom schedule
+  {1,1}, // alarm tone
+  {false,false}, // alarm progressive volume
   10, // photocell minimum
   400, // photocell maximum
 
@@ -55,10 +55,15 @@ __Settings Settings = {
 };
 
 static unsigned long Settings_timer = 0;
+// reset settings timer 
+void timeSettings(void){
+  Settings_timer = millis();
+}
+
 // Save settings array in EE
 void saveSettings(uint8_t quiet) {
   uint8_t c1 = 0; // # of bytes written
-  if ((millis()-Settings_timer) < 60000)  return; // check & update EE once a minute
+  if ((millis()-Settings_timer) < 5000)  return; // check & update EE every 5 seconds
   Settings_timer = millis();
   for (unsigned int p=0; p<sizeof(Settings); p++) {
     uint8_t b1 = eeprom_read_byte((uint8_t *)EE_Address + p);

@@ -31,10 +31,11 @@ struct __Settings
 {
   byte EEcheck1; // EE version check
 
-  byte time12hr; // 12/24 hour mode
+  unsigned int clockVer; // Firmware version
+  boolean time12hr; // 12/24 hour mode
   byte brightness; // brightness
   byte clockColor; // time digit color
-  unsigned int clockVer; // Firmware version
+  boolean autoColor; // Auto Color enabled
   byte clockFont; // Clock's font number
   byte sFX; // Menu SFX on/off
   boolean tempUnit; // Degree units C/F
@@ -48,13 +49,12 @@ struct __Settings
   byte IRenabled; // Defines if IR receiver is enabled
   byte DSTmode; // DST mode
   byte GPSenabled; // GPS receiver enabled
-  byte autoColor; // Auto Color enabled
   byte alarmHH[2]; // Alarm hours
   byte alarmMM[2]; // Alarm minutes
   // Alarm Freq. Controlled by 8 bits. If first bit is 0 alarm is off. Example in in decimal (not counting 1st bit):
   // Mon=64, Tue=32, Wed=16, Thu=8, Fri=4, Sat=2, Sun=1, Daily=127, Weekdays=124, Custom=126
   byte alarmOn[2]; // Alarm Off/Daily/Weekday/Custom settings
-  byte alarmCustom[2]; // custom alarm schedule
+  boolean alarmCustom[2]; // custom alarm schedule
   byte alarmTone[2]; // Alarm tone
   byte alarmProgVol[2]; // Alarm progressive volume?
   unsigned int photoCellMin; // Photocell minimum value
@@ -63,8 +63,9 @@ struct __Settings
   byte EEcheck2; // EE version check
 };
 
-void load_settings(void);
-void save_settings(void);
+void loadSettings(void);
+void saveSettings(void);
+void timeSettings(void);
 extern struct __Settings Settings;
 
 #endif

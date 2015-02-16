@@ -2,28 +2,32 @@
 // ---- Process Alarm Function ----
 // By: LensDigital
 // =======================================================================================
+static unsigned long alarmBlinkTime=0; // controls blinking of alarm indicators
 void procAlarm(byte alrmnum) {
-  int blinkDotDuration = 1000; // How frequently dots should blink (wbp)
+  int blinkDuration = 1000; // How frequently dots should blink (wbp)
   int iAlrm, iNow, wd;
   unsigned long tNow = now();
   if (isInMenu) return; // Do not sound alarm if changing settings
-  if (digitalRead(SET_BUTTON_PIN) == HIGH) processSetButton(); // Poll Set Button, that will reArm (cancel for today) alarm
-  if (Settings.alarmOn[alrmnum] & 128) { // Is global alarm switch on? (1st byte is set)
-    // ==== Begin alarm LED indicator ====
+  if (digitalRead(SET_BUTTON_PIN) == HIGH) processSetButton(); // Poll Set Button, that will reArm (cancel for today) alarm  ???
+
+  if (millis()-alarmBlinkTime < blinkDuration)  return; // run this part once per second
+  alarmBlinkTime = millis(); // reset offset to current time
+  
+  if (Settings.alarmOn[alrmnum] & 128) { // Is global alarm switch on? (1st bit is set)
+//    Serial.print("alarm LED "); Serial.print(alrmnum,HEX);
+//    Serial.print(", alarmOn: ");  Serial.print(Settings.alarmOn[alrmnum]);
+//    Serial.print(", soundAlarm: ");  Serial.print(soundAlarm[alrmnum]);
+//    Serial.print(", snoozeTime: ");  Serial.print(snoozeTime[alrmnum]);
+//    Serial.println(" ");
+
+// ==== Begin alarm LED indicator ====
     if (soundAlarm[alrmnum]) { // Alarm currently sounding?
-      if ( (millis()-alarmBlinkTime > blinkDotDuration)) { // It's been over blinkDuration time
-        alarmBlinkTime = millis(); // reset offset to current time
-        if ( alarmColor == BLACK )  alarmColor=RED; // Invert color of indicator
-        else alarmColor = BLACK;
-      }
+      if ( alarmColor == BLACK )  alarmColor=RED; // Invert color of indicator
+      else alarmColor = BLACK;
       plot (31*alrmnum,14,alarmColor); // Show blinking dot in Orange if snoozing  (wbp)
+//      Serial.print("plot1 "); Serial.println(alarmColor);
     }
     else if ( snoozeTime[alrmnum]==10 ) { // not snoozing?
-
-//      if ( alarmon[alrmnum] & weekdays[weekday()] )  // Is alarm on and set for today?
-//        plot (31*alrmnum,14,RED); // Show dot in Red, indicating that alarm is set for current day  (wbp)
-//      else
-//        plot (31*alrmnum,14,GREEN); // No alarm today so show green dot in lower left(right) corner (wbp)
 
       // check to see if alarm will sound again within 24 hours
       alarmColor=RED;  // assume it won't
@@ -39,19 +43,19 @@ void procAlarm(byte alrmnum) {
         if ((iAlrm-iNow)<=1440)  // is alarm set to go off in next 24 hours?
           alarmColor=GREEN;  // change LED to red
       }
-      plot (31*alrmnum,14,alarmColor); // show alarm status
+//      Serial.print("plot2 "); Serial.println(alarmColor);
+      plot (alrmnum*31,14,BLACK); // force color change
+      plot (alrmnum*31,14,alarmColor); // show alarm status
       
     } 
 
     else  { // snoozing
-      if ( (millis()-alarmBlinkTime > blinkDotDuration)) { // It's been over blinkDuration time
-        alarmBlinkTime = millis(); // reset offset to current time
-        if ( alarmColor == BLACK )  alarmColor=ORANGE; // Invert color of indicator
-        else alarmColor = BLACK;
-      }
+      if ( alarmColor == BLACK )  alarmColor=ORANGE; // Invert color of indicator
+      else alarmColor = BLACK;
       plot (31*alrmnum,14,alarmColor); // Show blinking dot in Orange if snoozing  (wbp)
+//      Serial.print("plot3 "); Serial.println(alarmColor);
     }
-    // ==== END alarm LED indicator ====
+// ==== END alarm LED indicator ====
       
     if (soundAlarm[alrmnum]) {  // already sounding alarm?
       playAlarm(alrmnum);
@@ -102,8 +106,8 @@ void procAlarm(byte alrmnum) {
 void playAlarm(byte alrmnum) {
   turnOffRadio(); // Disable RF12B
   if (interruptAlrm[alrmnum]) {
-      wave.stop();
-     return; // Alarm was interrupted with button, exit
+    wave.stop();
+    return; // Alarm was interrupted with button, exit
   }
   char myString[11];
   snprintf(myString,sizeof(myString), "ALRM%d.WAV",Settings.alarmTone[alrmnum]); // Make Alarm Filename
@@ -124,7 +128,7 @@ void rearmAlrm(byte alrmnum){
       soundAlarm[alrmnum]=false;
       interruptAlrm[alrmnum]=false;
 //      if (alrmToneNum[alrmnum]<6) alrmVol[alrmnum]=7; //Set low volume for escalating alarms
-      if (Settings.alarmProgVol[alrmnum]) alrmVol[alrmnum]=7; //Set low volume for escalating alarms (wbp)
+      if (Settings.alarmProgVol[alrmnum]) alrmVol[alrmnum]=ALARM_PROG_STARTVOL; //Set low volume for escalating alarms (wbp)
       else alrmVol[alrmnum]=0; // Set High volume for non-escalating alarms
       snoozeTime[alrmnum]=10; // Turn off snooze
      }
@@ -146,7 +150,7 @@ boolean resetAlrm(byte alrmnum){
     snoozeTime[alrmnum]=10;
     wave.stop();
     playcomplete("alrm_res.WAV");
-    if (Settings.alarmProgVol[alrmnum]) alrmVol[alrmnum]=7; //Set low volume for escalating alarms (wbp)
+    if (Settings.alarmProgVol[alrmnum]) alrmVol[alrmnum]=ALARM_PROG_STARTVOL; //Set low volume for escalating alarms (wbp)
     else alrmVol[alrmnum]=0; // Set High volume for non-escalating alarms
     return true;
     }

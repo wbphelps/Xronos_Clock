@@ -1,6 +1,6 @@
 /***********************************************************************
 * December 2014 - February 2015 - mods by WBPHELPS
-* Ver 2.18 (01/14/2015)
+* Ver 2.21 (02/16/2015)
 * logarithmic brightness levels
 * bugfix: brightness set to auto by error
 * auto bright - adjust at 1 second intervals (was 10)
@@ -29,6 +29,9 @@
 * flip alarm LED colors - green=alarm in next 24 hours, red if not
 * add display & set for photocell levels (min, max)
 *  BrtLo (0 to 100 by 10) and BrtHi (200 to 750 by 50)
+* use structure for settings saved in EE
+* fix temp<20 bug in sayTemp(); (from Len)
+* force color change for alarm LED (bug?)
 *
 * Add TZ Hr & TZ Mn to settings?
 * more compact text scrolling
@@ -69,7 +72,7 @@
 #include "myIR_Remote.h" // IR Codes defintion file (comment out if IR receiver not present)
 
 //#define firmware_ver 209 // Current Firmware version
-#define firmware_ver 220 // Current Firmware version (wbp)
+#define FIRMWARE_VER 221 // Current Firmware version (wbp)
 // EE version - change this to force reset of EE memory
 #define EE_VERSION 13
 
@@ -82,7 +85,7 @@ const byte GPS_PRESENT=true; // Set to True if GPS receiver is present
 #define AUTO_BRIGHTNESS_ON 0  //Set to 1 to disable autobrightness menu feature, 0 to enable if photocell is present.
 // ============================End of User Hardware Settings ==================================
 
-// Pins Delcarations
+// Pins Declarations
 // ===================================================================================
 #define BOUNCE_TIME_BUTTON  200   // bounce time in ms for the menu button
 #define BOUNCE_TIME_QUICK   50  // bounce time in ms for quickMenu
@@ -93,8 +96,6 @@ const byte GPS_PRESENT=true; // Set to True if GPS receiver is present
 #define MENU_BUTTON_PIN A4// "Menu Button" button on analog 4;
 #define SET_BUTTON_PIN A3// "set time" button on digital 17 (analog 3);
 #define INC_BUTTON_PIN A2// "inc time" button on digital 16 (analog 2);
-//#define PHOTOCELL_MIN 20 // Minimum reading from Photocell (wbp)
-//#define PHOTOCELL_MAX 500 // Maximum reading from Photocell (for brightess LED level)
 
 // ===================================================================================
 
@@ -127,7 +128,7 @@ RFM12B radio;
 #define MAX_SYSSETTINGS 11 // Maximum number of System menu items
 #define MAX_OPTIONS 4 // Max number of options menu items 
 
-//#define ALARM_PROGRESSIVE 6 // Number of alarm sounds that have progressive volume
+#define ALARM_PROG_STARTVOL 6 // Progressive alarm starting volume
 
 //#ifdef HAVE_GPS
 ///volatile uint8_t g_gps_enabled = 2;  // zero: off, 1: 4800 bps, 2: 9600 bps
@@ -190,11 +191,12 @@ byte alrmVol[2]={7,7}; // Alarm Volume (0-12, smaller = louder)
 const byte weekdays[8]={0,1,64,32,16,8,4,2}; // Lookup table to convert Weekday number to my day code used for Custom Alarm schedule
 
 unsigned long blinkTime=0; // controls blinking of the dots
-unsigned long alarmBlinkTime=0; // controls blinking of alarm indicators
+//unsigned long alarmBlinkTime=0; // controls blinking of alarm indicators
 unsigned long last_ms=0; // for setting seconds, etc.
 unsigned long last_RF=millis(); // Keeps track since last RF signal received
 volatile unsigned long lastButtonTime = 0;// last time a button was pushed; used for debouncing
 
+byte clockColor=GREEN; // working (non-permanent) copy of clock Color
 byte blinkColor=BLACK; // Default off
 byte alarmColor=BLACK; // Default off
 byte hhColor=BLACK; // Set color of the 2 hour digits
@@ -461,32 +463,41 @@ void setup ()
   Serial.begin(9600); // for GPS(wbp)
   // ========= Read Settings from EEPROM ===============================
   loadSettings(); // load variables saved in EE (load defaults if needed)
+  Settings.clockVer = FIRMWARE_VER;  // update clock firmware version
+  clockColor = Settings.clockColor;  // set working copy of clock color
+  if ( !RFM12B_PRESENT )  Settings.RadioEnabled=false;
+  if (!Settings.RadioEnabled) { // Disable saying ext temperature/humidity
+    if (Settings.sayOptions & 4) Settings.sayOptions = Settings.sayOptions ^ 4;
+    if (Settings.sayOptions & 2) Settings.sayOptions = Settings.sayOptions ^ 2;
+  }
+  if ( !IR_PRESENT )  Settings.IRenabled=false;
+  if ( !GPS_PRESENT )  Settings.GPSenabled = false;
   
   // Print FW Version
-    char welcome[15];
-//    byte ver=EEPROM.read (clockVerLoc); // Read 3 digit version number
-    byte ver = Settings.clockVer;  // 3 digit version number
-    byte temp = (ver%100) %10; //temp holder
-    byte ver3 = temp % 10; // Last digit
-    byte ver2 = (temp - ver3) / 10; // Second Digit
-    ver = (ver - ver2) / 100; // First digitf
-    snprintf(welcome, sizeof(welcome),"Firmware:V%d.%d%d",ver,ver2,ver3); 
-    Serial.println (welcome);
+  char welcome[15];
+  byte ver = Settings.clockVer;  // 3 digit version number
+  byte temp = (ver%100) %10; //temp holder
+  byte ver3 = temp % 10; // Last digit
+  byte ver2 = (temp - ver3) / 10; // Second Digit
+  ver = (ver - ver2) / 100; // First digit
+  snprintf(welcome, sizeof(welcome),"Firmware:V%d.%d%d",ver,ver2,ver3); 
+  Serial.println (welcome);
+  
   setSyncProvider(RTC.get);   // the function to get the time from the RTC
   if(timeStatus()!= timeSet) 
      putstring_nl("Unable to sync with the RTC");
   else
      putstring_nl("RTC has set the system time");    
   ht1632_setup();  // Setup LED Deisplay
-  //setBrightness(brightness); // Set Brightness 
+
   // Uncomment following two lines and modify to set time. After setting time, commend them and re-upload sketch
   //setTime(13,04,0,9,11,12); // Set time on Arduino (hr,min,sec,day,month,yr). Use with RTC.set(now());
   //RTC.set(now()); // Write Time data to RTC Chip. Use with previous command
-  //EEPROM.write (clockVerLoc,firmware_ver); delay (50); // Write current firmware version to EEProm
 
   wave.volume=Settings.soundVol; // Change System Sound Volume
   WaveShieldInit();
   TempInit();
+
   // Set initial brightness
   if (Settings.brightness==0) autoBrightness();
   else
@@ -532,7 +543,7 @@ void loop ()
 //  if (time1==0)
 //    time1 = millis();
 
-  showBigTime(Settings.clockColor);
+  showBigTime(clockColor);
   procAlarm(0);
   procAlarm(1);
   buttonProc();

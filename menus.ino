@@ -69,26 +69,22 @@ void setAlarm(byte alrmNum) {
   switch (subMenu[alrmNum]) {
     case 1: // Alarm On/off
       Settings.alarmOn[alrmNum]=Settings.alarmOn[alrmNum] ^ 128; //Toggle first bit (on/off)
-//      delay (5);
-//      EEPROM.write (alarmOnOffLoc[alrmNum],alarmon[alrmNum]);
       cls();
       break;
     case 2: // Set Alarm frequency to off/daily/weekday/custom
       switch (Settings.alarmOn[alrmNum]){
         case 255:
           Settings.alarmOn[alrmNum]=252; // Was Daily, now Workday
-          Settings.alarmCustom[alrmNum] =false;
+          Settings.alarmCustom[alrmNum] = false;
           break; 
         case 252:
           Settings.alarmOn[alrmNum]=254; // Was Workday, now custom
-          Settings.alarmCustom[alrmNum] =true;
+          Settings.alarmCustom[alrmNum] = true;
           break;
         default:
           Settings.alarmOn[alrmNum]=255; // Was custom, now Daily
-          Settings.alarmCustom[alrmNum] =false; // Remove if want to keep custom Menu setting even if alarm is off (need to tweak to make cusotm right after OFF so it will remember day settings 
+          Settings.alarmCustom[alrmNum] = false; // Remove if want to keep custom Menu setting even if alarm is off (need to tweak to make cusotm right after OFF so it will remember day settings 
         }
-//      EEPROM.write (alarmOnOffLoc[alrmNum],alarmon[alrmNum]);
-//      delay (5);
       playSFX(1);
       cls();
       break;
@@ -122,19 +118,16 @@ void setAlarm(byte alrmNum) {
           cls();
           break;
       }
-//      EEPROM.write (alarmOnOffLoc[alrmNum],alarmon[alrmNum]);
       playSFX(1);
       cls();
       break;
     case 4: // Set Alarm hours
-//      isAlarmModified[alrmNum]=true; // Set to True so when exiting changes will be written to EEProm
       if (decrement) Settings.alarmHH[alrmNum]--; 
       else Settings.alarmHH[alrmNum]++;
       if (Settings.alarmHH[alrmNum]==255) Settings.alarmHH[alrmNum] = 23; // Negative number (byte) will be 255
       else if (Settings.alarmHH[alrmNum] > 23) Settings.alarmHH[alrmNum] = 0;      
       break;
     case 5: // Set Alarm minutes  
-//      isAlarmModified[alrmNum]=true; // Set to True so when exiting changes will be written to EEProm
       if (decrement) Settings.alarmMM[alrmNum]--; 
       else Settings.alarmMM[alrmNum]++;
       if (Settings.alarmMM[alrmNum] ==255) Settings.alarmMM[alrmNum] = 59; // Negative number (byte) will be 255
@@ -148,14 +141,10 @@ void setAlarm(byte alrmNum) {
       else if (Settings.alarmTone[alrmNum] > 10) Settings.alarmTone[alrmNum] = 1;
       snprintf(myString,sizeof(myString), "ALRM%d.WAV",Settings.alarmTone[alrmNum]); // Make Alarm Filename
       playfile(myString);
-//      EEPROM.write(alarmToneLoc[alrmNum],alrmToneNum[alrmNum]);
-//      delay (5);
       cls();
       break;
     case 7: // Alarm Progressive On/off
       Settings.alarmProgVol[alrmNum]=!Settings.alarmProgVol[alrmNum]; //Toggle Progressive Alarm Vol
-//      delay (5);
-//      EEPROM.write (alarmProgVolLoc[alrmNum],alrmProgVol[alrmNum]);
       cls();
       break;
   }
@@ -189,7 +178,7 @@ void showAlarm(byte color){
         case 0:
           showText(10,0,"ERR",1,hhColor); // Should never come here!
           break;
-          case 255:
+        case 255:
           showText(0,0,"Daily",1,hhColor);
           break;
         case 252:
@@ -250,7 +239,7 @@ void showAlarm(byte color){
       showText(1,8,myString,1,color);
       if (Settings.time12hr) {
         // == BEGIN 12 Hour Mode ====
-        myhours=Settings.alarmHH[alrmNum]; // Get Alarm Hours from EEPROM
+        myhours=Settings.alarmHH[alrmNum]; // Get Alarm Hours 
         if (myhours==0) myhours=12; // Midnight
         else if (myhours >12) myhours=myhours-12;
 //        if (alrmHH[alrmNum]<12)  plot (0,1,hhColor); // Show AM Dot
@@ -445,7 +434,6 @@ void setTimeDate() {
       if (hours == 255)  hours = 23;  // handle wrap
       else if (hours > 23)  hours = 0;
 //      g_DST_updated = false; // re-init & re-calc DST for today
-//      EEPROM.write(DSTmodeLoc,g_DST_mode);
       break;
     }  
    // IMPORTANT! This will keep track of seconds for better time setting! 
@@ -482,8 +470,6 @@ void sysSetting(){
     case 1: // 12/24 Hour Mode
         if (!Settings.time12hr) Settings.time12hr=true; 
         else Settings.time12hr=false ; 
-//        EEPROM.write(mode24HRLoc,time12hr);
-//        delay (5);
         break;
      case 2: // Set Display Brightness
         cls();
@@ -491,8 +477,6 @@ void sysSetting(){
         else Settings.brightness++;
         if (Settings.brightness == 255) Settings.brightness = 5;
         else if (Settings.brightness > 5) Settings.brightness = AUTO_BRIGHTNESS_ON;  // 0 if photocell present, else 1
-//        EEPROM.write(brightLoc,brightness);
-//        delay (15);
         prevBrightness=0; // force an update
         if (Settings.brightness==0) autoBrightness();
         else
@@ -509,6 +493,7 @@ void sysSetting(){
            Settings.clockColor = 3;
            Settings.autoColor = true;
          }
+         clockColor = Settings.clockColor;  // set working copy of clockColor
        }
        else {
          if (Settings.clockColor<3)
@@ -517,11 +502,8 @@ void sysSetting(){
            Settings.clockColor = 1;
            Settings.autoColor = true;
          }
+         clockColor = Settings.clockColor;  // set working copy of clockColor
        }
-//       EEPROM.write(clockColorLoc,clockColor);
-//       delay (5);
-//       EEPROM.write(autoColorLoc,autoColor);
-//       delay (5);
        break;
      case 4: // Set Clock Font (0-5)
        cls();
@@ -529,22 +511,16 @@ void sysSetting(){
        else Settings.clockFont++;
        if (Settings.clockFont ==255) Settings.clockFont=4;
        else if (Settings.clockFont>4) Settings.clockFont=0;
-//       EEPROM.write(clockFontLoc,clockFont);
-//       delay (5);
        break;
      case 5: // Set sFX on/off
        cls();
        if (Settings.sFX) Settings.sFX=false;
        else  Settings.sFX=true;
-//       EEPROM.write(sFXLoc,sFX);
-//       delay (5);
        break;
      case 6: // Temperature Units
        cls();
        if (Settings.tempUnit) Settings.tempUnit=false;
        else  Settings.tempUnit=true;
-//       EEPROM.write(tempUnitLoc,tempUnit);
-//       delay (5);
        break;
       case 7: // Sound Volume
         cls();
@@ -553,16 +529,12 @@ void sysSetting(){
         if (Settings.soundVol == 255) Settings.soundVol=8;
         else if (Settings.soundVol > 8) Settings.soundVol=0;
         //playSFX(1);
-//        EEPROM.write(sndVolLoc,sndVol);
-//        delay (5);
         break;
       case 8: // Startup on/off
         cls();
         if (Settings.doStartup) Settings.doStartup=false;
         else Settings.doStartup=true;
         //playSFX(1);
-//        EEPROM.write(doStartupLoc,doStartup);
-//        delay (5);
         break;
       case 9: // RFM
         cls();
@@ -573,8 +545,6 @@ void sysSetting(){
             delay (15);
           }
           //playSFX(1);
-//          EEPROM.write(radioOnLoc,isRadioPresent);
-//          delay (5);
         }
         else {
           playSFX(5);
@@ -588,8 +558,6 @@ void sysSetting(){
           else Settings.IRenabled=true; // Turn on IR
           //playSFX(1);
         }
-//        EEPROM.write(IROnLoc,isIRPresent); 
-//        delay (5);
       break;
       case 11: // GPS
         cls(); 
@@ -598,8 +566,6 @@ void sysSetting(){
           else Settings.GPSenabled=true; // Turn on GPS
           //playSFX(1);
         }
-//        EEPROM.write(GPSOnLoc,isGPSPresent); 
-//        delay (5);
       break;
   }
 
@@ -611,7 +577,7 @@ void sysSetting(){
 // =======================================================================================
 void showSys(){
   if (!isSettingSys) return; // Exit if not setting system
-  byte color=Settings.clockColor;
+  byte color=clockColor;
   int blinkDigDuration =500;
   if ( (millis()-blinkTime > blinkDigDuration)) { // It's been over blinkDuration time
       blinkTime = millis(); // reset offset to current time
@@ -733,48 +699,34 @@ void optSetting(){
          else Settings.infoFreq++;
          if (Settings.infoFreq == 0) Settings.infoFreq=9;
          else if (Settings.infoFreq > 9) Settings.infoFreq=0;
-//         EEPROM.write(infoFreqLoc,infoFreq);
-//         delay (5);
          cls();
        break;
        case 2: // Scroll Date
          putstring_nl ("Scroll Date");
          Settings.infoOptions = Settings.infoOptions ^ 128; //Toggle
-//         EEPROM.write (infoOptionsLoc,infoOptions);
-//         delay (5);   
         break;
        case 3: // Scroll inernal temp
          putstring_nl ("Scroll Temp");
          Settings.infoOptions = Settings.infoOptions ^ 64; //Toggle
-//         EEPROM.write (infoOptionsLoc,infoOptions);
-//         delay (5);   
          break;
        case 4: // Scroll External Temp
          if ( RFM12B_PRESENT ) {
            Settings.infoOptions = Settings.infoOptions ^ 32; //Toggle
-//           EEPROM.write (infoOptionsLoc,infoOptions);
-//           delay (5);   
          } 
          else playSFX(5);
          break;
        case 5: // Scroll  Alarm
          Settings.infoOptions = Settings.infoOptions ^ 16; //Toggle
-//         EEPROM.write (infoOptionsLoc,infoOptions);
-//         delay (5);   
          break;
        case 6: // Scroll  Sensor Data
          if ( RFM12B_PRESENT ) {
            Settings.infoOptions = Settings.infoOptions ^ 8; //Toggle
-//           EEPROM.write (infoOptionsLoc,infoOptions);
-//           delay (5);   
          }
          else playSFX(5);
          break;
        case 7: // Scroll  Humidity data
          if ( RFM12B_PRESENT ) {
            Settings.infoOptions = Settings.infoOptions ^ 4; //Toggle
-//           EEPROM.write (infoOptionsLoc,infoOptions);
-//           delay (5);   
          }
          else playSFX(5);
          break;
@@ -793,40 +745,28 @@ void optSetting(){
          break;
        case 1: // Say Time
          Settings.sayOptions = Settings.sayOptions ^ 64; //Toggle
-//         EEPROM.write (sayOptionsLoc,sayOptions);
-//         delay (5);   
          break;
       case 2: // Say Date
          Settings.sayOptions = Settings.sayOptions ^ 32; //Toggle
-//         EEPROM.write (sayOptionsLoc,sayOptions);
-//         delay (5);   
          break;
       case 3: // Say Internal Temp
          Settings.sayOptions = Settings.sayOptions ^ 16; //Toggle
-//         EEPROM.write (sayOptionsLoc,sayOptions);
-//         delay (5);   
          break;
       case 4: // Say External Temp
          //Serial.println ("Saving say Ext Temp");
          if ( RFM12B_PRESENT ) {
            Settings.sayOptions = Settings.sayOptions ^ 4; //Toggle
-//           EEPROM.write (sayOptionsLoc,sayOptions);
-//           delay (10);   
          }
          else playSFX(5);
          break;
       case 5: // Say External Humidity
          if ( RFM12B_PRESENT ) {
            Settings.sayOptions = Settings.sayOptions ^ 2; //Toggle
-//           EEPROM.write (sayOptionsLoc,sayOptions);
-//           delay (10);   
          }
          else playSFX(5);
          break;
       case 6: // Say  Alarm
          Settings.sayOptions = Settings.sayOptions ^ 8; //Toggle
-//         EEPROM.write (sayOptionsLoc,sayOptions);
-//         delay (10);   
          break;
       case 7: // Exit
          subMenu[8]=0;
@@ -839,8 +779,6 @@ void optSetting(){
      else Settings.tempOffset++;
      if (Settings.tempOffset == 255) Settings.tempOffset=9;
      else if (Settings.tempOffset>9) Settings.tempOffset=0;
-//     EEPROM.write (tmpOffsetLoc,tmpOffset);
-//     delay (5);
      cls();
    break;
    
@@ -856,12 +794,10 @@ void optSetting(){
        case 2:
          Settings.photoCellMin += 10;
          if (Settings.photoCellMin > 100)  Settings.photoCellMin = 0;
-//         EEPROM.write (pCellMinLoc,Photocell_Min);
          break;
        case 3:
          Settings.photoCellMax += 50;
          if (Settings.photoCellMax > 750)  Settings.photoCellMax = 200;
-//         EEPROM.write (pCellMaxLoc,Photocell_Max);
          break;
        case 4:
          subMenu[9]=0;  // exit from pcell submenu
@@ -879,7 +815,7 @@ void optSetting(){
 // =======================================================================================
 void showOpt(){
   if (!isSettingOptions) return; // Exit if not setting options
-  byte color=Settings.clockColor;
+  byte color=clockColor;
   char myString[2]; 
   int blinkDigDuration =500;
   int pcell;
@@ -1129,19 +1065,6 @@ void playSFX(byte item){
   //radio.Wakeup(); // Disable RF12B
 }
 
-// =======================================================================================
-// ---- Write ALarm HH:MM changes to EEProm ----
-// ---- Using deidcated function to slow wear down of EEProm 
-// ---- by LensDigital
-// =======================================================================================
-//void writeEEPROMAlrm (byte alrmNum) {
-//  //putstring_nl ("Write Alarm to EEProm");
-//  EEPROM.write(alarmHHLoc[alrmNum],alrmHH[alrmNum]);
-//  delay (15);
-//  EEPROM.write(alarmMMLoc[alrmNum],alrmMM[alrmNum]);
-//  delay (15);
-//  isAlarmModified[alrmNum]=false;
-//}
 
 // =======================================================================================
 // ---- Helper Process for Set Button for Talking Setting ----
@@ -1269,7 +1192,7 @@ void butSetAlarm (byte alrmNum) {
      if (subMenu[alrmNum] > 7) subMenu[alrmNum]=1; // Goes back to first menu item  (wbp)
      if (!(Settings.alarmOn[alrmNum] & 128) && subMenu[alrmNum]==2)  subMenu[alrmNum]=4; // ALarm is off so we need to skip 4nd menu
      if (!Settings.alarmCustom[alrmNum] && subMenu[alrmNum]==3) subMenu[alrmNum]=4; // Custom Alarm is not set so skip to 4th menu
-      switch (subMenu[alrmNum]) {
+       switch (subMenu[alrmNum]) {
          case 1: // Set Alarm on Off
            cls();
            isSettingDate = false;
@@ -1283,28 +1206,28 @@ void butSetAlarm (byte alrmNum) {
            isSettingAlarm = true;
            isSettingAlrmHH = true;
            break;
-          case 3: // Set Alarm Custom schedule
-            if (Settings.alarmCustom[alrmNum]) {
-             //putstring_nl ("SET: Alarm1. Custom Schedule");
-             subMenu[4+alrmNum]++;
-             if (subMenu[4+alrmNum] > 8) subMenu[4+alrmNum]=1; // Goes back to first menu item (Monday)
-           }
-           isSettingAlrmHH = true;
-           isSettingAlrmMM = false;
-           break;
+         case 3: // Set Alarm Custom schedule
+           if (Settings.alarmCustom[alrmNum]) {
+            //putstring_nl ("SET: Alarm1. Custom Schedule");
+            subMenu[4+alrmNum]++;
+            if (subMenu[4+alrmNum] > 8) subMenu[4+alrmNum]=1; // Goes back to first menu item (Monday)
+            }
+            isSettingAlrmHH = true;
+            isSettingAlrmMM = false;
+            break;
           case 4: // Set Alarm Hrs
-          //putstring_nl ("SET: Alarm HRS");
-           cls();
-           isSettingAlrmHH = true;
-           isSettingAlrmMM = false;
-          break;
+            //putstring_nl ("SET: Alarm HRS");
+            cls();
+            isSettingAlrmHH = true;
+            isSettingAlrmMM = false;
+            break;
           case 5: // Set Alarm min
-          //putstring_nl ("SET: Alarm MIN");
-           isSettingAlrmHH = false;
-           isSettingAlrmMM = true;
-           break; 
+            //putstring_nl ("SET: Alarm MIN");
+            isSettingAlrmHH = false;
+            isSettingAlrmMM = true;
+            break; 
          case 6: // Set Alarm Tone
-         //putstring_nl ("SET: Alarm Tone");
+           //putstring_nl ("SET: Alarm Tone");
            isSettingAlrmHH = true; 
            isSettingAlrmMM = false; 
            break;

@@ -4,13 +4,14 @@
 // =======================================================================================
 void buttonProc(){
   // check MENU button;
-  showAlarm(Settings.clockColor); // Display Alarm setting screen
-  if (!isInQMenu) mainDate(Settings.clockColor); // Show date setting screen, but only if we are not in QMenu
+  showAlarm(clockColor); // Display Alarm setting screen
+  if (!isInQMenu) mainDate(clockColor); // Show date setting screen, but only if we are not in QMenu
   showSys();
   showOpt();
-  showDST(Settings.clockColor);
+  showDST(clockColor);
   if (digitalRead(MENU_BUTTON_PIN) == HIGH)
   {
+    timeSettings();  // reset Settings timer
     processMenuButton();
   }
    // check SET button;
@@ -18,12 +19,14 @@ void buttonProc(){
   {
     if (digitalRead(SET_BUTTON_PIN) == HIGH)
     {
+      timeSettings();  // reset Settings timer
       //if (soundAlarm) interruptAlrm=true; // Stops Alarm sound
       // "Set" button was pressed. Go into this level of menu and stay until exit form it or timeout
       processSetButton();
      }
-     if (digitalRead(INC_BUTTON_PIN) == HIGH)
+    if (digitalRead(INC_BUTTON_PIN) == HIGH)
     {
+      timeSettings();  // reset Settings timer
       // "INC" button was pressed. Start changing according values
       processIncButton();
      }
@@ -83,7 +86,7 @@ void processMenuButton()
     return;
     
  // ====  Alarm control   ====
- if (resetAlrm(0) || resetAlrm(1) ) return;
+  if (resetAlrm(0) || resetAlrm(1) ) return;
  
   //putstring_nl ("Is In Menu Button Proc");
   lastButtonTime = millis();

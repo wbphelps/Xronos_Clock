@@ -5,20 +5,25 @@ void startup ()
 {
   if (!Settings.doStartup) return; // Startup Disabled?
   //void initEPROM();
+  playfile("startup1.wav");
+  showText(0,0,"Welcome",3,GREEN);
+  showVersion();
+  cls();
+  showBigTime(clockColor);
+}
+
+// Show current firmware version (& other things?)
+void showVersion()
+{
   char welcome[15];
-//  byte ver=EEPROM.read (clockVerLoc); // Read 3 digit version number
   byte ver=Settings.clockVer;  // 3 digit version number
-//  byte temp = (ver%100) %10; //temp holder
   byte temp = (ver%100); //temp holder (wbp)
   byte ver3 = temp % 10; // Last digit
   byte ver2 = (temp - ver3) / 10; // Second Digit
   ver = (ver - ver2) / 100; // First digitf
-  playfile("startup1.wav");
-  showText(0,0,"Welcome",3,GREEN);
   snprintf(welcome, sizeof(welcome),"Version:%d.%d%dWm",ver,ver2,ver3);  // wbp
   scrolltextsizexcolor(8,welcome,RED,15);
   cls();
-  showBigTime(Settings.clockColor);
 }
 
 // Display divider colon :
@@ -52,19 +57,19 @@ void infoDisplay() {
     char myString[44];
     //if ( (minute()%10)==0) return; // Prevents showing during 0 digit time
     cls();
-    showSmTime(0,Settings.clockColor); // Show Time on top
+    showSmTime(0,clockColor); // Show Time on top
     if (Settings.infoOptions & 128) // Option Enabled?
-      if (!showDate(Settings.clockColor)) return; // Scroll Date. Exit if scroll was interrupted by button press
+      if (!showDate(clockColor)) return; // Scroll Date. Exit if scroll was interrupted by button press
     if (Settings.infoOptions & 64) // Option Enabled?
-      if (!showTemp(Settings.clockColor,false,true)) return; // Scroll Inside Temp. Exit if scroll was interrupted by button press
+      if (!showTemp(clockColor,false,true)) return; // Scroll Inside Temp. Exit if scroll was interrupted by button press
     cls(); 
     if (Settings.RadioEnabled) {
         if (Settings.infoOptions & 32) {// Option Enabled?
-          if (!showTemp(Settings.clockColor,false,false)) return; // Scroll Outside Temp. Exit if scroll was interrupted by button press
+          if (!showTemp(clockColor,false,false)) return; // Scroll Outside Temp. Exit if scroll was interrupted by button press
          cls();
         }
         if (Settings.infoOptions & 4) {// Humidity Option Enabled?
-        if (!showHumidity(Settings.clockColor,false)) return; //Scroll Outside Humidity. Exit if scroll was interrupted by button press
+        if (!showHumidity(clockColor,false)) return; //Scroll Outside Humidity. Exit if scroll was interrupted by button press
         cls ();
         }
     }
@@ -78,13 +83,13 @@ void infoDisplay() {
       if (Settings.infoOptions & 8) {// Option Enabled?
         if ( last_RF > 0 && ( (millis()-last_RF) < 1800000) )  { // Show sensor timestamp
           //Serial.println ("Sensor data receiveed recently");
-          showSmTime(0,Settings.clockColor); // Show Time on top
+          showSmTime(0,clockColor); // Show Time on top
           snprintf(myString,sizeof(myString), "Sensor data received %2d seconds ago",second(last_RF));
-          if (! scrolltextsizexcolor(8,myString,Settings.clockColor,5) ) return;
+          if (! scrolltextsizexcolor(8,myString,clockColor,5) ) return;
           cls ();
         }
         else { // Sensor data hasn't been reiceved in a while
-          showSmTime(0,Settings.clockColor); // Show Time on top
+          showSmTime(0,clockColor); // Show Time on top
           snprintf(myString,sizeof(myString), "Sensor data not received in over 30 minutes (%2d)",second(last_RF));
           Serial.println (last_RF);
           if (! scrolltextsizexcolor(8,myString,RED,5) ) return;
@@ -103,7 +108,7 @@ boolean alarmInfo(byte alrmNum){
   if ( ! (Settings.alarmOn[alrmNum] & 128) ) return true; //  Alarm is off
      char myString[54]; // String to keep Alarm msg
      char wkdays[28]; //Days of week
-     showSmTime(0,Settings.clockColor); // Show time on top
+     showSmTime(0,clockColor); // Show time on top
      if ( snoozeTime[alrmNum]!=10 ) { // Are we snoozing?
        snprintf(myString,sizeof(myString), "Alarm%d on! Snoozing...Z Z z z z z...",alrmNum+1);
        return scrolltextsizexcolor(8,myString,RED,5);
@@ -157,7 +162,7 @@ boolean alarmInfo(byte alrmNum){
          else // It's 24 hour mode
          snprintf(myString,sizeof(myString), "Alarm%d is set to %02d:%02d %s",alrmNum+1,Settings.alarmHH[alrmNum],Settings.alarmMM[alrmNum],wkdays); 
        }
-     return scrolltextsizexcolor(8,myString,Settings.clockColor,5);
+     return scrolltextsizexcolor(8,myString,clockColor,5);
      }
      
 }
@@ -323,12 +328,17 @@ void sayTemp(int temp, boolean location){
   if (location) playcomplete("INSIDE.WAV");
   else playcomplete("OUTSIDE.WAV");
   playcomplete("IS.WAV");
-  
-  snprintf(myString,sizeof(myString), "%d0.WAV",(temp/10)%10); // first digit
-  playcomplete(myString);
-  if ((temp%10)!=0) {
-    snprintf(myString,sizeof(myString), "%d.WAV",temp%10); // first digit
+  if (temp<20) {
+    snprintf(myString,sizeof(myString), "%d.WAV",temp); // Teen and single digits
     playcomplete(myString);
+  }
+  else { // It's over 20, so make 2 digit phrase
+    snprintf(myString,sizeof(myString), "%d0.WAV",(temp/10)%10); // first digit
+    playcomplete(myString);
+    if ((temp%10)!=0) {
+      snprintf(myString,sizeof(myString), "%d.WAV",temp%10); // first digit
+      playcomplete(myString);
+    }
   }
   playcomplete("DEGREES.WAV");
   if (Settings.tempUnit) playcomplete("fahrenh.WAV");
@@ -720,14 +730,14 @@ void sayItem () {
       cls();
       okClock=true; 
       isSettingDate=false;
-      showBigTime(Settings.clockColor);
+      showBigTime(clockColor);
       sayTime();
       break; 
   case 2: // Show/Say Date
       isSettingDate = true;
       okClock=false;
       cls();
-      mainDate(Settings.clockColor); // Show full screen date
+      mainDate(clockColor); // Show full screen date
       sayDate();
   break; 
   case 3: // Say and show INdoor temperature
@@ -758,14 +768,14 @@ void sayItem () {
         cls();
         menuItem=1;
         subMenu[0]=4; // Enable display of Alarm 1
-        showAlarm(Settings.clockColor);
+        showAlarm(clockColor);
         sayAlarm(0);
         
       }
       if ( Settings.alarmOn[1] & 128) { // Alarm 2 is on
         menuItem=2;
         subMenu[1]=4; // Enable display of Alarm 2
-        showAlarm(Settings.clockColor);
+        showAlarm(clockColor);
         sayAlarm(1);
      
       }
@@ -906,7 +916,6 @@ byte runningAverage(int r)
 // ---- by LensDigital & William Phelps
 // =======================================================================================
 static unsigned long lastRun = 0;
-//extern byte autoColor;  // wbp
 void autoBrightness () {
 //  if (isInMenu) return;
   if (Settings.brightness) return; // Brightness is not set to 0 (auto)
@@ -915,7 +924,7 @@ void autoBrightness () {
   lastRun = millis();
   //Serial.println ("Changing Brightness");
   photoCell = analogRead(photoCellPin);
-  Serial.print("pCell:"); Serial.println(photoCell);
+//  Serial.print("pCell:"); Serial.println(photoCell);
   lightLevel = map( constrain (photoCell, Settings.photoCellMin, Settings.photoCellMax), Settings.photoCellMin, Settings.photoCellMax, 1, 5); // Get Ambient Light Reading
   lightLevel = runningAverage(lightLevel); // calc running average 
 //  if (prevBrightness==0) {  // Initialized previous Brightness setting only if Brightness was reset
@@ -928,11 +937,11 @@ void autoBrightness () {
     //Serial.println (FreeRam());
     if (Settings.autoColor) {
       if (lightLevel < 3)
-        Settings.clockColor = RED;
+        clockColor = RED;
       else if (lightLevel < 4)
-        Settings.clockColor = ORANGE;
+        clockColor = ORANGE;
       else
-        Settings.clockColor = GREEN;
+        clockColor = GREEN;
     }
   }
 }
@@ -955,7 +964,7 @@ boolean showHumidity(byte color, boolean speak) {
   
   if(!speak) { //Scroll
     snprintf(myString,sizeof(myString), "Humidity %2d%%",extHum); // Scroll Outside Humidity
-    return scrolltextsizexcolor(8,myString,Settings.clockColor,20);
+    return scrolltextsizexcolor(8,myString,clockColor,20);
   }
   else {
     snprintf(myString,sizeof(myString), "%d%%",extHum); // Make string for Outside Humidity  
