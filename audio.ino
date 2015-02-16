@@ -59,7 +59,7 @@ void playfile(char *name) {
   if (!wave.create(f)) {
     putstring_nl("Not a valid WAV"); return;
   }
-  wave.volume=sndVol; // Set Playback Sound
+  wave.volume=Settings.soundVol; // Set Playback Sound
   // ok time to play! start playback
   wave.play();
  
@@ -89,7 +89,7 @@ void playalarmfile(char *name, byte alrmnum) {
   }
   // Check if Alarm should be escalated
 //  if (alrmToneNum[alrmnum]<=ALARM_PROGRESSIVE){ // wbp
-  if (alrmProgVol[alrmnum]){ // wbp
+  if (Settings.alarmProgVol[alrmnum]){ // wbp
     // Escalate alarm volume
     if (alrmVol[alrmnum]>0) alrmVol[alrmnum]--;
   }

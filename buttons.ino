@@ -4,11 +4,11 @@
 // =======================================================================================
 void buttonProc(){
   // check MENU button;
-  showAlarm(clockColor); // Display Alarm setting screen
-  if (!isInQMenu) mainDate(clockColor); // Show date setting screen, but only if we are not in QMenu
+  showAlarm(Settings.clockColor); // Display Alarm setting screen
+  if (!isInQMenu) mainDate(Settings.clockColor); // Show date setting screen, but only if we are not in QMenu
   showSys();
   showOpt();
-  showDST(clockColor);
+  showDST(Settings.clockColor);
   if (digitalRead(MENU_BUTTON_PIN) == HIGH)
   {
     processMenuButton();
@@ -62,8 +62,8 @@ void buttonProc(){
    
     okClock=true; 
     isIncrementing = false; 
-    if (isAlarmModified[0]) writeEEPROMAlrm(0);
-    if (isAlarmModified[1]) writeEEPROMAlrm(1);
+//    if (isAlarmModified[0]) writeEEPROMAlrm(0);
+//    if (isAlarmModified[1]) writeEEPROMAlrm(1);
     wave.stop(); // Any sounds (in case Alarm Tone is playing and sFX are disabled)
     playSFX(3);
     cls();

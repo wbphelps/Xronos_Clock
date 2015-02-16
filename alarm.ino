@@ -8,7 +8,7 @@ void procAlarm(byte alrmnum) {
   unsigned long tNow = now();
   if (isInMenu) return; // Do not sound alarm if changing settings
   if (digitalRead(SET_BUTTON_PIN) == HIGH) processSetButton(); // Poll Set Button, that will reArm (cancel for today) alarm
-  if (alarmon[alrmnum] & 128) { // Is global alarm switch on? (1st byte is set)
+  if (Settings.alarmOn[alrmnum] & 128) { // Is global alarm switch on? (1st byte is set)
     // ==== Begin alarm LED indicator ====
     if (soundAlarm[alrmnum]) { // Alarm currently sounding?
       if ( (millis()-alarmBlinkTime > blinkDotDuration)) { // It's been over blinkDuration time
@@ -28,14 +28,14 @@ void procAlarm(byte alrmnum) {
       // check to see if alarm will sound again within 24 hours
       alarmColor=RED;  // assume it won't
       wd = weekday(tNow);  // today's weekday number
-      iAlrm = alrmHH[alrmnum]*60 + alrmMM[alrmnum];  // time of alarm in minutes
+      iAlrm = Settings.alarmHH[alrmnum]*60 + Settings.alarmMM[alrmnum];  // time of alarm in minutes
       iNow = hour(tNow)*60 + minute(tNow);  // time now in minutes
       if (iNow>iAlrm) { // is tAlrm in the past?
         iAlrm+=1440;  // set tAlrm ahead by one day
         wd+=1;  // let's look at tomorrow
         if (wd>7)  wd=1;  // wrap if necessary
       }
-      if (alarmon[alrmnum] & weekdays[wd]) {  // is alarm on and set for the day in question?
+      if (Settings.alarmOn[alrmnum] & weekdays[wd]) {  // is alarm on and set for the day in question?
         if ((iAlrm-iNow)<=1440)  // is alarm set to go off in next 24 hours?
           alarmColor=GREEN;  // change LED to red
       }
@@ -64,7 +64,7 @@ void procAlarm(byte alrmnum) {
         if ( (minute(tNow)%10) == snoozeTime[alrmnum]) {
           soundAlarm[alrmnum]=true; // Check last digit of current minute
 //        if (alrmToneNum[alrmnum]<=ALARM_PROGRESSIVE)  alrmVol[alrmnum]=7; // Reset Alarm Volume
-          if (alrmProgVol[alrmnum])  alrmVol[alrmnum]=7; // Reset Alarm Volume
+          if (Settings.alarmProgVol[alrmnum])  alrmVol[alrmnum]=7; // Reset Alarm Volume
           else  alrmVol[alrmnum]=0;
         }
       }
@@ -75,8 +75,8 @@ void procAlarm(byte alrmnum) {
         if ( (alarmon[alrmnum] == 2) && ( (weekday() == 1) || (weekday () == 7) ) ) ;// Do nothing, cause it's weekend and alarm was set to weekday
         else // It's Either Daily alarm or we are in Mon-Fri range
          */
-          if ( alarmon[alrmnum] & weekdays[weekday()] ) { // Alarm is scheduled for this day!
-            if ( (hour(tNow)==alrmHH[alrmnum]) && ( minute(tNow)==alrmMM[alrmnum]) ) {
+          if ( Settings.alarmOn[alrmnum] & weekdays[weekday()] ) { // Alarm is scheduled for this day!
+            if ( (hour(tNow)==Settings.alarmHH[alrmnum]) && ( minute(tNow)==Settings.alarmMM[alrmnum]) ) {
               if (alrmnum==0) { // It's first alarm processor
                 soundAlarm[1]=false; // Interrupts 2nd alarm if it's playing
                 snoozeTime[1]=10; // Disable snooze for 2nd alarm
@@ -106,7 +106,7 @@ void playAlarm(byte alrmnum) {
      return; // Alarm was interrupted with button, exit
   }
   char myString[11];
-  snprintf(myString,sizeof(myString), "ALRM%d.WAV",alrmToneNum[alrmnum]); // Make Alarm Filename
+  snprintf(myString,sizeof(myString), "ALRM%d.WAV",Settings.alarmTone[alrmnum]); // Make Alarm Filename
   playalarmfile(myString,alrmnum);
   
 }
@@ -119,12 +119,12 @@ void playAlarm(byte alrmnum) {
 // =======================================================================================
 void rearmAlrm(byte alrmnum){
   unsigned long tNow = now();
-  if (alarmon[alrmnum] & 128) { // Is global alarm switch on? (1st bit is set?)
-    if ( ( hour(tNow)==alrmHH[alrmnum]+1) && ( minute(tNow)==alrmMM[alrmnum]) ) { // It's been 1 hour since Alarm sounded
+  if (Settings.alarmOn[alrmnum] & 128) { // Is global alarm switch on? (1st bit is set?)
+    if ( ( hour(tNow)==Settings.alarmHH[alrmnum]+1) && ( minute(tNow)==Settings.alarmMM[alrmnum]) ) { // It's been 1 hour since Alarm sounded
       soundAlarm[alrmnum]=false;
       interruptAlrm[alrmnum]=false;
 //      if (alrmToneNum[alrmnum]<6) alrmVol[alrmnum]=7; //Set low volume for escalating alarms
-      if (alrmProgVol[alrmnum]) alrmVol[alrmnum]=7; //Set low volume for escalating alarms (wbp)
+      if (Settings.alarmProgVol[alrmnum]) alrmVol[alrmnum]=7; //Set low volume for escalating alarms (wbp)
       else alrmVol[alrmnum]=0; // Set High volume for non-escalating alarms
       snoozeTime[alrmnum]=10; // Turn off snooze
      }
@@ -146,7 +146,7 @@ boolean resetAlrm(byte alrmnum){
     snoozeTime[alrmnum]=10;
     wave.stop();
     playcomplete("alrm_res.WAV");
-    if (alrmProgVol[alrmnum]) alrmVol[alrmnum]=7; //Set low volume for escalating alarms (wbp)
+    if (Settings.alarmProgVol[alrmnum]) alrmVol[alrmnum]=7; //Set low volume for escalating alarms (wbp)
     else alrmVol[alrmnum]=0; // Set High volume for non-escalating alarms
     return true;
     }

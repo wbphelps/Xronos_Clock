@@ -57,10 +57,11 @@
 #include <Time.h>  
 #include <DS1307RTC.h>  // a basic DS1307 library that returns time as a time_t
 #include <stdlib.h> // Used for string manipulations and string to int conversions
+#include "settings.h"
 #include "gps.h"  // wbp
 #include "WaveUtil.h" // Used by wave shield
 #include "WaveHC.h" // Used by wave shield (library modified by LensDigital to accomodate ATMega644p/ATMega1284p)
-#include <EEPROM.h>
+//#include <EEPROM.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <RFM12B.h>
@@ -68,15 +69,17 @@
 #include "myIR_Remote.h" // IR Codes defintion file (comment out if IR receiver not present)
 
 //#define firmware_ver 209 // Current Firmware version
-#define firmware_ver 219 // Current Firmware version (wbp)
+#define firmware_ver 220 // Current Firmware version (wbp)
+// EE version - change this to force reset of EE memory
+#define EE_VERSION 13
 
 // ============================================================================================
 // Importante User Hardware config settings, modify as needed
 // ============================================================================================
-static boolean RFM12B_Enabled=true; // Defines if RFM12B Chip present.  Set to true to enable. Must also have ATMega1284p! Will not work with ATMega644p chip
+const byte RFM12B_PRESENT=false; // Defines if RFM12B Chip present.  Set to true to enable. Must also have ATMega1284p! Will not work with ATMega644p chip
+const byte IR_PRESENT=false; // Set to True if IR receiver is present. Must also have ATMega1284p! Will not work with ATMega644p chip
+const byte GPS_PRESENT=true; // Set to True if GPS receiver is present
 #define AUTO_BRIGHTNESS_ON 0  //Set to 1 to disable autobrightness menu feature, 0 to enable if photocell is present.
-static boolean IR_PRESENT=true; // Set to True if IR receiver is present. Must also have ATMega1284p! Will not work with ATMega644p chip
-static boolean GPS_PRESENT=true; // Set to True if GPS receiver is present
 // ============================End of User Hardware Settings ==================================
 
 // Pins Delcarations
@@ -160,37 +163,29 @@ boolean isSettingYear   = false;
 boolean isSettingDST = false; 
 boolean isSettingAlrmMM   = false;
 boolean isSettingAlrmHH   = false;
-boolean isSettingAlrmCust[2]; // Use to track custom alarm schedule setting
-boolean isAlarmModified[2]={false,false}; // If hh:mm of alarm was changed, settings will be written to EEPROM
+//boolean isSettingAlrmCust[2]; // Use to track custom alarm schedule setting
+//boolean isAlarmModified[2]={false,false}; // If hh:mm of alarm was changed, settings will be written to EEPROM
 boolean isSettingOptions = false;
 boolean okClock = true; // Can we show time? Normally true, unless we showing something else
-boolean time12hr; // Showing time in 24 or 12 hr format
+//boolean time12hr; // Showing time in 24 or 12 hr format
 boolean interruptAlrm[2] = {false,false};
 boolean soundAlarm[2] = {false,false};
 boolean interruptAlrm2 = false;
 boolean soundAlarm2 = false;
 boolean isIncrementing = false;
 boolean blinking=false;
-boolean sFX=true; // Menu Effects on/off
+//boolean sFX=true; // Menu Effects on/off
 boolean buttonPressedInc=false; // Tracks High state of INC button
-boolean doStartup; // Startup sequence enable/disable
-boolean radioOn=true;
-boolean isRadioPresent; // Defines in RFM12B Chip present. Stored in EEPROM
-boolean isIRPresent; // Defines if IR receiver is present
-boolean isGPSPresent; // Defines if GPS receiver is present
+//boolean doStartup; // Startup sequence enable/disable
+//boolean radioOn=true;
+//boolean isRadioPresent; // Defines in RFM12B Chip present. Stored in EEPROM
+//boolean isIRPresent; // Defines if IR receiver is present
+//boolean isGPSPresent; // Defines if GPS receiver is present
 boolean decrement; // Only used with IR remote to decrement digits (--)
 
-
-byte alrmHH[2]; // Alarm Hours
-byte alrmMM[2]; // Alarm Minutes
-byte alarmon[2]; // Alarm Freq. Controlled by 8 bits. If first bit is 0 alarm is off. Example in in decimal (not counting 1st bit):
+//byte alarmon[2]; // Alarm Freq. Controlled by 8 bits. If first bit is 0 alarm is off. Example in in decimal (not counting 1st bit):
                  // Mon=64, Tue=32, Wed=16, Thu=8, Fri=4, Sat=2, Sun=1, Daily=127, Weekdays=124, Custom=126
 byte alrmVol[2]={7,7}; // Alarm Volume (0-12, smaller = louder)
-byte alrmProgVol[2]; //Progressive volume?
-byte alrmToneNum[2]; // Number of alarm tone
-
-byte tmpOffset; // temperature offset (minus)
-byte sndVol=0; // Normal Sounds volume (0-12, smaller = louder)
 
 const byte weekdays[8]={0,1,64,32,16,8,4,2}; // Lookup table to convert Weekday number to my day code used for Custom Alarm schedule
 
@@ -200,9 +195,6 @@ unsigned long last_ms=0; // for setting seconds, etc.
 unsigned long last_RF=millis(); // Keeps track since last RF signal received
 volatile unsigned long lastButtonTime = 0;// last time a button was pushed; used for debouncing
 
-byte clockColor;
-byte autoColor = true;  // Auto color mode
-byte clockFont; 
 byte blinkColor=BLACK; // Default off
 byte alarmColor=BLACK; // Default off
 byte hhColor=BLACK; // Set color of the 2 hour digits
@@ -218,8 +210,6 @@ byte snoozeTime[2]={10,10}; // Keeps last digit of minutes for snooze
 int  extTemp=300; // External Temperature in C
 int  extHum=300; // External Humidity
 
-unsigned int Photocell_Min = 20;  // low reading expected from photocell
-unsigned int Photocell_Max = 500; // high reading from photocell
 unsigned int photoCell = 0; // last reading from photocell
 
 byte currStatusInc=LOW; // Current Status of Incremental button
@@ -245,40 +235,8 @@ byte menuItem=0; // Counts presses of the Set button
 byte mbutState=1; // Menu button option 
 byte subMenu[MAX_SUBMENUS]={0,0,0,0,0,0,0,0,0,0}; // 0 = setting Alarm1, 1 = setting Alarm 2, 2 for setting Time/Date, 3 for System Settings,
 //   4 for setting custom alrm 1, 5 = custom alarm 2, 6 = UserOptions, 7= Infodisplay options, 8 = Voice Prompts, 9 = Photocell
-byte brightness; // LED Display Brightness
 byte lightLevel; // Light level from photocensor
 byte prevBrightness = 0; // Previous Brightness (to detect brightness level change)
-boolean tempUnit; // Temperature units (True=F or False=C)
-byte infoFreq; // Info Display Freq options
-byte sayOptions;  // Say items options
-byte infoOptions;  // Info Display items options
-
-// EEPROM Location Definitions
-#define	mode24HRLoc 0		// 12/24 hour mode storage location
-const byte alarmHHLoc[2]={1,9};                        // alarm hours storage location
-const byte alarmMMLoc[2]={2,10};           		// alarm minutes storage location
-const byte alarmOnOffLoc[2]={3,11};		        // alarm Off/Daily/Weekday/Custom storage locations
-#define	brightLoc 4		// Brightness storage location
-#define	clockColorLoc 5		// Time digit color storage location
-#define	clockVerLoc 6		// Firmware version storage location
-const byte alarmToneLoc[2]={7,12};                    // Alarm  Tone storage location
-#define clockFontLoc 8               // Clock's font number location
-#define sFXLoc 13               // Menu SFX on/off location
-#define tempUnitLoc 14               // Degreen Units location
-#define sndVolLoc 15               // Sound Volume control location
-#define infoFreqLoc 16               // Info Display frequency and what to show
-#define sayOptionsLoc 17               // Define which options to say
-#define doStartupLoc 18               
-#define tmpOffsetLoc 20              // Temperature Offset sotrage location
-#define infoOptionsLoc 21               // Info Display frequency and what to show
-#define radioOnLoc 22          // Defines if RF receiver is enabled
-#define IROnLoc 23          // Defines if IR receiver is enabled
-#define DSTmodeLoc 24   // DST mode in EE
-#define GPSOnLoc 25   // GPS receiver enabled in EE
-#define autoColorLoc 26  // Auto Color enabled in EE
-const byte alarmProgVolLoc[2]={27,28};	// alarm progressive voluem storage locations
-#define pCellMinLoc 29  // Photocell min storage loc
-#define pCellMaxLoc 30  // Photocell max storage loc
 
 // Wave Shield Declarations
 SdReader card;    // This object holds the information for the card
@@ -296,8 +254,6 @@ void myDebug(){
    //Serial.print ("interruptAlarm=");Serial.println (interruptAlrm); 
   // Serial.print ("SnozeTime="); Serial.println (snoozeTime); 
 }
-
-
 
 // Better (low memory) version of Serial print (by David Pankhurst)
 // * http://www.utopiamechanicus.com/article/low-memory-serial-print/
@@ -346,65 +302,12 @@ void TempInit(){
 }
 
 
-
-// ===================================================================
-// * READ EEPROM Settings *
-// ===================================================================
-void getEEPROMSettings () {
-  byte alrmTst;
-  for (byte i=0;i<2;i++) {
-    alarmon[i]=EEPROM.read(alarmOnOffLoc[i]); // read Alarm off/Daily/Weekday from EEPROM
-    alrmHH[i]=EEPROM.read(alarmHHLoc[i]);  // Read Alarm Hours from EEPROM
-    alrmMM[i]=EEPROM.read(alarmMMLoc[i]); // Read Alarm Minutes from EEPROM
-    alrmToneNum[i]=EEPROM.read(alarmToneLoc[i]); // Read Alarm Tone number from EEPROM
-    alrmProgVol[i]=EEPROM.read(alarmProgVolLoc[i]); // Read Alarm Progressive Vol from EEPROM
-    // Check if custom alarm schdule is set
-    alrmTst=alarmon[i]<<1; // Shift left one to get rid of 1st bit
-    alrmTst=alrmTst>>1; // Shift right one to get rid of 1st bit
-    if ( (alrmTst == 124) || (alrmTst == 127) ) isSettingAlrmCust[i]=false; // i.e. Daily or Weekday alarm is set
-    else isSettingAlrmCust[i]=true; // It's set to custom day
-  }
-  time12hr=EEPROM.read(mode24HRLoc); // Read time mode (12/24 hours) from EEPROM
-  brightness=EEPROM.read(brightLoc); // Read Brightness setting from EEPROM
-  clockColor=EEPROM.read(clockColorLoc); // Read Clock Color from EEPROM
-  if (clockColor!=RED && clockColor!=GREEN && clockColor!=ORANGE) clockColor=ORANGE;// Failsafe for when EEPROM location is blank or corrupted, so clock will be visible
-  autoColor=EEPROM.read(autoColorLoc); // Read Auto Color from EEPROM
-  clockFont=EEPROM.read(clockFontLoc); // Read Alarm Tone number from EEPROM
-  sFX=EEPROM.read(sFXLoc); // Read Sound FX on/of for menu system
-  tempUnit=EEPROM.read(tempUnitLoc); // Read temp unit
-  sndVol=EEPROM.read(sndVolLoc); // Read Sound Volume
-  infoFreq=EEPROM.read(infoFreqLoc); // Read infodisplay options
-  infoOptions=EEPROM.read(infoOptionsLoc); // Read infodisplay options
-  sayOptions=EEPROM.read(sayOptionsLoc); // Read say prompt options
-  doStartup=EEPROM.read(doStartupLoc); // Read say prompt options
-  tmpOffset=EEPROM.read (tmpOffsetLoc); // Read Temperature offset
-  g_DST_mode=EEPROM.read (DSTmodeLoc); // Read DST mode
-  Photocell_Min = EEPROM.read(pCellMinLoc);  // photocell min
-  Photocell_Max = EEPROM.read(pCellMaxLoc);  // photocell min
-  if ( RFM12B_Enabled ) isRadioPresent=EEPROM.read (radioOnLoc);
-  else isRadioPresent=false;
-  
-  if (!isRadioPresent) { // Disable saying ext temperature/humidity
-    if (sayOptions & 4) sayOptions = sayOptions ^ 4;
-    if (sayOptions & 2) sayOptions = sayOptions ^ 2;
-  }
-  if (EEPROM.read (clockVerLoc) != firmware_ver) { //Write current firmware version to EEPROM if it's different from stored
-    putstring_nl("Writing new Fw version");
-    EEPROM.write (clockVerLoc,firmware_ver); 
-    delay (15); 
-  }
-  if ( IR_PRESENT ) isIRPresent=EEPROM.read (IROnLoc); // IR receiver setting
-  else isIRPresent=false;
-  if ( GPS_PRESENT ) isGPSPresent=EEPROM.read (GPSOnLoc); // IR receiver setting
-  else isGPSPresent=false;
-}
-
 // ===================================================================
 // * Decode IR Codes *
 // Comment out if IR receiver not present
 // ===================================================================
 void IR_process () {
-  if (!isIRPresent) return;
+  if (!Settings.IRenabled) return;
   if ((millis()-g_IR_timer) > 1000) { // leave IR signal indicator on for 1 second
     g_IR_timer = millis();  // reset timer
     g_IR_receive = 0;  // no signal
@@ -512,7 +415,7 @@ static uint8_t gps_counter = 0;
 // runs every 0.000128 seconds
 ISR(TIMER2_OVF_vect)
 {
-  if (isGPSPresent) {
+  if (Settings.GPSenabled) {
     if (++gps_counter == 4) {  // about once every 0.5 ms
       GPSread();  // check for data on the serial port
       gps_counter = 0;
@@ -524,7 +427,7 @@ void checkGPS() {
 //#ifdef HAVE_GPS
   if (isInMenu) return;
 //  if (!g_gps_enabled) return;
-  if (!isGPSPresent) return;
+  if (!Settings.GPSenabled) return;
   if (gpsDataReady()) {
     parseGPSdata(gpsNMEA());  // get the GPS serial stream and possibly update the clock 
   }
@@ -555,12 +458,14 @@ tmElements_t tm;
 
 void setup ()  
 {
-  Serial.begin(9600); // (115200); (wbp)
-  //initEPROM();
+  Serial.begin(9600); // for GPS(wbp)
+  // ========= Read Settings from EEPROM ===============================
+  loadSettings(); // load variables saved in EE (load defaults if needed)
   
   // Print FW Version
     char welcome[15];
-    byte ver=EEPROM.read (clockVerLoc); // Read 3 digit version number
+//    byte ver=EEPROM.read (clockVerLoc); // Read 3 digit version number
+    byte ver = Settings.clockVer;  // 3 digit version number
     byte temp = (ver%100) %10; //temp holder
     byte ver3 = temp % 10; // Last digit
     byte ver2 = (temp - ver3) / 10; // Second Digit
@@ -577,18 +482,17 @@ void setup ()
   // Uncomment following two lines and modify to set time. After setting time, commend them and re-upload sketch
   //setTime(13,04,0,9,11,12); // Set time on Arduino (hr,min,sec,day,month,yr). Use with RTC.set(now());
   //RTC.set(now()); // Write Time data to RTC Chip. Use with previous command
-   //EEPROM.write (clockVerLoc,firmware_ver); delay (50); // Write current firmware version to EEProm
-   // ========= Read Settings from EEPROM ===============================
-  getEEPROMSettings ();
-  wave.volume=sndVol; // Change System Sound Volume
+  //EEPROM.write (clockVerLoc,firmware_ver); delay (50); // Write current firmware version to EEProm
+
+  wave.volume=Settings.soundVol; // Change System Sound Volume
   WaveShieldInit();
   TempInit();
   // Set initial brightness
-  if (brightness==0) autoBrightness();
+  if (Settings.brightness==0) autoBrightness();
   else
-    setBrightness(brightness);
+    setBrightness(Settings.brightness);
   // Initialize Radio module 
-  if (isRadioPresent) radio.Initialize(NODEID, RF12_915MHZ, NETWORKID);
+  if (Settings.RadioEnabled) radio.Initialize(NODEID, RF12_915MHZ, NETWORKID);
 //  if (isIRPresent) {
 //    irrecv.enableIRIn(); // Start the IR receiver. Comment out if IR not present
 //  }
@@ -604,7 +508,7 @@ tmElements_t tm;
 //  radio.Sleep();
 
   delay(1000); 
-  if (isIRPresent) {
+  if (Settings.IRenabled) {
     Serial.println("IR Present");
     irrecv.enableIRIn(); // Start the IR receiver. Comment out if IR not present
   }
@@ -628,7 +532,7 @@ void loop ()
 //  if (time1==0)
 //    time1 = millis();
 
-  showBigTime(clockColor);
+  showBigTime(Settings.clockColor);
   procAlarm(0);
   procAlarm(1);
   buttonProc();
@@ -641,6 +545,7 @@ void loop ()
   IR_process();
   checkGPS();  // wbp
   checkDST();  // wbp
+  saveSettings(false);  // wbp
 
 //  ctr1++;
 //  if (ctr1==100) {

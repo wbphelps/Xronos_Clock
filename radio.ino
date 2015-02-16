@@ -1,16 +1,18 @@
 // =======================================================================================
 // ---- Receives Temperature from remote RF12B transmitter ----
 // =======================================================================================
+static boolean __radioOn=true;
+
 void receiveTemp() {
-  if (!isRadioPresent) return;
+  if (!Settings.RadioEnabled) return;
   if (isInMenu) return;
   
   if (soundAlarm[0] || soundAlarm[1]) return;
   if (wave.isplaying) return;
   //if (isInQMenu) return;
-  if (!radioOn) {
+  if (!__radioOn) {
     radio.Wakeup(); // Turn on Radio
-    radioOn=true;
+    __radioOn=true;
     //putstring_nl ("Radio Wake up!");
   }
   if (  ((millis()-last_RF) > 900000 ) || last_RF==0) plot (31,0,RED); //Indicate that temp hasn't been received in over 15 min
@@ -70,11 +72,11 @@ void receiveTemp() {
 // ==================================================
 // -- Turns off radio and keeps track of it's status
 void turnOffRadio() {
- if (!isRadioPresent) return;
+ if (!Settings.RadioEnabled) return;
  //radio.Sleep();
- if (radioOn) {
+ if (__radioOn) {
    radio.Sleep();
-   radioOn=false;
+   __radioOn=false;
    //putstring_nl ("Radio Sleep!"); 
   delay (5);
  }

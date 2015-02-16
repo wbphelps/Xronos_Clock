@@ -3,10 +3,11 @@
 // ---------------------------------------------------------------------------------------
 void startup ()
 {
-  if (!doStartup) return; // Startup Disabled?
+  if (!Settings.doStartup) return; // Startup Disabled?
   //void initEPROM();
   char welcome[15];
-  byte ver=EEPROM.read (clockVerLoc); // Read 3 digit version number
+//  byte ver=EEPROM.read (clockVerLoc); // Read 3 digit version number
+  byte ver=Settings.clockVer;  // 3 digit version number
 //  byte temp = (ver%100) %10; //temp holder
   byte temp = (ver%100); //temp holder (wbp)
   byte ver3 = temp % 10; // Last digit
@@ -17,65 +18,7 @@ void startup ()
   snprintf(welcome, sizeof(welcome),"Version:%d.%d%dWm",ver,ver2,ver3);  // wbp
   scrolltextsizexcolor(8,welcome,RED,15);
   cls();
-  showBigTime(clockColor);
-}
-
-// =======================================================================================
-// ---- Initializes EEPROM for new Chip. run only first time ----
-// ---------------------------------------------------------------------------------------
-void initEPROM()
-{
-  putstring_nl ("Writing Initial settings to EEPROM!!!");
- for (byte i=0;i<2;i++) {
-    EEPROM.write (alarmHHLoc[i],0);  
-    delay (50);
-    EEPROM.write (alarmMMLoc[i],0);
-    delay (50);
-    EEPROM.write (alarmOnOffLoc[i],0);
-    delay (50);
-    EEPROM.write(alarmToneLoc[i],1); // Write Alarm Tone number
-    delay (50);
-    EEPROM.write(alarmProgVolLoc[i],0); // Write Alarm Progressive Vol setting
-    delay (50);
- }
-  EEPROM.write (mode24HRLoc,false); // Write time mode (12/24 hours)
-  delay (50);
-  EEPROM.write (brightLoc,3); // Write Brightness setting
-  delay (50);
-  EEPROM.write (clockColorLoc,GREEN); // Write Clock Color
-  delay (50);
-  EEPROM.write (clockVerLoc,firmware_ver); 
-  delay (50);
-  EEPROM.write(clockFontLoc,1); // Write Alarm Tone number
-  delay (50);
-  EEPROM.write (sFXLoc,1); // Write Menu SFX on/off
-  delay (50);
-  EEPROM.write (tempUnitLoc,true);// Write Temperature units
-  delay (50);
-  EEPROM.write (sndVolLoc,0);// Write Sound Volume
-  delay (50);
-  EEPROM.write(infoFreqLoc,2); // Write infodisplay freq options
-  delay (50);
-  EEPROM.write(sayOptionsLoc,255); // Write Say options
-  delay (50);
-  EEPROM.write(doStartupLoc,true); // Write Startup option
-  delay (50);
-  EEPROM.write(tmpOffsetLoc,2); // Write Temperature Offset
-  delay (50);
-  EEPROM.write(infoOptionsLoc,2); // Write InfoDisplay options
-  delay (50);
-  EEPROM.write(radioOnLoc,false); // Disable RFM by default during INIT
-  delay (50);
-  EEPROM.write(IROnLoc,false); // Disable IR by default during INIT
-  delay (50);
-  EEPROM.write(DSTmodeLoc,false); // Disable DST by default
-  delay (50);
-  EEPROM.write(pCellMinLoc,10); // Default photocell minimum reading
-  delay (50);
-  EEPROM.write(pCellMaxLoc,400); // Default photocell maximum reading
-  delay (50);
-  
-  //wave.volume=sndVol; // Change System Sound Volume
+  showBigTime(Settings.clockColor);
 }
 
 // Display divider colon :
@@ -99,49 +42,49 @@ void showDivider(byte color){
 // By: LensDigital
 // ---------------------------------------------------------------------------------------
 void infoDisplay() {
-  if (infoFreq == 0) return; // User choose to never show this screen
-  if (! ((infoOptions & 128) || (infoOptions & 64) || (infoOptions & 32) || (infoOptions & 16) || (infoOptions & 8) ) ) return; // All display options disabled
+  if (Settings.infoFreq == 0) return; // User choose to never show this screen
+  if (! ((Settings.infoOptions & 128) || (Settings.infoOptions & 64) || (Settings.infoOptions & 32) || (Settings.infoOptions & 16) || (Settings.infoOptions & 8) ) ) return; // All display options disabled
   if (soundAlarm[0] || soundAlarm[1]) return; // Do not show if Alarm is playing
   if (isInMenu) return; // Do not show when in menu
   if (isInQMenu) return; // Do not show when in quick menu
   // Check if it's time to Show Info display 
-  if ( (minute()%10)%infoFreq == 0 && ( second()==5) )  { // Show date and temp every XX minutes and 5 seconds
+  if ( (minute()%10)%Settings.infoFreq == 0 && ( second()==5) )  { // Show date and temp every XX minutes and 5 seconds
     char myString[44];
     //if ( (minute()%10)==0) return; // Prevents showing during 0 digit time
     cls();
-    showSmTime(0,clockColor); // Show Time on top
-    if (infoOptions & 128) // Option Enabled?
-      if (!showDate(clockColor)) return; // Scroll Date. Exit if scroll was interrupted by button press
-    if (infoOptions & 64) // Option Enabled?
-      if (!showTemp(clockColor,false,true)) return; // Scroll Inside Temp. Exit if scroll was interrupted by button press
+    showSmTime(0,Settings.clockColor); // Show Time on top
+    if (Settings.infoOptions & 128) // Option Enabled?
+      if (!showDate(Settings.clockColor)) return; // Scroll Date. Exit if scroll was interrupted by button press
+    if (Settings.infoOptions & 64) // Option Enabled?
+      if (!showTemp(Settings.clockColor,false,true)) return; // Scroll Inside Temp. Exit if scroll was interrupted by button press
     cls(); 
-    if (isRadioPresent) {
-        if (infoOptions & 32) {// Option Enabled?
-          if (!showTemp(clockColor,false,false)) return; // Scroll Outside Temp. Exit if scroll was interrupted by button press
+    if (Settings.RadioEnabled) {
+        if (Settings.infoOptions & 32) {// Option Enabled?
+          if (!showTemp(Settings.clockColor,false,false)) return; // Scroll Outside Temp. Exit if scroll was interrupted by button press
          cls();
         }
-        if (infoOptions & 4) {// Humidity Option Enabled?
-        if (!showHumidity(clockColor,false)) return; //Scroll Outside Humidity. Exit if scroll was interrupted by button press
+        if (Settings.infoOptions & 4) {// Humidity Option Enabled?
+        if (!showHumidity(Settings.clockColor,false)) return; //Scroll Outside Humidity. Exit if scroll was interrupted by button press
         cls ();
         }
     }
-    if (infoOptions & 16) {// Option Enabled?
+    if (Settings.infoOptions & 16) {// Option Enabled?
       if (!alarmInfo(0)) return; //Show info for alarm 1. Exit if scroll was interrupted by button press
       cls ();
       if (!alarmInfo(1)) return; //Show info for alarm 2. Exit if scroll was interrupted by button press
       cls();
     }
-    if (isRadioPresent) 
-      if (infoOptions & 8) {// Option Enabled?
+    if (Settings.RadioEnabled) 
+      if (Settings.infoOptions & 8) {// Option Enabled?
         if ( last_RF > 0 && ( (millis()-last_RF) < 1800000) )  { // Show sensor timestamp
           //Serial.println ("Sensor data receiveed recently");
-          showSmTime(0,clockColor); // Show Time on top
+          showSmTime(0,Settings.clockColor); // Show Time on top
           snprintf(myString,sizeof(myString), "Sensor data received %2d seconds ago",second(last_RF));
-          if (! scrolltextsizexcolor(8,myString,clockColor,5) ) return;
+          if (! scrolltextsizexcolor(8,myString,Settings.clockColor,5) ) return;
           cls ();
         }
         else { // Sensor data hasn't been reiceved in a while
-          showSmTime(0,clockColor); // Show Time on top
+          showSmTime(0,Settings.clockColor); // Show Time on top
           snprintf(myString,sizeof(myString), "Sensor data not received in over 30 minutes (%2d)",second(last_RF));
           Serial.println (last_RF);
           if (! scrolltextsizexcolor(8,myString,RED,5) ) return;
@@ -157,64 +100,64 @@ void infoDisplay() {
 // By: LensDigital
 // ---------------------------------------------------------------------------------------
 boolean alarmInfo(byte alrmNum){
-  if ( ! (alarmon[alrmNum] & 128) ) return true; //  Alarm is off
+  if ( ! (Settings.alarmOn[alrmNum] & 128) ) return true; //  Alarm is off
      char myString[54]; // String to keep Alarm msg
      char wkdays[28]; //Days of week
-     showSmTime(0,clockColor); // Show time on top
+     showSmTime(0,Settings.clockColor); // Show time on top
      if ( snoozeTime[alrmNum]!=10 ) { // Are we snoozing?
        snprintf(myString,sizeof(myString), "Alarm%d on! Snoozing...Z Z z z z z...",alrmNum+1);
        return scrolltextsizexcolor(8,myString,RED,5);
      }
      else { // Alarm is on but not snoozing
-       if (alarmon[alrmNum] == DAILY) {  // Daily Alarm
-         if(time12hr) { // It's 12 hour mode
-           if (hoursMode(alrmHH[alrmNum]) )  // Check if it's AM
-             snprintf(myString,sizeof(myString), "Alarm %d is set Daily at %d:%02d AM",alrmNum+1,myhours,alrmMM[alrmNum]); 
+       if (Settings.alarmOn[alrmNum] == DAILY) {  // Daily Alarm
+         if(Settings.time12hr) { // It's 12 hour mode
+           if (hoursMode(Settings.alarmHH[alrmNum]) )  // Check if it's AM
+             snprintf(myString,sizeof(myString), "Alarm %d is set Daily at %d:%02d AM",alrmNum+1,myhours,Settings.alarmMM[alrmNum]); 
            else // It's PM
-             snprintf(myString,sizeof(myString), "Alarm %d is set Daily at %d:%02d PM",alrmNum+1,myhours,alrmMM[alrmNum]); 
+             snprintf(myString,sizeof(myString), "Alarm %d is set Daily at %d:%02d PM",alrmNum+1,myhours,Settings.alarmMM[alrmNum]); 
          }
          else // It's 24 hour mode
-           snprintf(myString,sizeof(myString), "Alarm %d is set Daily at %02d:%02d",alrmNum+1,alrmHH[alrmNum],alrmMM[alrmNum]); 
+           snprintf(myString,sizeof(myString), "Alarm %d is set Daily at %02d:%02d",alrmNum+1,Settings.alarmHH[alrmNum],Settings.alarmMM[alrmNum]); 
        }
-       else if (alarmon[alrmNum] == WEEKDAY) {  // It's WeekDay alarm
-         if(time12hr) { // It's 12 hour mode
-           myhours = alrmHH[alrmNum];
+       else if (Settings.alarmOn[alrmNum] == WEEKDAY) {  // It's WeekDay alarm
+         if(Settings.time12hr) { // It's 12 hour mode
+           myhours = Settings.alarmHH[alrmNum];
            if (myhours == 0) 
              myhours=12; // It's Midnight
            else if (myhours >12) myhours=myhours-12;
-           if (alrmHH[alrmNum]<12) // Show AM
-             snprintf(myString,sizeof(myString), "Alarm %d is set M-F at %d:%02d AM",alrmNum+1,myhours,alrmMM[alrmNum]); 
+           if (Settings.alarmHH[alrmNum]<12) // Show AM
+             snprintf(myString,sizeof(myString), "Alarm %d is set M-F at %d:%02d AM",alrmNum+1,myhours,Settings.alarmMM[alrmNum]); 
            else 
-             snprintf(myString,sizeof(myString), "Alarm %d is set M-F at %d:%02d PM",alrmNum+1,myhours,alrmMM[alrmNum]); 
+             snprintf(myString,sizeof(myString), "Alarm %d is set M-F at %d:%02d PM",alrmNum+1,myhours,Settings.alarmMM[alrmNum]); 
          }
          else // It's 24 hour mode
-         snprintf(myString,sizeof(myString), "Alarm %d is set M-F at %02d:%02d",alrmNum+1,alrmHH[alrmNum],alrmMM[alrmNum]); 
+         snprintf(myString,sizeof(myString), "Alarm %d is set M-F at %02d:%02d",alrmNum+1,Settings.alarmHH[alrmNum],Settings.alarmMM[alrmNum]); 
        }
        else {  // It's Custom alarm
           // Make custom string containing each weekday that alarm is set too
          strcpy (wkdays,"");
-         if (alarmon[alrmNum] & MON)  strcat (wkdays, "Mon ");
-         if (alarmon[alrmNum] & TUE)  strcat (wkdays, "Tue ");
-         if (alarmon[alrmNum] & WED)  strcat (wkdays, "Wed ");
-         if (alarmon[alrmNum] & THU)  strcat (wkdays, "Thu ");
-         if (alarmon[alrmNum] & FRI)  strcat (wkdays, "Fri ");
-         if (alarmon[alrmNum] & SAT)  strcat (wkdays, "Sat ");
-         if (alarmon[alrmNum] & SUN)  strcat (wkdays, "Sun ");
+         if (Settings.alarmOn[alrmNum] & MON)  strcat (wkdays, "Mon ");
+         if (Settings.alarmOn[alrmNum] & TUE)  strcat (wkdays, "Tue ");
+         if (Settings.alarmOn[alrmNum] & WED)  strcat (wkdays, "Wed ");
+         if (Settings.alarmOn[alrmNum] & THU)  strcat (wkdays, "Thu ");
+         if (Settings.alarmOn[alrmNum] & FRI)  strcat (wkdays, "Fri ");
+         if (Settings.alarmOn[alrmNum] & SAT)  strcat (wkdays, "Sat ");
+         if (Settings.alarmOn[alrmNum] & SUN)  strcat (wkdays, "Sun ");
            
-          if(time12hr) { // It's 12 hour mode
-           myhours = alrmHH[alrmNum];
+          if(Settings.time12hr) { // It's 12 hour mode
+           myhours = Settings.alarmHH[alrmNum];
            if (myhours == 0) 
              myhours=12; // It's Midnight
            else if (myhours >12) myhours=myhours-12;
-           if (alrmHH[alrmNum]<12) // Show AM
-             snprintf(myString,sizeof(myString), "Alarm%d is set to %d:%02d AM %s",alrmNum+1,myhours,alrmMM[alrmNum],wkdays); 
+           if (Settings.alarmHH[alrmNum]<12) // Show AM
+             snprintf(myString,sizeof(myString), "Alarm%d is set to %d:%02d AM %s",alrmNum+1,myhours,Settings.alarmMM[alrmNum],wkdays); 
            else 
-             snprintf(myString,sizeof(myString), "Alarm%d is set to %d:%02d PM %s",alrmNum+1,myhours,alrmMM[alrmNum],wkdays); 
+             snprintf(myString,sizeof(myString), "Alarm%d is set to %d:%02d PM %s",alrmNum+1,myhours,Settings.alarmMM[alrmNum],wkdays); 
          }
          else // It's 24 hour mode
-         snprintf(myString,sizeof(myString), "Alarm%d is set to %02d:%02d %s",alrmNum+1,alrmHH[alrmNum],alrmMM[alrmNum],wkdays); 
+         snprintf(myString,sizeof(myString), "Alarm%d is set to %02d:%02d %s",alrmNum+1,Settings.alarmHH[alrmNum],Settings.alarmMM[alrmNum],wkdays); 
        }
-     return scrolltextsizexcolor(8,myString,clockColor,5);
+     return scrolltextsizexcolor(8,myString,Settings.clockColor,5);
      }
      
 }
@@ -229,7 +172,7 @@ void sayTime(){
      playcomplete("TIME_IS.WAV");
      char myString[9];
      myhours = hour(tNow);
-     if(time12hr) { // == 12 Hour Mode ====
+     if(Settings.time12hr) { // == 12 Hour Mode ====
        if (myhours>12)  myhours-=12;
        if (myhours==0)  myhours=12;
        snprintf(myString,sizeof(myString), "%d.WAV",myhours); // Make Hours string
@@ -247,7 +190,7 @@ void sayTime(){
        }
      if (minute(tNow)<20) {
        if (minute(tNow)==0) {
-         if (!time12hr)  // only say "hundred" if in 24 hour mode (wbp)
+         if (!Settings.time12hr)  // only say "hundred" if in 24 hour mode (wbp)
            playcomplete("100.WAV");  // We are at hh:00
        }
        else {
@@ -278,7 +221,7 @@ void sayTime(){
        }
      }
      // If needed say AM or PM
-     if(time12hr) { // == 12 Hour Mode ====
+     if(Settings.time12hr) { // == 12 Hour Mode ====
        if (isAM(tNow) ) playcomplete("AM.WAV");
        else playcomplete("PM.WAV");
      }
@@ -298,8 +241,8 @@ void sayAlarm(byte alrmNum){
   playcomplete("SET.WAV");
   playcomplete("2.WAV");
   
-  if(time12hr) { // It's 12 hour mode
-           myhours = alrmHH[alrmNum];
+  if(Settings.time12hr) { // It's 12 hour mode
+           myhours = Settings.alarmHH[alrmNum];
            if (myhours == 0) 
              myhours=12; // It's Midnight
            else if (myhours >12) myhours=myhours-12;
@@ -307,25 +250,25 @@ void sayAlarm(byte alrmNum){
            playcomplete(myString); // Play Hours
    }
      else // == 24 Hour Mode ====
-       if (alrmHH[alrmNum] > 20) { // Make complex 2 digit sound
+       if (Settings.alarmHH[alrmNum] > 20) { // Make complex 2 digit sound
          playcomplete("20.WAV"); // Play Hours 1st digit
-         snprintf(myString,sizeof(myString), "%d.WAV",alrmHH[alrmNum]%10); // Make Hours 2nd digit string
+         snprintf(myString,sizeof(myString), "%d.WAV",Settings.alarmHH[alrmNum]%10); // Make Hours 2nd digit string
          playcomplete(myString); // Play Hours 2nd digit
        }
        else { // Simple
-         snprintf(myString,sizeof(myString), "%d.WAV",alrmHH[alrmNum]); // Make Hours string
+         snprintf(myString,sizeof(myString), "%d.WAV",Settings.alarmHH[alrmNum]); // Make Hours string
          playcomplete(myString); // Play Hours
        }
-     if (alrmMM[alrmNum]<20) {
-       if (alrmMM[alrmNum]==0) { playcomplete("100.WAV"); } // We are at hh:00
+     if (Settings.alarmMM[alrmNum]<20) {
+       if (Settings.alarmMM[alrmNum]==0) { playcomplete("100.WAV"); } // We are at hh:00
        else {
-         if (( (alrmMM[alrmNum]/10)%10) == 0) playcomplete ("OH.WAV"); // If first digit of minute is 0, say "oh"
-         snprintf(myString,sizeof(myString), "%d.WAV",alrmMM[alrmNum]); // Make Minutes string
+         if (( (Settings.alarmMM[alrmNum]/10)%10) == 0) playcomplete ("OH.WAV"); // If first digit of minute is 0, say "oh"
+         snprintf(myString,sizeof(myString), "%d.WAV",Settings.alarmMM[alrmNum]); // Make Minutes string
          playcomplete(myString);
          }
        }
      else { // Make complex 2 digit sound
-       minutes=(alrmMM[alrmNum]/10)%10;
+       minutes=(Settings.alarmMM[alrmNum]/10)%10;
        switch (minutes){ // Create 1st digit sound
          case 2:
            playcomplete ("20.WAV");
@@ -340,27 +283,27 @@ void sayAlarm(byte alrmNum){
            playcomplete ("50.WAV");
            break;
        }
-       if ((alrmMM[alrmNum]%10)!=0) { // Don't say if last digit is 0
-         snprintf(myString,sizeof(myString), "%d.WAV",alrmMM[alrmNum]%10); // Make 2nd digit
+       if ((Settings.alarmMM[alrmNum]%10)!=0) { // Don't say if last digit is 0
+         snprintf(myString,sizeof(myString), "%d.WAV",Settings.alarmMM[alrmNum]%10); // Make 2nd digit
          playcomplete(myString); // Play 
        }
      }
      // If needed say AM or PM
-     if(time12hr) { // == 12 Hour Mode ====
-       if (alrmHH[alrmNum]<12)  playcomplete("AM.WAV");
+     if(Settings.time12hr) { // == 12 Hour Mode ====
+       if (Settings.alarmHH[alrmNum]<12)  playcomplete("AM.WAV");
        else playcomplete("PM.WAV");
      }
-     if (alarmon[alrmNum] == DAILY) playcomplete("DAILY.WAV");// Daily Alarm
-     else if (alarmon[alrmNum] == WEEKDAY) playcomplete("wkdays.WAV");// Workday Alarm
+     if (Settings.alarmOn[alrmNum] == DAILY) playcomplete("DAILY.WAV");// Daily Alarm
+     else if (Settings.alarmOn[alrmNum] == WEEKDAY) playcomplete("wkdays.WAV");// Workday Alarm
      else { // Custom ALarm
        playcomplete("EVERY.WAV");
-       if (alarmon[alrmNum] & MON) playcomplete("MON.WAV");
-       if (alarmon[alrmNum] & TUE) playcomplete("TUE.WAV");
-       if (alarmon[alrmNum] & WED) playcomplete("WED.WAV");
-       if (alarmon[alrmNum] & THU) playcomplete("THU.WAV");
-       if (alarmon[alrmNum] & FRI) playcomplete("FRI.WAV");
-       if (alarmon[alrmNum] & SAT) playcomplete("SAT.WAV");
-       if (alarmon[alrmNum] & SUN) playcomplete("SUN.WAV");
+       if (Settings.alarmOn[alrmNum] & MON) playcomplete("MON.WAV");
+       if (Settings.alarmOn[alrmNum] & TUE) playcomplete("TUE.WAV");
+       if (Settings.alarmOn[alrmNum] & WED) playcomplete("WED.WAV");
+       if (Settings.alarmOn[alrmNum] & THU) playcomplete("THU.WAV");
+       if (Settings.alarmOn[alrmNum] & FRI) playcomplete("FRI.WAV");
+       if (Settings.alarmOn[alrmNum] & SAT) playcomplete("SAT.WAV");
+       if (Settings.alarmOn[alrmNum] & SUN) playcomplete("SUN.WAV");
      }
      
 }
@@ -388,7 +331,7 @@ void sayTemp(int temp, boolean location){
     playcomplete(myString);
   }
   playcomplete("DEGREES.WAV");
-  if (tempUnit) playcomplete("fahrenh.WAV");
+  if (Settings.tempUnit) playcomplete("fahrenh.WAV");
   else playcomplete("celcius.WAV");
 }
 
@@ -503,7 +446,7 @@ void showBigTime(byte color){
   unsigned long tNow = now();  // wbp
   myhours = hour(tNow);
   // Check if we are running in 12 Hour Mode:
-  if(time12hr) {
+  if(Settings.time12hr) {
   // == BEGIN 12 Hour Mode ====
 //    x=2; //offset hours by 2 dots
 //    myhours=hourFormat12();
@@ -512,19 +455,19 @@ void showBigTime(byte color){
     else plot (0,1,BLACK); // Hide Dot
     if (myhours>12)  myhours-=12;
     if (myhours==0)  myhours=12;  
-    if ( (myhours/10)%10 == 0 ) showDigit(-1,2,0,5,clockFont,BLACK); // Hide first digit 
-    else showDigit(-1,2,(myhours/10)%10,5,clockFont,hhColor);
+    if ( (myhours/10)%10 == 0 ) showDigit(-1,2,0,5,Settings.clockFont,BLACK); // Hide first digit 
+    else showDigit(-1,2,(myhours/10)%10,5,Settings.clockFont,hhColor);
   }
   // === END 12 Hour Mode ===
   else {
   // 24 Hour Mode
     //plot (0,1,BLACK); // Hide PM Dot (wbp)
-    showDigit(-1,2,(myhours/10)%10,5,clockFont,hhColor); // Show 1st digit of hour
+    showDigit(-1,2,(myhours/10)%10,5,Settings.clockFont,hhColor); // Show 1st digit of hour
   }
-  showDigit(5,2,myhours%10,5,clockFont,hhColor); // Show 2nd digit of hour
+  showDigit(5,2,myhours%10,5,Settings.clockFont,hhColor); // Show 2nd digit of hour
   showDivider (blinkColor);
-  showDigit(16,2,(minute(tNow)/10)%10,5,clockFont,mmColor); // Show 1st digit of minute
-  showDigit(22,2,minute(tNow)%10,5,clockFont,mmColor); // Show 2nd digit of minute
+  showDigit(16,2,(minute(tNow)/10)%10,5,Settings.clockFont,mmColor); // Show 1st digit of minute
+  showDigit(22,2,minute(tNow)%10,5,Settings.clockFont,mmColor); // Show 2nd digit of minute
   
 }
 
@@ -540,7 +483,7 @@ void showSmTime (byte location,byte color){
   location=location*8; // Shift to bottom row if 1
   // Check if we are running in 12 Hour Mode:
   myhours = hour(tNow);
-  if(time12hr) {
+  if (Settings.time12hr) {
   // == BEGIN 12 Hour Mode ====
 //    myhours=hourFormat12();
     if (myhours>12)  myhours-=12;  // 12 hour time
@@ -628,7 +571,7 @@ boolean showTemp(byte color,boolean speak, boolean location){
   char myString[32];
   char tempInOut[7];
   byte tmpOffset2=0; // will differ if getting temp from outside
-  if (location)  tmpOffset2=tmpOffset; //Only for Inside temp Actual offset is used
+  if (location)  tmpOffset2=Settings.tempOffset; //Only for Inside temp Actual offset is used
   boolean returnVal=true;// Return value
   float tempC;
   if (location) { // Get temperature from attached sensor
@@ -637,12 +580,12 @@ boolean showTemp(byte color,boolean speak, boolean location){
     snprintf(tempInOut,sizeof(tempInOut), "In");
   }
   else { // Get Temperature from external sensor
-    if (!isRadioPresent) return true;
+    if (!Settings.RadioEnabled) return true;
     tempC=extTemp; // External Temperature was requested
     snprintf(tempInOut,sizeof(tempInOut), "Out");
   }
   if (tempC > 100 || tempC < -50) { // Temperature sensor is not working
-    //playSFX(4);
+    //playSFX(5);
     snprintf(myString,sizeof(myString), "Temp %s Sensor ERROR",tempInOut); // Show Error and exit (wbp)
     showSmTime(0,color); // Show small digit time on top
     return scrolltextsizexcolor(8,myString,RED,10);
@@ -652,21 +595,21 @@ boolean showTemp(byte color,boolean speak, boolean location){
   int tempFint = int(tempF +0.5) - tmpOffset2; // Convert round off decimal to whole number.
   showSmTime(0,color); // Show small digit time on top
   if(!speak) { //Scroll Temp
-    if (isRadioPresent) {
-      if (tempUnit) snprintf(myString,sizeof(myString), "Temp %s:%dF ",tempInOut,tempFint); // Format String for Farenheight (wbp)
+    if (Settings.RadioEnabled) {
+      if (Settings.tempUnit) snprintf(myString,sizeof(myString), "Temp %s:%dF ",tempInOut,tempFint); // Format String for Farenheight (wbp)
       else snprintf(myString,sizeof(myString), "Temp %s:%dC ",tempInOut,tempCint); // Format String for Celcius (wbp)
     }
     else {
-      if (tempUnit) snprintf(myString,sizeof(myString), "Temp:%dF ",tempFint); // Format String for Farenheight (wbp)
+      if (Settings.tempUnit) snprintf(myString,sizeof(myString), "Temp:%dF ",tempFint); // Format String for Farenheight (wbp)
       else snprintf(myString,sizeof(myString), "Temp:%dC ",tempCint); // Format String for Celcius (wbp)
     }
     returnVal=scrolltextsizexcolor(8,myString,color,20); 
   }
   if (speak) {
-    if (tempUnit) snprintf(myString,sizeof(myString), "%dF ",tempFint); // Short Format String for Farenheight
+    if (Settings.tempUnit) snprintf(myString,sizeof(myString), "%dF ",tempFint); // Short Format String for Farenheight
     else  snprintf(myString,sizeof(myString), "%dC ",tempCint); // Short Format String for Farenheight
     showText(5,8,myString,1,color); // Show Static Temp string
-    if (tempUnit) sayTemp(tempFint,location);
+    if (Settings.tempUnit) sayTemp(tempFint,location);
     else sayTemp(tempCint,location);
   }
   return returnVal;
@@ -777,14 +720,14 @@ void sayItem () {
       cls();
       okClock=true; 
       isSettingDate=false;
-      showBigTime(clockColor);
+      showBigTime(Settings.clockColor);
       sayTime();
       break; 
   case 2: // Show/Say Date
       isSettingDate = true;
       okClock=false;
       cls();
-      mainDate(clockColor); // Show full screen date
+      mainDate(Settings.clockColor); // Show full screen date
       sayDate();
   break; 
   case 3: // Say and show INdoor temperature
@@ -807,22 +750,22 @@ void sayItem () {
       showHumidity(ORANGE,true);
   break;
   case 6: // Say Alarm
-      if (! (alarmon[0] & 128) && ! (alarmon[1] & 128) ) { lastButtonTime = 0; break; }//Both Alarms are off
-      if ( alarmon[0] & 128) { // Alarm 1 is On
+      if (! (Settings.alarmOn[0] & 128) && ! (Settings.alarmOn[1] & 128) ) { lastButtonTime = 0; break; }//Both Alarms are off
+      if ( Settings.alarmOn[0] & 128) { // Alarm 1 is On
         isSettingDate = false;
         okClock=false;
         isSettingAlarm=true;
         cls();
         menuItem=1;
         subMenu[0]=4; // Enable display of Alarm 1
-        showAlarm(clockColor);
+        showAlarm(Settings.clockColor);
         sayAlarm(0);
         
       }
-      if ( alarmon[1] & 128) { // Alarm 2 is on
+      if ( Settings.alarmOn[1] & 128) { // Alarm 2 is on
         menuItem=2;
         subMenu[1]=4; // Enable display of Alarm 2
-        showAlarm(clockColor);
+        showAlarm(Settings.clockColor);
         sayAlarm(1);
      
       }
@@ -840,17 +783,17 @@ void talkingLogic () {
   
     switch (mbutState){ // Skip item if it's disabled in EEProm
      case 1: 
-     if (!(sayOptions & 64)) {
+     if (!(Settings.sayOptions & 64)) {
        mbutState++;
-       if (!(sayOptions & 32)) {
+       if (!(Settings.sayOptions & 32)) {
          mbutState++; 
-         if (!(sayOptions & 16)) { 
+         if (!(Settings.sayOptions & 16)) { 
            mbutState++;
-           if (!(sayOptions & 4)) {
+           if (!(Settings.sayOptions & 4)) {
              mbutState++;
-             if (!(sayOptions & 2)) {
+             if (!(Settings.sayOptions & 2)) {
                mbutState++;
-               if (!(sayOptions & 8)) {
+               if (!(Settings.sayOptions & 8)) {
                  mbutState++;
                  return;
                }
@@ -862,15 +805,15 @@ void talkingLogic () {
          
      break;
      case 2:
-     if (!(sayOptions & 32)) {
+     if (!(Settings.sayOptions & 32)) {
        mbutState++; 
-       if (!(sayOptions & 16)) { 
+       if (!(Settings.sayOptions & 16)) { 
            mbutState++;
-           if (!(sayOptions & 4)) {
+           if (!(Settings.sayOptions & 4)) {
              mbutState++;
-             if (!(sayOptions & 2)) {
+             if (!(Settings.sayOptions & 2)) {
                mbutState++;
-               if (!(sayOptions & 8)) {
+               if (!(Settings.sayOptions & 8)) {
                  mbutState++;
                }
              }
@@ -879,13 +822,13 @@ void talkingLogic () {
      }
      break;
      case 3:
-     if (!(sayOptions & 16)) {
+     if (!(Settings.sayOptions & 16)) {
        mbutState++; 
-       if (!(sayOptions & 4)) {
+       if (!(Settings.sayOptions & 4)) {
              mbutState++;
-             if (!(sayOptions & 2)) {
+             if (!(Settings.sayOptions & 2)) {
                mbutState++;
-               if (!(sayOptions & 8)) {
+               if (!(Settings.sayOptions & 8)) {
                  mbutState++;
                }
              }
@@ -893,26 +836,26 @@ void talkingLogic () {
      }
      break;
      case 4:
-     if (!(sayOptions & 4)) {
+     if (!(Settings.sayOptions & 4)) {
        mbutState++;
-       if (!(sayOptions & 2)) {
+       if (!(Settings.sayOptions & 2)) {
                mbutState++;
-         if (!(sayOptions & 8)) {
+         if (!(Settings.sayOptions & 8)) {
                mbutState++;
          }
        }
      }
      break;
      case 5:
-       if (!(sayOptions & 2)) {
+       if (!(Settings.sayOptions & 2)) {
                mbutState++;
-         if (!(sayOptions & 8)) {
+         if (!(Settings.sayOptions & 8)) {
                mbutState++;
          }
        }
      break;
      case 6:
-     if (!(sayOptions & 8)) mbutState++;
+     if (!(Settings.sayOptions & 8)) mbutState++;
      break;
     }
     
@@ -963,17 +906,17 @@ byte runningAverage(int r)
 // ---- by LensDigital & William Phelps
 // =======================================================================================
 static unsigned long lastRun = 0;
-extern byte autoColor;  // wbp
+//extern byte autoColor;  // wbp
 void autoBrightness () {
 //  if (isInMenu) return;
-  if (brightness) return; // Brightness is not set to 0 (auto)
+  if (Settings.brightness) return; // Brightness is not set to 0 (auto)
 //  if (second()%10) return; // Take readings every 10th second only
   if ((millis()-lastRun) < 1000) return; // take one reading per second
   lastRun = millis();
   //Serial.println ("Changing Brightness");
   photoCell = analogRead(photoCellPin);
   Serial.print("pCell:"); Serial.println(photoCell);
-  lightLevel = map( constrain (photoCell, Photocell_Min, Photocell_Max), Photocell_Min, Photocell_Max, 1, 5); // Get Ambient Light Reading
+  lightLevel = map( constrain (photoCell, Settings.photoCellMin, Settings.photoCellMax), Settings.photoCellMin, Settings.photoCellMax, 1, 5); // Get Ambient Light Reading
   lightLevel = runningAverage(lightLevel); // calc running average 
 //  if (prevBrightness==0) {  // Initialized previous Brightness setting only if Brightness was reset
 //    prevBrightness=lightLevel;
@@ -983,13 +926,13 @@ void autoBrightness () {
     prevBrightness=lightLevel;
     //Serial.println (lightLevel);
     //Serial.println (FreeRam());
-    if (autoColor) {
+    if (Settings.autoColor) {
       if (lightLevel < 3)
-        clockColor = RED;
+        Settings.clockColor = RED;
       else if (lightLevel < 4)
-        clockColor = ORANGE;
+        Settings.clockColor = ORANGE;
       else
-        clockColor = GREEN;
+        Settings.clockColor = GREEN;
     }
   }
 }
@@ -1000,19 +943,19 @@ void autoBrightness () {
 // By: LensDigital
 // =======================================================================================
 boolean showHumidity(byte color, boolean speak) {
-  if (!isRadioPresent) return false;
+  if (!Settings.RadioEnabled) return false;
   //if (extHum==300) return false; // Humidity did not update
   char myString[25];
   showSmTime(0,color); // Show small digit time on top
   if (extHum > 100 || extHum < 1) { // Humidity sensor is not working
     //showSmTime(0,color); // Show small digit time on top
-    //playSFX(4);
+    //playSFX(5);
     return scrolltextsizexcolor(8,"Humidity Sensor ERROR",RED,10);
   }
   
   if(!speak) { //Scroll
     snprintf(myString,sizeof(myString), "Humidity %2d%%",extHum); // Scroll Outside Humidity
-    return scrolltextsizexcolor(8,myString,clockColor,20);
+    return scrolltextsizexcolor(8,myString,Settings.clockColor,20);
   }
   else {
     snprintf(myString,sizeof(myString), "%d%%",extHum); // Make string for Outside Humidity  
