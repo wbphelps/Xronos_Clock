@@ -122,12 +122,14 @@ void setAlarm(byte alrmNum) {
       cls();
       break;
     case 4: // Set Alarm hours
+      playSFX(1);
       if (decrement) Settings.alarmHH[alrmNum]--; 
       else Settings.alarmHH[alrmNum]++;
       if (Settings.alarmHH[alrmNum]==255) Settings.alarmHH[alrmNum] = 23; // Negative number (byte) will be 255
       else if (Settings.alarmHH[alrmNum] > 23) Settings.alarmHH[alrmNum] = 0;      
       break;
     case 5: // Set Alarm minutes  
+      playSFX(1);
       if (decrement) Settings.alarmMM[alrmNum]--; 
       else Settings.alarmMM[alrmNum]++;
       if (Settings.alarmMM[alrmNum] ==255) Settings.alarmMM[alrmNum] = 59; // Negative number (byte) will be 255
@@ -619,13 +621,13 @@ void showSys(){
       if (Settings.autoColor)
         showText(1,8,"Auto",1,ORANGE);
       else switch ( Settings.clockColor) {
-       case 1:  
+       case RED:  
          showText(8,8,"Red",1,RED);
          break;  
-       case 2:  
+       case GREEN:  
          showText(1,8,"Green",1,GREEN);
          break;
-       case 3:  
+       case ORANGE:  
          showText(1,8,"Yello",1,ORANGE);
          break;
       }

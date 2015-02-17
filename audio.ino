@@ -25,7 +25,7 @@ void sdErrorCheck(void) {
 // 
 void playcomplete(char *name) {
   // call our helper to find and play this name
- turnOffRadio(); // Disable RF12B
+  turnOffRadio(); // Disable RF12B
   playfile(name);
   while (wave.isplaying) {
   // do nothing while its playing
@@ -40,7 +40,7 @@ void playcomplete(char *name) {
 // 
 void playfile(char *name) {
   turnOffRadio(); // Disable RF12B
-  
+
   // see if the wave object is currently doing something
   if (wave.isplaying) {// already playing something, so stop it!
     wave.stop(); // stop it
@@ -71,11 +71,11 @@ void playfile(char *name) {
 void playalarmfile(char *name, byte alrmnum) {
   turnOffRadio(); // Disable RF12B
   // see if the wave object is currently doing something
-  if (wave.isplaying) {// already playing something, so just skip
+  if (wave.isplaying) { // already playing something, so just skip
     return;
   }
   // look in the root directory and open the file
-   if (!f.open(root, name)) {
+  if (!f.open(root, name)) {
     //putstring("Couldn't open file "); 
     delay (20);
     // Retry
@@ -95,7 +95,7 @@ void playalarmfile(char *name, byte alrmnum) {
   }
   else alrmVol[alrmnum]=0;
   wave.volume=alrmVol[alrmnum]; // Set Alarm Volume
-  
+  delay(100); // try to avoid clicks when volume changed ???
   // ok time to play! start playback
   wave.play();
   //radio.Wakeup(); // Disable RF12B

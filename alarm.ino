@@ -8,53 +8,43 @@ void procAlarm(byte alrmnum) {
   int iAlrm, iNow, wd;
   unsigned long tNow = now();
   if (isInMenu) return; // Do not sound alarm if changing settings
-  if (digitalRead(SET_BUTTON_PIN) == HIGH) processSetButton(); // Poll Set Button, that will reArm (cancel for today) alarm  ???
-
-  if (millis()-alarmBlinkTime < blinkDuration)  return; // run this part once per second
-  alarmBlinkTime = millis(); // reset offset to current time
-  
+///  if (digitalRead(SET_BUTTON_PIN) == HIGH) processSetButton(); // Poll Set Button, that will reArm (cancel for today) alarm  ???
   if (Settings.alarmOn[alrmnum] & 128) { // Is global alarm switch on? (1st bit is set)
-//    Serial.print("alarm LED "); Serial.print(alrmnum,HEX);
-//    Serial.print(", alarmOn: ");  Serial.print(Settings.alarmOn[alrmnum]);
-//    Serial.print(", soundAlarm: ");  Serial.print(soundAlarm[alrmnum]);
-//    Serial.print(", snoozeTime: ");  Serial.print(snoozeTime[alrmnum]);
-//    Serial.println(" ");
 
 // ==== Begin alarm LED indicator ====
-    if (soundAlarm[alrmnum]) { // Alarm currently sounding?
-      if ( alarmColor == BLACK )  alarmColor=RED; // Invert color of indicator
-      else alarmColor = BLACK;
-      plot (31*alrmnum,14,alarmColor); // Show blinking dot in Orange if snoozing  (wbp)
-//      Serial.print("plot1 "); Serial.println(alarmColor);
-    }
-    else if ( snoozeTime[alrmnum]==10 ) { // not snoozing?
+    if (millis()-alarmBlinkTime >= blinkDuration) { // run this part once per second
+      alarmBlinkTime = millis(); // reset offset to current time
 
-      // check to see if alarm will sound again within 24 hours
-      alarmColor=RED;  // assume it won't
-      wd = weekday(tNow);  // today's weekday number
-      iAlrm = Settings.alarmHH[alrmnum]*60 + Settings.alarmMM[alrmnum];  // time of alarm in minutes
-      iNow = hour(tNow)*60 + minute(tNow);  // time now in minutes
-      if (iNow>iAlrm) { // is tAlrm in the past?
-        iAlrm+=1440;  // set tAlrm ahead by one day
-        wd+=1;  // let's look at tomorrow
-        if (wd>7)  wd=1;  // wrap if necessary
+      if (soundAlarm[alrmnum]) { // Alarm currently sounding?
+        if ( alarmColor == BLACK )  alarmColor=RED; // Invert color of indicator
+        else alarmColor = BLACK;
+        plot (31*alrmnum,14,alarmColor); // Show blinking dot in Orange if snoozing  (wbp)
       }
-      if (Settings.alarmOn[alrmnum] & weekdays[wd]) {  // is alarm on and set for the day in question?
-        if ((iAlrm-iNow)<=1440)  // is alarm set to go off in next 24 hours?
-          alarmColor=GREEN;  // change LED to red
-      }
-//      Serial.print("plot2 "); Serial.println(alarmColor);
-      plot (alrmnum*31,14,BLACK); // force color change
-      plot (alrmnum*31,14,alarmColor); // show alarm status
-      
-    } 
 
-    else  { // snoozing
-      if ( alarmColor == BLACK )  alarmColor=ORANGE; // Invert color of indicator
-      else alarmColor = BLACK;
-      plot (31*alrmnum,14,alarmColor); // Show blinking dot in Orange if snoozing  (wbp)
-//      Serial.print("plot3 "); Serial.println(alarmColor);
-    }
+      else if ( snoozeTime[alrmnum]==10 ) { // not snoozing?
+        // check to see if alarm will sound again within 24 hours
+        alarmColor=RED;  // assume it won't
+        wd = weekday(tNow);  // today's weekday number
+        iAlrm = Settings.alarmHH[alrmnum]*60 + Settings.alarmMM[alrmnum];  // time of alarm in minutes
+        iNow = hour(tNow)*60 + minute(tNow);  // time now in minutes
+        if (iNow>iAlrm) { // is tAlrm in the past?
+          iAlrm+=1440;  // set tAlrm ahead by one day
+          wd+=1;  // let's look at tomorrow
+          if (wd>7)  wd=1;  // wrap if necessary
+        }
+        if (Settings.alarmOn[alrmnum] & weekdays[wd]) {  // is alarm on and set for the day in question?
+          if ((iAlrm-iNow)<=1440)  // is alarm set to go off in next 24 hours?
+            alarmColor=GREEN;  // change LED to red
+        }
+        plot (alrmnum*31,14,alarmColor); // show alarm status
+      } 
+
+      else  { // snoozing
+        if ( alarmColor == BLACK )  alarmColor=ORANGE; // Invert color of indicator
+        else alarmColor = BLACK;
+        plot (31*alrmnum,14,alarmColor); // Show blinking dot in Orange if snoozing  (wbp)
+      }
+  }
 // ==== END alarm LED indicator ====
       
     if (soundAlarm[alrmnum]) {  // already sounding alarm?
@@ -154,7 +144,7 @@ boolean resetAlrm(byte alrmnum){
     else alrmVol[alrmnum]=0; // Set High volume for non-escalating alarms
     return true;
     }
-    return false;
+  return false;
 }
 
 // ============================================================================================================================
@@ -173,7 +163,12 @@ void snoozeProc(byte alrmnum){
   wave.stop();
   interruptAlrm[alrmnum]=false;
   isInQMenu=false;
-  delay(1000);
+  delay(500);
+//  cls();
+  char myString[30];
+  snprintf(myString,sizeof(myString), "Snoozing...");
+  scrolltextsizexcolor(4,myString,RED,10);
+  delay(500);
 }
 
 

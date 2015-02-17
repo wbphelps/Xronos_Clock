@@ -1,6 +1,6 @@
 /***********************************************************************
 * December 2014 - February 2015 - mods by WBPHELPS
-* Ver 2.21 (02/16/2015)
+* Ver 2.23 (02/16/2015)
 * logarithmic brightness levels
 * bugfix: brightness set to auto by error
 * auto bright - adjust at 1 second intervals (was 10)
@@ -31,7 +31,9 @@
 *  BrtLo (0 to 100 by 10) and BrtHi (200 to 750 by 50)
 * use structure for settings saved in EE
 * fix temp<20 bug in sayTemp(); (from Len)
-* force color change for alarm LED (bug?)
+* fix green/red color bug
+* fix debounce timer, hold button to reset alarm
+* add button debounce/hold/repeat 
 *
 * Add TZ Hr & TZ Mn to settings?
 * more compact text scrolling
@@ -60,7 +62,7 @@
 #include <Time.h>  
 #include <DS1307RTC.h>  // a basic DS1307 library that returns time as a time_t
 #include <stdlib.h> // Used for string manipulations and string to int conversions
-#include "settings.h"
+#include "settings.h" // settings & options stored in EE memory
 #include "gps.h"  // wbp
 #include "WaveUtil.h" // Used by wave shield
 #include "WaveHC.h" // Used by wave shield (library modified by LensDigital to accomodate ATMega644p/ATMega1284p)
@@ -72,7 +74,7 @@
 #include "myIR_Remote.h" // IR Codes defintion file (comment out if IR receiver not present)
 
 //#define firmware_ver 209 // Current Firmware version
-#define FIRMWARE_VER 221 // Current Firmware version (wbp)
+#define FIRMWARE_VER 222 // Current Firmware version (wbp)
 // EE version - change this to force reset of EE memory
 #define EE_VERSION 13
 
@@ -80,15 +82,18 @@
 // Importante User Hardware config settings, modify as needed
 // ============================================================================================
 const byte RFM12B_PRESENT=false; // Defines if RFM12B Chip present.  Set to true to enable. Must also have ATMega1284p! Will not work with ATMega644p chip
-const byte IR_PRESENT=false; // Set to True if IR receiver is present. Must also have ATMega1284p! Will not work with ATMega644p chip
+const byte IR_PRESENT=true; // Set to True if IR receiver is present. Must also have ATMega1284p! Will not work with ATMega644p chip
 const byte GPS_PRESENT=true; // Set to True if GPS receiver is present
 #define AUTO_BRIGHTNESS_ON 0  //Set to 1 to disable autobrightness menu feature, 0 to enable if photocell is present.
 // ============================End of User Hardware Settings ==================================
 
 // Pins Declarations
 // ===================================================================================
-#define BOUNCE_TIME_BUTTON  200   // bounce time in ms for the menu button
+#define BUTTON_DEBOUNCE_TIME  100   // debounce time in ms for the buttons
+#define BUTTON_HOLD_TIME 1000  // button hold time before repeating
+#define BUTTON_REPEAT_TIME 50  // button repeat interval
 #define BOUNCE_TIME_QUICK   50  // bounce time in ms for quickMenu
+#define RESET_BUTTON_TIME 500  // hold time for alarm reset
 #define tempPin A0 //Pin for temperature sensor DS18B20
 #define photoCellPin A1 // Pin for Photo Resistor
 #define SS_SD 4 // Pin for SS on SD Card
@@ -316,36 +321,36 @@ void IR_process () {
     plot(31,2,BLACK); // clear IR signal indicator
   }
   if (irrecv.decode(&results)) {
-//    Serial.println(results.value, HEX);
+//    Serial.print("IR "); Serial.println(results.value, HEX);
     plot(31,2,GREEN); //Plot Indicator dot (IR signal was received)
     g_IR_receive = 1;  // IR signal received
     g_IR_timer = millis();  // reset timer
     switch (results.value) {
       case IR_ON:
         //Serial.println ("Received ON/OFF");
-        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
+//        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
         processMenuButton();
         break;
       case IR_PLUS:
         //Serial.println ("Received PLUS");
         decrement=false;
-        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
+//        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
         processIncButton();
         break;
       case IR_MINUS:
         //Serial.println ("Received MINUS");
         decrement=true;
-        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
+//        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
         processIncButton();
         break;
       case IR_UP:
         //Serial.println ("Received UP");
-        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
+//        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
         processSetButton();
         break;
       case IR_DOWN:
         //Serial.println ("Received DOWN");
-        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
+//        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
         processSetButton();
         break;
       case IR_ENTER: // Talk All Items

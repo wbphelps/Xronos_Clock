@@ -2,6 +2,10 @@
 // ---- Check button input and act upon it ----
 // Adopted from Florinc by Bratan
 // =======================================================================================
+static byte button1State = 0;
+static byte button2State = 0;
+static byte button3State = 0;
+static unsigned int buttonHoldTime = 100;  // how long button must be held
 void buttonProc(){
   // check MENU button;
   showAlarm(clockColor); // Display Alarm setting screen
@@ -9,27 +13,71 @@ void buttonProc(){
   showSys();
   showOpt();
   showDST(clockColor);
-  if (digitalRead(MENU_BUTTON_PIN) == HIGH)
-  {
-    timeSettings();  // reset Settings timer
+  if (digitalRead(MENU_BUTTON_PIN) == HIGH) {
+    if (button1State == 0) {  // was the button just pressed?
+      lastButtonTime = millis();  // start button debounce timer (wbp)
+      buttonHoldTime = BUTTON_DEBOUNCE_TIME;  // first hold is just debounce
+      button1State = 1;  // button pressed
+    }
+    if ((millis() - lastButtonTime) < buttonHoldTime)  return;  // debounce
     processMenuButton();
+    if (button1State == 1) {  // button just pressed
+      button1State = 2;  // button down but not held
+      buttonHoldTime = BUTTON_HOLD_TIME;  // longer hold before repeat
+    }
+    else if (button1State == 2) { // button held
+      button1State = 3;  // button holding & repeating
+      buttonHoldTime = BUTTON_REPEAT_TIME;  // very short hold now
+    }
   }
+  else   // button not down
+    button1State = 0;  // menu button not pressed
+
    // check SET button;
-  if (isInMenu)
-  {
-    if (digitalRead(SET_BUTTON_PIN) == HIGH)
-    {
-      timeSettings();  // reset Settings timer
+  if (isInMenu) {
+    if (digitalRead(SET_BUTTON_PIN) == HIGH) {
+      if (button2State == 0) {  // was the button just pressed?
+        lastButtonTime = millis();  // start button debounce timer (wbp)
+        buttonHoldTime = BUTTON_DEBOUNCE_TIME;  // first hold is just debounce
+        button2State = 1;  // button pressed
+      }
+      if ((millis() - lastButtonTime) < buttonHoldTime)  return;  // debounce, etc
       //if (soundAlarm) interruptAlrm=true; // Stops Alarm sound
       // "Set" button was pressed. Go into this level of menu and stay until exit form it or timeout
       processSetButton();
-     }
-    if (digitalRead(INC_BUTTON_PIN) == HIGH)
-    {
-      timeSettings();  // reset Settings timer
+      if (button2State == 1) {  // button pressed
+        button2State = 2;  // button down but not held
+        buttonHoldTime = BUTTON_HOLD_TIME;  // longer hold before repeat
+      }
+      else if (button2State == 2) {  // button held
+        button2State = 3;  // button holding & repeating
+        buttonHoldTime = BUTTON_REPEAT_TIME;  // very short hold now
+      }
+    }
+    else
+      button2State = 0;  // button not pressed
+    if (digitalRead(INC_BUTTON_PIN) == HIGH) {
+      if (button3State == 0) {  // was the button just pressed?
+        lastButtonTime = millis();  // start button debounce timer (wbp)
+        buttonHoldTime = BUTTON_DEBOUNCE_TIME;  // first hold is just debounce
+        button3State = 1;  // button pressed
+      }
+      if ((millis() - lastButtonTime) < buttonHoldTime)  return;  // debounce, etc
       // "INC" button was pressed. Start changing according values
       processIncButton();
-     }
+      switch (button3State) {
+        case 1:  // button pressed
+          button3State = 2;  // button down but not held
+          buttonHoldTime = BUTTON_HOLD_TIME;  // longer hold before repeat
+          break;
+        case 2:  // button held
+          button3State = 3;  // button holding & repeating
+          buttonHoldTime = BUTTON_REPEAT_TIME;  // very short hold now
+          break;
+      }
+    }
+    else
+      button3State = 0;  // button not pressed
   }
   // display the menu option for 5 seconds after menu button was pressed;
   if ((lastButtonTime > 0) && (millis() - lastButtonTime < 5000)) {  // wbp
@@ -41,8 +89,7 @@ void buttonProc(){
   }
 
   // return the main mode if no button was pressed for 5 seconds;
-   if (isInMenu)
-  {
+  if (isInMenu) {
     // Exit and reinitialize
     isInMenu = false;
     isSettingTime = false;
@@ -59,9 +106,9 @@ void buttonProc(){
     isSettingYear   = false;
     menuItem=0;
     decrement=false;
-   for (int i=0;i<MAX_SUBMENUS;i++) { // Initialize SubMenus (wbp)
+    for (int i=0;i<MAX_SUBMENUS;i++) { // Initialize SubMenus (wbp)
       subMenu[i]=0;
-   }
+    }
    
     okClock=true; 
     isIncrementing = false; 
@@ -81,15 +128,16 @@ void buttonProc(){
 void processMenuButton()
 {
   if (isInQMenu) return; // We are in quick menu, so don't show settings menu
-  // debouncing;
-  if ((millis() - lastButtonTime) < BOUNCE_TIME_BUTTON)
-    return;
     
  // ====  Alarm control   ====
-  if (resetAlrm(0) || resetAlrm(1) ) return;
+  if ( soundAlarm[0] || soundAlarm[1] || (snoozeTime[0]<10) || (snoozeTime[1]<10) ) {  // sounding alarm or snoozing?
+    if ((millis() - lastButtonTime) < RESET_BUTTON_TIME)  return;  // hold button down to reset alarm
+    if (resetAlrm(0) || resetAlrm(1) ) return;
+  }
  
   //putstring_nl ("Is In Menu Button Proc");
   lastButtonTime = millis();
+  timeSettings();  // reset Settings timer
   last_ms=millis(); // Create Offset for keeping track of seconds
   isInMenu = true;
   startBlinking();
@@ -112,16 +160,13 @@ void processMenuButton()
 void processSetButton()
 {
   
-  // debouncing;
-  if ((millis() - lastButtonTime) < BOUNCE_TIME_BUTTON)
-    return;
- 
   // If Alarms sound it will stop them and snooze
   snoozeProc(0);
   snoozeProc(1);
  
   if (!isInMenu) return; // failsafe
   lastButtonTime = millis();
+  timeSettings();  // reset Settings timer
   //isInMenu    = true;
   playSFX(2);
   switch (menuItem) {
@@ -158,12 +203,10 @@ void processSetButton()
 // =======================================================================================
 void processIncButton()
 {  
-  // debouncing;
-  if ((millis() - lastButtonTime) < BOUNCE_TIME_BUTTON)
-    return;
+  lastButtonTime = millis();
+  timeSettings();  // reset Settings timer
   isIncrementing = true;
   stopBlinking();
-  lastButtonTime = millis();
   switch (menuItem) {
     case 1: // Setting Alarm 1
       setAlarm(0);
