@@ -1,7 +1,8 @@
 # Xronos_Clock
 Custom firmware for the Xronos Clock from LensDigital
 
-Latest update Jan 14, 2015 - William Phelps - wm (at) usa.net 
+Latest update Feb 17, 2015 - William Phelps - wm (at) usa.net 
+* Ver 2.23 (02/17/2015)
  
 ## **Includes the following modifications:** ##
 
@@ -21,4 +22,22 @@ Latest update Jan 14, 2015 - William Phelps - wm (at) usa.net
 * Automatic DST (US rules)
 
 * add GPS On/Off in System settings
-
+* switch IRRemote to use Timer3 interrupt instead of Timer2
+* small changes to fonts 3 & 4
+* set IR & GPS status LED's after clear
+* adjust some menu spacings
+* auto color, depending on light level
+* move alarm indicators to edges
+* change menu timeout to 5 seconds
+* blink alarm indicators if playing or snoozing
+* add progressive alarm volume on/off option for alarm setting
+* set alarm LED color if alarm is due within next 24 hours
+* atomic (single fetch) time/date
+* flip alarm LED colors - green=alarm in next 24 hours, red if not
+* add display & set for photocell levels (min, max)
+*  BrtLo (0 to 100 by 10) and BrtHi (200 to 750 by 50)
+* use structure for settings saved in EE
+* fix temp<20 bug in sayTemp(); (from Len)
+* fix green/red color bug
+* fix debounce timer, hold button to reset alarm
+* add button debounce/hold/repeat 
