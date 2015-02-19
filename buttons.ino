@@ -7,12 +7,14 @@ static byte button2State = 0;
 static byte button3State = 0;
 static unsigned int buttonHoldTime = 100;  // how long button must be held
 void buttonProc(){
-  // check MENU button;
+  // check a few things first
   showAlarm(clockColor); // Display Alarm setting screen
   if (!isInQMenu) mainDate(clockColor); // Show date setting screen, but only if we are not in QMenu
   showSys();
   showOpt();
   showDST(clockColor);
+
+  // check MENU button;
   if (digitalRead(MENU_BUTTON_PIN) == HIGH) {
     if (button1State == 0) {  // was the button just pressed?
       lastButtonTime = millis();  // start button debounce timer (wbp)
@@ -33,7 +35,7 @@ void buttonProc(){
   else   // button not down
     button1State = 0;  // menu button not pressed
 
-   // check SET button;
+  // If in Menu, check SET & INCR buttons
   if (isInMenu) {
     if (digitalRead(SET_BUTTON_PIN) == HIGH) {
       if (button2State == 0) {  // was the button just pressed?
@@ -78,18 +80,19 @@ void buttonProc(){
     }
     else
       button3State = 0;  // button not pressed
-  }
-  // display the menu option for 5 seconds after menu button was pressed;
-  if ((lastButtonTime > 0) && (millis() - lastButtonTime < 5000)) {  // wbp
-    if ( millis() - lastButtonTime > 1000 )  { // Start blinking if buttons not touched for a second
-       isIncrementing = false;
-      if (!isInQMenu) startBlinking();
+  
+    // display the menu option for 5 seconds after menu button was pressed;
+    if ((lastButtonTime > 0) && (millis() - lastButtonTime < 5000)) {  // wbp
+//      if ( millis() - lastButtonTime > 1000 )  { // Start blinking if buttons not touched for a second
+//        isIncrementing = false;
+//        if (!isInQMenu) 
+//          startBlinking();
+//      }
+      return;
     }
-    return;
-  }
 
   // return the main mode if no button was pressed for 5 seconds;
-  if (isInMenu) {
+//  if (isInMenu) {
     // Exit and reinitialize
     isInMenu = false;
     isSettingTime = false;
@@ -117,7 +120,9 @@ void buttonProc(){
     wave.stop(); // Any sounds (in case Alarm Tone is playing and sFX are disabled)
     playSFX(3);
     cls();
-  }
+//  }
+
+  }  // if (isInMenu)
   
 }
 

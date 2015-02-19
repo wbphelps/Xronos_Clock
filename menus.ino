@@ -1001,7 +1001,7 @@ void showOpt(){
 // ---- Hold button for more than a second to autoamtically go thru all items.
 // ---- by LensDigital
 // =======================================================================================
-void quickMenu(){
+void quickMenu() {
   // check MENU/INCR button;
     currStatusInc=digitalRead(INC_BUTTON_PIN);
     if (currStatusInc!=lastStatusInc) {// Change Occured 
@@ -1115,68 +1115,68 @@ void userMenu () {
 // =======================================================================================
 void butSetClock() {
   cls();
-        startBlinking();
-        isSettingAlarm = false;
-        isSettingTime   = true;
-        isSettingSys=false;
-        subMenu[2]++; // Increment button press count
-//        if (subMenu[2] > 7) subMenu[2]=1; // Goes back to first menu item
-        if (subMenu[2] > MAX_SETTINGS) subMenu[2]=1; // Goes back to first menu item (wbp)
-      	switch (subMenu[2]) {
-         case 1: // Set hours
-          //putstring_nl ("SET: Hours");
-          cls();
-          okClock=true;
-          isSettingTime   = true;
-          isSettingDate = false;
-          isSettingHours   = true;
-	  isSettingMinutes = false;
-	  isSettingMonth   = false;
-	  isSettingDay   = false;
-	  isSettingYear   = false;
-          isSettingDST = false;
-          break;
-         case 2: // Set Minutes
-          //putstring_nl ("SET: Mins");
-          isSettingHours   = false;
-	  isSettingMinutes = true;
-	  isSettingMonth   = false;
-	  isSettingDay   = false;
-	  isSettingYear   = false;
-          break;
-         case 3: // Set Month  (wbp)
-          isSettingDate = true;
-          okClock=false;
-          cls();
-          //putstring_nl ("SET: Month");
-          isSettingHours   = false;
-      	  isSettingMinutes = false;
-      	  isSettingMonth   = true;
-      	  isSettingDay   = false;
-      	  isSettingYear   = false;
-          break;
-         case 4: // Set Day
-          //putstring_nl ("SET: Day");
-          isSettingHours   = false;
-	  isSettingMinutes = false;
-	  isSettingMonth   = false;
-	  isSettingDay   = true;
-	  isSettingYear   = false;
-          break;
-         case 5: // Set year
-          //putstring_nl ("SET: Year");
-          isSettingHours   = false;
-	  isSettingMinutes = false;
-	  isSettingMonth   = false;
-	  isSettingDay   = false;
-	  isSettingYear   = true;
-          break;
-         case 6: // DST on/off/auto
-          isSettingDST = true;
-          isSettingDate = false;
-          isSettingYear   = false;
-          break;
-        }
+  startBlinking();
+  isSettingAlarm = false;
+  isSettingTime   = true;
+  isSettingSys=false;
+  subMenu[2]++; // Increment button press count
+//  if (subMenu[2] > 7) subMenu[2]=1; // Goes back to first menu item
+  if (subMenu[2] > MAX_SETTINGS) subMenu[2]=1; // Goes back to first menu item (wbp)
+  switch (subMenu[2]) {
+    case 1: // Set hours
+      //putstring_nl ("SET: Hours");
+      cls();
+      okClock=true;
+      isSettingTime   = true;
+      isSettingDate = false;
+      isSettingHours   = true;
+      isSettingMinutes = false;
+      isSettingMonth   = false;
+      isSettingDay   = false;
+      isSettingYear   = false;
+      isSettingDST = false;
+      break;
+    case 2: // Set Minutes
+      //putstring_nl ("SET: Mins");
+      isSettingHours   = false;
+      isSettingMinutes = true;
+      isSettingMonth   = false;
+      isSettingDay   = false;
+      isSettingYear   = false;
+      break;
+    case 3: // Set Month  (wbp)
+      isSettingDate = true;
+      okClock=false;
+      cls();
+      //putstring_nl ("SET: Month");
+      isSettingHours   = false;
+      isSettingMinutes = false;
+      isSettingMonth   = true;
+      isSettingDay   = false;
+      isSettingYear   = false;
+      break;
+    case 4: // Set Day
+      //putstring_nl ("SET: Day");
+      isSettingHours   = false;
+      isSettingMinutes = false;
+      isSettingMonth   = false;
+      isSettingDay   = true;
+      isSettingYear   = false;
+      break;
+    case 5: // Set year
+      //putstring_nl ("SET: Year");
+      isSettingHours   = false;
+      isSettingMinutes = false;
+      isSettingMonth   = false;
+      isSettingDay   = false;
+      isSettingYear   = true;
+      break;
+    case 6: // DST on/off/auto
+      isSettingDST = true;
+      isSettingDate = false;
+      isSettingYear   = false;
+      break;
+    }
 }
 
 // =======================================================================================
@@ -1184,55 +1184,55 @@ void butSetClock() {
 // ---- by Bratan
 // =======================================================================================
 void butSetAlarm (byte alrmNum) {
-     startBlinking();
-     //putstring_nl ("SET: Alarm");
-     cls();
-     isSettingAlarm = true;
-     isSettingSys=false;
-     if (subMenu[alrmNum]==3) ; // Do not increment
-     else subMenu[alrmNum]++; // Increment button press count
-     if (subMenu[alrmNum] > 7) subMenu[alrmNum]=1; // Goes back to first menu item  (wbp)
-     if (!(Settings.alarmOn[alrmNum] & 128) && subMenu[alrmNum]==2)  subMenu[alrmNum]=4; // ALarm is off so we need to skip 4nd menu
-     if (!Settings.alarmCustom[alrmNum] && subMenu[alrmNum]==3) subMenu[alrmNum]=4; // Custom Alarm is not set so skip to 4th menu
-       switch (subMenu[alrmNum]) {
-         case 1: // Set Alarm on Off
-           cls();
-           isSettingDate = false;
-           isSettingAlarm = true;
-           isSettingAlrmHH = true;
-           break;
-         case 2: // SET: Alarm Dalily/Weekday/Custom
-           //putstring_nl ("SET: Alarm OFF/Dalily/Weekday/Custom");
-           cls();
-           isSettingDate = false;
-           isSettingAlarm = true;
-           isSettingAlrmHH = true;
-           break;
-         case 3: // Set Alarm Custom schedule
-           if (Settings.alarmCustom[alrmNum]) {
-            //putstring_nl ("SET: Alarm1. Custom Schedule");
-            subMenu[4+alrmNum]++;
-            if (subMenu[4+alrmNum] > 8) subMenu[4+alrmNum]=1; // Goes back to first menu item (Monday)
-            }
-            isSettingAlrmHH = true;
-            isSettingAlrmMM = false;
-            break;
-          case 4: // Set Alarm Hrs
-            //putstring_nl ("SET: Alarm HRS");
-            cls();
-            isSettingAlrmHH = true;
-            isSettingAlrmMM = false;
-            break;
-          case 5: // Set Alarm min
-            //putstring_nl ("SET: Alarm MIN");
-            isSettingAlrmHH = false;
-            isSettingAlrmMM = true;
-            break; 
-         case 6: // Set Alarm Tone
-           //putstring_nl ("SET: Alarm Tone");
-           isSettingAlrmHH = true; 
-           isSettingAlrmMM = false; 
-           break;
-        }
+  startBlinking();
+  //putstring_nl ("SET: Alarm");
+  cls();
+  isSettingAlarm = true;
+  isSettingSys=false;
+  if (subMenu[alrmNum]==3) ; // Do not increment
+  else subMenu[alrmNum]++; // Increment button press count
+  if (subMenu[alrmNum] > 7) subMenu[alrmNum]=1; // Goes back to first menu item  (wbp)
+  if (!(Settings.alarmOn[alrmNum] & 128) && subMenu[alrmNum]==2)  subMenu[alrmNum]=4; // ALarm is off so we need to skip 4nd menu
+  if (!Settings.alarmCustom[alrmNum] && subMenu[alrmNum]==3) subMenu[alrmNum]=4; // Custom Alarm is not set so skip to 4th menu
+  switch (subMenu[alrmNum]) {
+    case 1: // Set Alarm on Off
+      cls();
+      isSettingDate = false;
+      isSettingAlarm = true;
+      isSettingAlrmHH = true;
+      break;
+   case 2: // SET: Alarm Dalily/Weekday/Custom
+      //putstring_nl ("SET: Alarm OFF/Dalily/Weekday/Custom");
+      cls();
+      isSettingDate = false;
+      isSettingAlarm = true;
+      isSettingAlrmHH = true;
+      break;
+    case 3: // Set Alarm Custom schedule
+      if (Settings.alarmCustom[alrmNum]) {
+        //putstring_nl ("SET: Alarm1. Custom Schedule");
+        subMenu[4+alrmNum]++;
+        if (subMenu[4+alrmNum] > 8) subMenu[4+alrmNum]=1; // Goes back to first menu item (Monday)
+      }
+      isSettingAlrmHH = true;
+      isSettingAlrmMM = false;
+      break;
+    case 4: // Set Alarm Hrs
+      //putstring_nl ("SET: Alarm HRS");
+      cls();
+      isSettingAlrmHH = true;
+      isSettingAlrmMM = false;
+      break;
+    case 5: // Set Alarm min
+      //putstring_nl ("SET: Alarm MIN");
+      isSettingAlrmHH = false;
+      isSettingAlrmMM = true;
+      break; 
+    case 6: // Set Alarm Tone
+      //putstring_nl ("SET: Alarm Tone");
+      isSettingAlrmHH = true; 
+      isSettingAlrmMM = false; 
+      break;
+    }
 }
 

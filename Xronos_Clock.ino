@@ -1,5 +1,5 @@
 /***********************************************************************
-* December 2014 - February 2015 - mods by WBPHELPS
+* December 2014 - February 2015 - mods by William Phelps (wm@usa.net)
 * Ver 2.23 (02/16/2015)
 * logarithmic brightness levels
 * bugfix: brightness set to auto by error
@@ -89,7 +89,7 @@ const byte GPS_PRESENT=true; // Set to True if GPS receiver is present
 
 // Pins Declarations
 // ===================================================================================
-#define BUTTON_DEBOUNCE_TIME  100   // debounce time in ms for the buttons
+#define BUTTON_DEBOUNCE_TIME 20  // debounce time in ms for the buttons
 #define BUTTON_HOLD_TIME 1000  // button hold time before repeating
 #define BUTTON_REPEAT_TIME 50  // button repeat interval
 #define BOUNCE_TIME_QUICK   50  // bounce time in ms for quickMenu
