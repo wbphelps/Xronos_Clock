@@ -163,7 +163,17 @@ void showAlarm(byte color){
   if (!isSettingAlarm) return; // Exit if not setting alarm
   byte alrmNum;
   char myString[11];
-  alrmBlink(color);
+//  alrmBlink(color);
+  hhColor=color;  // set both to normal color first
+  mmColor=color;
+  if (blinking) {
+    if (isSettingAlrmHH) {
+      if (blinkDigit)  hhColor = BLACK;  // blink Hours
+    }
+    if (isSettingAlrmMM) {
+      if (blinkDigit)  mmColor = BLACK;  // blink Minutes
+    }
+  }
   if (menuItem==1) alrmNum=0; // Decide which Alarm to show
   else alrmNum=1;
   switch (subMenu[alrmNum]) { 
@@ -287,45 +297,6 @@ void showAlarm(byte color){
   
 }
 
-// =======================================================================================
-// ---- Alarm Setting Blink Function ----
-// ---- by LensDigital
-// =======================================================================================
-void alrmBlink(byte color) {
-  int blinkDigDuration =500;
-     if (blinking) {
-       if ( (millis()-blinkTime > blinkDigDuration)) { // It's been over blinkDuration time
-          blinkTime = millis(); // reset offset to current time
-          if (isSettingAlrmHH) {
-            if (hhColor==BLACK) {
-             hhColor = color; // Inverse color of Hours 
-             }
-           else {
-             hhColor = BLACK;
-            
-           }
-             
-           mmColor = color; // Minutes not blinking
-          }
-          if (isSettingAlrmMM) {
-           if ( mmColor == BLACK ) mmColor = color; // Inverse color of Minutes 
-           else mmColor = BLACK;
-           hhColor = color; // Hours not blinking
-          }
-        } 
-    } 
-    else {  // DO not blink!
-     if (isSettingAlrmHH) {
-       hhColor=color;
-       mmColor=color;
-     }
-     else {
-       hhColor=color; 
-       mmColor=color;
-     }
-    }
-    
-}
 
 // =======================================================================================
 // ---- Show  DST Menu (Daylight Savings Time) ----
@@ -334,15 +305,17 @@ void alrmBlink(byte color) {
 void showDST(byte color) {
   if (!isSettingDST) return; // Exit if not setting DST
   showText(6,0,"DST",1,color);
+  hhColor = color; 
+  if (blinkDigit)  hhColor = BLACK;  // blink setting value
   switch (g_DST_mode) {
     case 0: // DST off
-    showText(6,8,"Off ",1,color);
+    showText(6,8,"Off ",1,hhColor);
     break;
     case 1: // DST on
-    showText(6,8,"On  ",1,color);
+    showText(6,8,"On  ",1,hhColor);
     break;
     case 2: // DST Auto
-    showText(6,8,"Auto",1,color);
+    showText(6,8,"Auto",1,hhColor);
     break;
    }
 }
@@ -474,7 +447,7 @@ void setTimeDate() {
 // =======================================================================================
 void sysSetting(){
  //putstring_nl ("Setting System");
- if (subMenu[3]) playSFX(1); // Don't play sound if not setting anything, i.e. submenu=0
+ if (subMenu[3])  playSFX(1); // Don't play sound if not setting anything, i.e. submenu=0
  switch (subMenu[3]) {
     case 1: // 12/24 Hour Mode
         if (!Settings.time12hr) Settings.time12hr=true; 
@@ -539,13 +512,38 @@ void sysSetting(){
         else if (Settings.soundVol > 8) Settings.soundVol=0;
         //playSFX(1);
         break;
-      case 8: // Startup on/off
+      case 8: // cursor blink
+        cls(); 
+        if (Settings.cursorBlink) Settings.cursorBlink=false; // Turn off blinking cursor
+        else Settings.cursorBlink=true; // Turn on blinking cursor
+        //playSFX(1);
+      break;
+      case 9: // Startup on/off
         cls();
         if (Settings.doStartup) Settings.doStartup=false;
         else Settings.doStartup=true;
         //playSFX(1);
         break;
-      case 9: // RFM
+      case 10: // GPS
+        cls(); 
+        if (GPS_PRESENT) { // If GPS Hardware defined globally
+          if (Settings.GPSenabled) Settings.GPSenabled=false; // Turn off GPS
+          else Settings.GPSenabled=true; // Turn on GPS
+          //playSFX(1);
+        }
+      break;
+      case 11: // IR
+        cls(); 
+        if (IR_PRESENT) { // If IR Hardware defined globally
+          if (Settings.IRenabled) Settings.IRenabled=false; // Turn off IR
+          else {
+            Settings.IRenabled=true; // Turn on IR
+            irrecv.enableIRIn(); // Start the IR receiver. Comment out if IR not present
+          }
+          //playSFX(1);
+        }
+      break;
+      case 12: // RFM
         cls();
         if ( RFM12B_PRESENT ) { // If chip phisically present
           if (Settings.RadioEnabled) Settings.RadioEnabled=false;
@@ -560,22 +558,6 @@ void sysSetting(){
           Settings.RadioEnabled=false;
         }
       break;
-      case 10: // IR
-        cls(); 
-        if (IR_PRESENT) { // If IR Hardware defined globally
-          if (Settings.IRenabled) Settings.IRenabled=false; // Turn off IR
-          else Settings.IRenabled=true; // Turn on IR
-          //playSFX(1);
-        }
-      break;
-      case 11: // GPS
-        cls(); 
-        if (GPS_PRESENT) { // If GPS Hardware defined globally
-          if (Settings.GPSenabled) Settings.GPSenabled=false; // Turn off GPS
-          else Settings.GPSenabled=true; // Turn on GPS
-          //playSFX(1);
-        }
-      break;
   }
 
 }
@@ -587,12 +569,8 @@ void sysSetting(){
 void showSys(){
   if (!isSettingSys) return; // Exit if not setting system
   byte color=clockColor;
-  int blinkDigDuration =500;
-  if ( (millis()-blinkTime > blinkDigDuration)) { // It's been over blinkDuration time
-      blinkTime = millis(); // reset offset to current time
-      if ( hhColor == BLACK ) hhColor = color; // Inverse color  
-      else hhColor = BLACK;
-  } 
+  hhColor = color;
+  if (blinkDigit)  hhColor = BLACK;  // blink setting value
   switch (subMenu[3]){ 
     case 1: // We are setting 12/24 Hour mode
       showText(1,0,"Mode:",1,color);
@@ -625,19 +603,22 @@ void showSys(){
     break;
     case 3: // Set Clock Color
       showText(1,0,"Color",1,color);
-      if (Settings.autoColor)
-        showText(1,8,"Auto",1,ORANGE);
-      else switch ( Settings.clockColor) {
-       case RED:  
-         showText(8,8,"Red",1,RED);
-         break;  
-       case GREEN:  
-         showText(1,8,"Green",1,GREEN);
-         break;
-       case ORANGE:  
-         showText(1,8,"Yello",1,ORANGE);
-         break;
+      if (blinkDigit) {
+        if (Settings.autoColor)
+          showText(1,8,"Auto",1,ORANGE);
+        else switch ( Settings.clockColor) {
+         case RED:  
+           showText(8,8,"Red",1,RED);
+           break;  
+         case GREEN:  
+           showText(1,8,"Green",1,GREEN);
+           break;
+         case ORANGE:  
+           showText(1,8,"Yello",1,ORANGE);
+           break;
+        }
       }
+      else showText(1,8,"     ",1,BLACK);  // blink the setting
     break;
     case 4: // Set Clock Font
       char myString[8];
@@ -665,24 +646,29 @@ void showSys(){
          for (int x=0;x<y-Settings.soundVol;x++)
           plot ( (x+24)+(8-y),(y+8)-1, color); 
       break; 
-    case 8: // Startup on/off
+    case 8: // blink
+      showText(2,0,"Blink",1,color);
+      if (Settings.cursorBlink) showText(10,8,"ON",1,hhColor); 
+      else showText(10,8,"OFF",1,hhColor);
+    break;
+    case 9: // Startup on/off
       showText(2,0,"Startup",3,color);
       if (Settings.doStartup) showText(10,8,"ON",1,hhColor); 
       else showText(10,8,"OFF",1,hhColor); 
     break;
-    case 9: // RF Module
-      showText(2,0,"RFM12",1,color); 
-      if (Settings.RadioEnabled) showText(10,8,"ON",1,hhColor); 
+    case 10: // GPS Receiver
+      showText(2,0,"GPS",1,color); 
+      if (Settings.GPSenabled) showText(10,8,"ON",1,hhColor); 
       else showText(10,8,"OFF",1,hhColor);  
     break;
-    case 10: // IR Receiver
+    case 11: // IR Receiver
       showText(2,0,"IR",1,color); 
       if (Settings.IRenabled) showText(10,8,"ON",1,hhColor); 
       else showText(10,8,"OFF",1,hhColor);  
     break;
-    case 11: // GPS Receiver
-      showText(2,0,"GPS",1,color); 
-      if (Settings.GPSenabled) showText(10,8,"ON",1,hhColor); 
+    case 12: // RF Module
+      showText(2,0,"RFM12",1,color); 
+      if (Settings.RadioEnabled) showText(10,8,"ON",1,hhColor); 
       else showText(10,8,"OFF",1,hhColor);  
     break;
   }
@@ -828,11 +814,8 @@ void showOpt(){
   char myString[2]; 
   int blinkDigDuration =500;
   int pcell;
-  if ( (millis()-blinkTime > blinkDigDuration)) { // It's been over blinkDuration time
-      blinkTime = millis(); // reset offset to current time
-      if ( hhColor == BLACK ) hhColor = color; // Inverse color  
-      else hhColor = BLACK;
-  } 
+  hhColor = color;  // assume normal color
+  if (blinkDigit)  hhColor = BLACK;  // blink setting value
   switch (subMenu[6]){ 
    case 1: // InfoDisplay
       if (subMenu[7]==0) { // Will skip showing this text if we are deeper in submenu
@@ -978,8 +961,8 @@ void showOpt(){
          autoBrightness();  // read photocell & set brightness
        showText(0,0,"Pcell",1,color);
        snprintf(myString,4, "%3d",photoCell); // Make string
-       showText(10,8,myString,1,hhColor);
-       blinkTime = millis();  // don't blink until you see the whites of their eyes
+       showText(10,8,myString,1,color);  // display pcell reading (no blink)
+//       blinkTime = millis();  // don't blink until you see the whites of their eyes
        hhColor = color;
        lastButtonTime = millis()-500;  // don't exit either
       break;

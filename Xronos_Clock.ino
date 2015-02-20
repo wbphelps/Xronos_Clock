@@ -1,6 +1,6 @@
 /***********************************************************************
 * December 2014 - February 2015 - mods by William Phelps (wm@usa.net)
-* Ver 2.24 (02/18/2015)
+* Ver 2.25 (02/18/2015)
 * logarithmic brightness levels
 * bugfix: brightness set to auto by error
 * auto bright - adjust at 1 second intervals (was 10)
@@ -35,7 +35,8 @@
 * fix debounce timer, hold button to reset alarm
 * add button debounce/hold/repeat 
 * add tick sound for setting time
-* option to enable/disable blinking cursor
+* option to enable/disable blinking colon
+* global blink timers, bug fixes
 *
 * Add TZ Hr & TZ Mn to settings?
 * more compact text scrolling
@@ -76,7 +77,7 @@
 #include "myIR_Remote.h" // IR Codes defintion file (comment out if IR receiver not present)
 
 //#define firmware_ver 209 // Current Firmware version
-#define FIRMWARE_VER 224 // Current Firmware version (wbp)
+#define FIRMWARE_VER 225 // Current Firmware version (wbp)
 // EE version - change this to force reset of EE memory
 #define EE_VERSION 13
 
@@ -132,7 +133,7 @@ RFM12B radio;
 #define MAX_MENUS 5 // Maximum number of menus
 #define MAX_SUBMENUS 10 // Maximum number of submenus
 #define MAX_SETTINGS 6 // Maximum number of settings menu items
-#define MAX_SYSSETTINGS 11 // Maximum number of System menu items
+#define MAX_SYSSETTINGS 12 // Maximum number of System menu items
 #define MAX_OPTIONS 4 // Max number of options menu items 
 
 #define ALARM_PROG_STARTVOL 6 // Progressive alarm starting volume
@@ -171,24 +172,15 @@ boolean isSettingYear   = false;
 boolean isSettingDST = false; 
 boolean isSettingAlrmMM   = false;
 boolean isSettingAlrmHH   = false;
-//boolean isSettingAlrmCust[2]; // Use to track custom alarm schedule setting
-//boolean isAlarmModified[2]={false,false}; // If hh:mm of alarm was changed, settings will be written to EEPROM
 boolean isSettingOptions = false;
 boolean okClock = true; // Can we show time? Normally true, unless we showing something else
-//boolean time12hr; // Showing time in 24 or 12 hr format
 boolean interruptAlrm[2] = {false,false};
 boolean soundAlarm[2] = {false,false};
 boolean interruptAlrm2 = false;
 boolean soundAlarm2 = false;
 boolean isIncrementing = false;
 boolean blinking=false;
-//boolean sFX=true; // Menu Effects on/off
 boolean buttonPressedInc=false; // Tracks High state of INC button
-//boolean doStartup; // Startup sequence enable/disable
-//boolean radioOn=true;
-//boolean isRadioPresent; // Defines in RFM12B Chip present. Stored in EEPROM
-//boolean isIRPresent; // Defines if IR receiver is present
-//boolean isGPSPresent; // Defines if GPS receiver is present
 boolean decrement; // Only used with IR remote to decrement digits (--)
 
 //byte alarmon[2]; // Alarm Freq. Controlled by 8 bits. If first bit is 0 alarm is off. Example in in decimal (not counting 1st bit):
@@ -198,7 +190,9 @@ byte alrmVol[2]={7,7}; // Alarm Volume (0-12, smaller = louder)
 const byte weekdays[8]={0,1,64,32,16,8,4,2}; // Lookup table to convert Weekday number to my day code used for Custom Alarm schedule
 
 unsigned long blinkTime=0; // controls blinking of the dots
-//unsigned long alarmBlinkTime=0; // controls blinking of alarm indicators
+unsigned long blinkDigitTime=0; // controls blinking of the digits
+boolean blinkOn=true; // blinking objects on (true) or off (false)?
+boolean blinkDigit=true; // blinking objects on (true) or off (false)?
 unsigned long last_ms=0; // for setting seconds, etc.
 unsigned long last_RF=millis(); // Keeps track since last RF signal received
 volatile unsigned long lastButtonTime = 0;// last time a button was pushed; used for debouncing
@@ -211,7 +205,6 @@ byte mmColor=BLACK; // Set color of the 2 minute digits
 byte monColor=BLACK; // Set color of the month
 byte ddColor=BLACK; // Set color of the day
 byte yyColor=BLACK; // Set color of the year (last 2 digits)
-byte dateColor=BLACK; // Set color of the date
 byte alrmonColor=BLACK; // Set color of the 2 hour digits
 byte alrmhhColor=BLACK; // Set color of the 2 hour digits
 byte alrmmmColor=BLACK; // Set color of the 2 minute digits
@@ -550,6 +543,7 @@ void loop ()
 //  if (time1==0)
 //    time1 = millis();
 
+  setBlinkers();  // set global blink switches
   showBigTime(clockColor);
   procAlarm(0);
   procAlarm(1);

@@ -30,6 +30,7 @@ __Settings Settings = {
   GREEN, // clock color
   true, // auto color
   1, // clock font
+  true, // blinking colon
   true, // SFX
   true, // temperature units
   0, // sound volume

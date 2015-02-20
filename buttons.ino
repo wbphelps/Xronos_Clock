@@ -35,29 +35,31 @@ void buttonProc(){
   else   // button not down
     button1State = 0;  // menu button not pressed
 
-  // If in Menu, check SET & INCR buttons
-  if (isInMenu) {
-    if (digitalRead(SET_BUTTON_PIN) == HIGH) {
-      if (button2State == 0) {  // was the button just pressed?
-        lastButtonTime = millis();  // start button debounce timer (wbp)
-        buttonHoldTime = BUTTON_DEBOUNCE_TIME;  // first hold is just debounce
-        button2State = 1;  // button pressed
-      }
-      if ((millis() - lastButtonTime) < buttonHoldTime)  return;  // debounce, etc
-      //if (soundAlarm) interruptAlrm=true; // Stops Alarm sound
-      // "Set" button was pressed. Go into this level of menu and stay until exit form it or timeout
-      processSetButton();
-      if (button2State == 1) {  // button pressed
-        button2State = 2;  // button down but not held
-        buttonHoldTime = BUTTON_HOLD_TIME;  // longer hold before repeat
-      }
-      else if (button2State == 2) {  // button held
-        button2State = 3;  // button holding & repeating
-        buttonHoldTime = BUTTON_REPEAT_TIME;  // very short hold now
-      }
+  // Check Set button
+  if (digitalRead(SET_BUTTON_PIN) == HIGH) {
+    if (button2State == 0) {  // was the button just pressed?
+      lastButtonTime = millis();  // start button debounce timer (wbp)
+      buttonHoldTime = BUTTON_DEBOUNCE_TIME;  // first hold is just debounce
+      button2State = 1;  // button pressed
     }
-    else
-      button2State = 0;  // button not pressed
+    if ((millis() - lastButtonTime) < buttonHoldTime)  return;  // debounce, etc
+    //if (soundAlarm) interruptAlrm=true; // Stops Alarm sound
+    // "Set" button was pressed
+    processSetButton();
+    if (button2State == 1) {  // button pressed
+      button2State = 2;  // button down but not held
+      buttonHoldTime = BUTTON_HOLD_TIME;  // longer hold before repeat
+    }
+    else if (button2State == 2) {  // button held
+      button2State = 3;  // button holding & repeating
+      buttonHoldTime = BUTTON_REPEAT_TIME;  // very short hold now
+    }
+  }
+  else
+    button2State = 0;  // button not pressed
+
+  // If in Menu, INCR buttons
+  if (isInMenu) {
     if (digitalRead(INC_BUTTON_PIN) == HIGH) {
       if (button3State == 0) {  // was the button just pressed?
         lastButtonTime = millis();  // start button debounce timer (wbp)
@@ -82,12 +84,13 @@ void buttonProc(){
       button3State = 0;  // button not pressed
   
     // display the menu option for 5 seconds after menu button was pressed;
+    // start blinking again if no button pushed for 1 second
     if ((lastButtonTime > 0) && (millis() - lastButtonTime < 5000)) {  // wbp
-//      if ( millis() - lastButtonTime > 1000 )  { // Start blinking if buttons not touched for a second
-//        isIncrementing = false;
-//        if (!isInQMenu) 
-//          startBlinking();
-//      }
+      if ( millis() - lastButtonTime > 1000 )  { // Start blinking if buttons not touched for a second
+        isIncrementing = false;
+        if (!isInQMenu) 
+          startBlinking();
+      }
       return;
     }
 
@@ -211,7 +214,7 @@ void processIncButton()
   lastButtonTime = millis();
   timeSettings();  // reset Settings timer
   isIncrementing = true;
-  stopBlinking();
+  stopBlinking();  
   switch (menuItem) {
     case 1: // Setting Alarm 1
       setAlarm(0);

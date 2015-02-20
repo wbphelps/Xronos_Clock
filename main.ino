@@ -411,46 +411,47 @@ void sayDate(){
 
 
 // =======================================================================================
+// set common blink switches
+// By: wbp
+// ---------------------------------------------------------------------------------------
+#define blinkDotDuration 1000 // How frequently dots should blink (wbp)
+#define blinkDigitDuration 500 // Frequencey of digit blinking during time setting
+void setBlinkers(){
+  // Blinker processor (used to blink divider and/or digits during time setting
+  if ( (millis()-blinkTime > blinkDotDuration)) { // It's been over blinkDuration time
+    blinkTime = millis(); // reset blink timer to current time
+    blinkOn = !blinkOn; // toggle blinkOn
+  }
+  if ( (millis()-blinkDigitTime > blinkDigitDuration)) { // It's been over blinkDuration time
+    blinkDigitTime = millis(); // reset blink timer to current time
+    blinkDigit = !blinkDigit; // toggle blinkOn
+  }
+}
+
+
+// =======================================================================================
 // Display large digit (full screen) time
 // By: LensDigital
+// modified by wbp
 // ---------------------------------------------------------------------------------------
 void showBigTime(byte color){
   //if (menuItem > 3 || !okClock) return; // Date setting is in progress. Do not show clock
   if (!okClock) return; // Date setting is in progress. Do not show clock
-  int blinkDotDuration = 1000; // How frequently dots should blink (wbp)
-  int blinkDigDuration = 500; // Frequencey of digit blinking during time setting
-//  int x=0; //offset
-  if (color==4)color=random(3)+1; // Select random color
+  if (color==4)  color=random(3)+1; // Select random color
   
-  // Blinker processor (used to blink divider and/or digits during time setting
-  if (!isInMenu)  // If we are setting time, don't blick divider
-    if ( (millis()-blinkTime > blinkDotDuration)) { // It's been over blinkDuration time
-      blinkTime = millis(); // reset offset to current time
-      if ( blinkColor == BLACK )  blinkColor=color; // Inverse color of divider
-      else blinkColor = BLACK;
-      //else if (!blinking) blinkColor=BLACK; // If setting time don't blink divider
-    }  
-  
+  // is divider (colon) blinking?
+  if (blinkOn || isInMenu || !Settings.cursorBlink) blinkColor = color;
+  else blinkColor = BLACK;  // blink the divider
+
+  hhColor = color;  mmColor = color;  // assume normal color
   if (blinking) { // Setting time, so blink correct digits
     //Serial.println ("Setting time");
     blinkColor=color; // Show steady divider dots
-    if ( (millis()-blinkTime > blinkDigDuration)) { // It's been over blinkDuration time
-      blinkTime = millis(); // reset offset to current time
-      if (isSettingHours) {
-        //putstring_nl ("Setting hours");
-       if ( hhColor == BLACK ) hhColor = color; // Inverse color of Hours 
-       else hhColor = BLACK;
-       mmColor = color; // Minutes not blinking
+      if (blinkDigit) {  // blink?
+        if (isSettingHours)  hhColor = BLACK;  // blinking Hours
+        if (isSettingMinutes) mmColor = BLACK;  // blinking Minutes
       }
-      if (isSettingMinutes) {
-        //putstring_nl ("Setting minutes");
-       if ( mmColor == BLACK ) mmColor = color; // Inverse color of Minutes 
-       else mmColor = BLACK;
-       hhColor = color; // Hours not blinking
-      }
-    }
   }
-  else { hhColor=color; mmColor=color;} // We are not setting time, so show digits as usual
   // --- END OF BLINK PROCESSOR
     
   unsigned long tNow = now();  // wbp
@@ -525,39 +526,22 @@ void showSmTime (byte location,byte color){
 // ---------------------------------------------------------------------------------------
 void mainDate(byte color){
   if (!isSettingDate) return; // Not setting Date
-  int blinkDigDuration = 500; // Frequencey of digit blinking during time setting
   char dateString[5]; // Var will hold generated string
   if (color==4)color=random(3)+1; // Select random color
-  // Blinker processor (used to blink text, number during date setting
-  if (isSettingTime){
-     if ( (millis()-blinkTime > blinkDigDuration)) { // It's been over blinkDuration time
-      blinkTime = millis(); // reset offset to current time
-      if (blinking){ // Setting date, so blink correct string
-         if ( dateColor == BLACK ) dateColor=color;
-         else  dateColor=BLACK;
-      }
-      else dateColor=color;
-    }  
+  // Blink processor (used to blink text, number during date setting
+  monColor=color;
+  ddColor=color;
+  yyColor=color;
+  if (isSettingTime && blinking && blinkDigit){
     if (isSettingMonth) {
-       monColor=dateColor; 
-       ddColor=color; 
-       yyColor=color;
+       monColor=BLACK; 
      }
      if (isSettingDay) {
-       monColor=color;
-       ddColor=dateColor;
-       yyColor=color;
+       ddColor=BLACK;
      }
      if (isSettingYear) {
-       monColor=color;
-       ddColor=color;
-       yyColor=dateColor;
+       yyColor=BLACK;
      }
-  }
-  else {
-    monColor=color;
-    ddColor=color;
-    yyColor=color;
   }
   // --- END OF BLINK PROCESSOR
    

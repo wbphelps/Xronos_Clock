@@ -2,7 +2,7 @@
 // ---- Process Alarm Function ----
 // By: LensDigital
 // =======================================================================================
-static unsigned long alarmBlinkTime=0; // controls blinking of alarm indicators
+//static unsigned long alarmBlinkTime=0; // controls blinking of alarm indicators
 void procAlarm(byte alrmnum) {
   int blinkDuration = 1000; // How frequently dots should blink (wbp)
   int iAlrm, iNow, wd;
@@ -12,16 +12,26 @@ void procAlarm(byte alrmnum) {
   if (Settings.alarmOn[alrmnum] & 128) { // Is global alarm switch on? (1st bit is set)
 
 // ==== Begin alarm LED indicator ====
-    if (millis()-alarmBlinkTime >= blinkDuration) { // run this part once per second
-      alarmBlinkTime = millis(); // reset offset to current time
+//    if (millis()-alarmBlinkTime >= blinkDuration) { // run this part once per second
+//      alarmBlinkTime = millis(); // reset offset to current time
 
       if (soundAlarm[alrmnum]) { // Alarm currently sounding?
-        if ( alarmColor == BLACK )  alarmColor=RED; // Invert color of indicator
-        else alarmColor = BLACK;
+//        if ( alarmColor == BLACK )  alarmColor=RED; // Invert color of indicator
+//        else alarmColor = BLACK;
+        if (blinkOn)  alarmColor=RED;  // blink alarm indicator
+        else alarmColor=BLACK;
         plot (31*alrmnum,14,alarmColor); // Show blinking dot in Orange if snoozing  (wbp)
       }
 
-      else if ( snoozeTime[alrmnum]==10 ) { // not snoozing?
+      else if ( snoozeTime[alrmnum] < 10)  { // snoozing
+//        if ( alarmColor == BLACK )  alarmColor=ORANGE; // Invert color of indicator
+//        else alarmColor = BLACK;
+        if (blinkOn)  alarmColor=ORANGE;  // use Yellow for snoozing alarm
+        else alarmColor=BLACK;  // and blink it
+        plot (31*alrmnum,14,alarmColor); // Show blinking dot in Orange if snoozing  (wbp)
+      }
+
+      else  { // not sounding and not snoozing...
         // check to see if alarm will sound again within 24 hours
         alarmColor=RED;  // assume it won't
         wd = weekday(tNow);  // today's weekday number
@@ -38,13 +48,7 @@ void procAlarm(byte alrmnum) {
         }
         plot (alrmnum*31,14,alarmColor); // show alarm status
       } 
-
-      else  { // snoozing
-        if ( alarmColor == BLACK )  alarmColor=ORANGE; // Invert color of indicator
-        else alarmColor = BLACK;
-        plot (31*alrmnum,14,alarmColor); // Show blinking dot in Orange if snoozing  (wbp)
-      }
-  }
+//  }
 // ==== END alarm LED indicator ====
       
     if (soundAlarm[alrmnum]) {  // already sounding alarm?

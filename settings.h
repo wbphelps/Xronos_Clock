@@ -37,6 +37,7 @@ struct __Settings
   byte clockColor; // time digit color
   boolean autoColor; // Auto Color enabled
   byte clockFont; // Clock's font number
+  boolean cursorBlink; // blinking colon control
   byte sFX; // Menu SFX on/off
   boolean tempUnit; // Degree units C/F
   byte soundVol; // Sound Volume
