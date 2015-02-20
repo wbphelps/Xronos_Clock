@@ -58,7 +58,7 @@ void procAlarm(byte alrmnum) {
         if ( (minute(tNow)%10) == snoozeTime[alrmnum]) {
           soundAlarm[alrmnum]=true; // Check last digit of current minute
 //        if (alrmToneNum[alrmnum]<=ALARM_PROGRESSIVE)  alrmVol[alrmnum]=7; // Reset Alarm Volume
-          if (Settings.alarmProgVol[alrmnum])  alrmVol[alrmnum]=7; // Reset Alarm Volume
+          if (Settings.alarmProgVol[alrmnum])  alrmVol[alrmnum]=ALARM_PROG_STARTVOL; // Reset Alarm Volume
           else  alrmVol[alrmnum]=0;
         }
       }

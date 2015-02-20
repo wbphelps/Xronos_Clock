@@ -64,12 +64,13 @@ void setAlarm(byte alrmNum) {
   soundAlarm[alrmNum]=false; // Make sure alarm that just sounded doesn't resume
   snoozeTime[alrmNum]=10; // Disable Snooze
 //  if (alrmToneNum[alrmNum]<=ALARM_PROGRESSIVE) alrmVol[alrmNum]=7; // Set initial alarm volume (for escalating alarms)
-  if (Settings.alarmProgVol[alrmNum]) alrmVol[alrmNum]=7; // Set initial alarm volume (for escalating alarms)
-  if (subMenu[alrmNum] >0 && subMenu[alrmNum] <4) playSFX(1); // Don't play sound if not setting anything, i.e. submenu=0 or setting hrs, minutes, tone
+  if (Settings.alarmProgVol[alrmNum]) alrmVol[alrmNum]=ALARM_PROG_STARTVOL; // Set initial alarm volume (for escalating alarms)
+//  if (subMenu[alrmNum] >0 && subMenu[alrmNum] <4) playSFX(1); // Don't play sound if not setting anything, i.e. submenu=0 or setting hrs, minutes, tone
   switch (subMenu[alrmNum]) {
     case 1: // Alarm On/off
       Settings.alarmOn[alrmNum]=Settings.alarmOn[alrmNum] ^ 128; //Toggle first bit (on/off)
       cls();
+      playSFX(1);
       break;
     case 2: // Set Alarm frequency to off/daily/weekday/custom
       switch (Settings.alarmOn[alrmNum]){
@@ -122,18 +123,18 @@ void setAlarm(byte alrmNum) {
       cls();
       break;
     case 4: // Set Alarm hours
-      playSFX(1);
       if (decrement) Settings.alarmHH[alrmNum]--; 
       else Settings.alarmHH[alrmNum]++;
       if (Settings.alarmHH[alrmNum]==255) Settings.alarmHH[alrmNum] = 23; // Negative number (byte) will be 255
       else if (Settings.alarmHH[alrmNum] > 23) Settings.alarmHH[alrmNum] = 0;      
+      playSFX(6);  // tick
       break;
     case 5: // Set Alarm minutes  
-      playSFX(1);
       if (decrement) Settings.alarmMM[alrmNum]--; 
       else Settings.alarmMM[alrmNum]++;
       if (Settings.alarmMM[alrmNum] ==255) Settings.alarmMM[alrmNum] = 59; // Negative number (byte) will be 255
       else if (Settings.alarmMM[alrmNum] > 59) Settings.alarmMM[alrmNum] = 0;
+      playSFX(6);  // tick
       break;
     case 6: // Set Alarm melody  
       if (decrement) Settings.alarmTone[alrmNum]--;
@@ -148,6 +149,7 @@ void setAlarm(byte alrmNum) {
     case 7: // Alarm Progressive On/off
       Settings.alarmProgVol[alrmNum]=!Settings.alarmProgVol[alrmNum]; //Toggle Progressive Alarm Vol
       cls();
+      playSFX(1);
       break;
   }
 
@@ -382,6 +384,7 @@ void setTimeDate() {
       else hours++;
       if (hours == 255) hours = 23;
       else if (hours > 23) hours = 0;
+      playSFX(6); // tick
       break;
     case 2: // Set minutes
       if (decrement) minutes--;
@@ -389,24 +392,28 @@ void setTimeDate() {
       if (minutes == 255) minutes = 59;
       else if (minutes > 59) minutes = 0;
       seconds=0; // Reset seconds to 0 with each minute change
+      playSFX(6); // tick
       break;
     case 3: // Set months
        if (decrement) months--;
        else months++;
        if (months == 0) months=12;
       else if (months > 12) months=1;
+      playSFX(6); // tick
       break;
     case 4: // Set Days
       if (decrement) days--;
       else  days++;
       if (days == 255) days = 31;
       else if (days > mdays)  days = 1;
+      playSFX(6); // tick
       break;
     case 5: // Set Years 
       if (decrement) years--;
       else years++;
       if (years < 10 ) years = 40;
       else if (years > 40) years = 10; // Default to 2010
+      playSFX(6); // tick
       break;
 //    case 6: // Set DST +1 hours 
 //      playSFX(1);
@@ -1062,6 +1069,9 @@ void playSFX(byte item){
     break;    
   case 5: 
     playfile("ERR1.WAV");
+    break;    
+  case 6: 
+    playfile("TICK.WAV");
     break;    
   }
   //radio.Wakeup(); // Disable RF12B

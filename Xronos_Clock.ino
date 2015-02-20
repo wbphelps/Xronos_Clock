@@ -1,6 +1,6 @@
 /***********************************************************************
 * December 2014 - February 2015 - mods by William Phelps (wm@usa.net)
-* Ver 2.23 (02/16/2015)
+* Ver 2.24 (02/18/2015)
 * logarithmic brightness levels
 * bugfix: brightness set to auto by error
 * auto bright - adjust at 1 second intervals (was 10)
@@ -34,6 +34,8 @@
 * fix green/red color bug
 * fix debounce timer, hold button to reset alarm
 * add button debounce/hold/repeat 
+* add tick sound for setting time
+* option to enable/disable blinking cursor
 *
 * Add TZ Hr & TZ Mn to settings?
 * more compact text scrolling
@@ -74,7 +76,7 @@
 #include "myIR_Remote.h" // IR Codes defintion file (comment out if IR receiver not present)
 
 //#define firmware_ver 209 // Current Firmware version
-#define FIRMWARE_VER 222 // Current Firmware version (wbp)
+#define FIRMWARE_VER 224 // Current Firmware version (wbp)
 // EE version - change this to force reset of EE memory
 #define EE_VERSION 13
 
@@ -91,7 +93,7 @@ const byte GPS_PRESENT=true; // Set to True if GPS receiver is present
 // ===================================================================================
 #define BUTTON_DEBOUNCE_TIME 20  // debounce time in ms for the buttons
 #define BUTTON_HOLD_TIME 1000  // button hold time before repeating
-#define BUTTON_REPEAT_TIME 50  // button repeat interval
+#define BUTTON_REPEAT_TIME 200  // button repeat interval - 5/second
 #define BOUNCE_TIME_QUICK   50  // bounce time in ms for quickMenu
 #define RESET_BUTTON_TIME 500  // hold time for alarm reset
 #define tempPin A0 //Pin for temperature sensor DS18B20
