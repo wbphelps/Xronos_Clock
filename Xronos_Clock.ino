@@ -1,6 +1,6 @@
 /***********************************************************************
 * December 2014 - February 2015 - mods by William Phelps (wm@usa.net)
-* Ver 2.25 (02/18/2015)
+* Ver 2.26 (02/20/2015)
 * logarithmic brightness levels
 * bugfix: brightness set to auto by error
 * auto bright - adjust at 1 second intervals (was 10)
@@ -37,6 +37,7 @@
 * add tick sound for setting time
 * option to enable/disable blinking colon
 * global blink timers, bug fixes
+* rewrite button logic, merge button checks to common routine
 *
 * Add TZ Hr & TZ Mn to settings?
 * more compact text scrolling
@@ -234,7 +235,7 @@ byte months;
 byte days;
 byte years; //Last 2 digits of a year
 byte menuItem=0; // Counts presses of the Set button 
-byte mbutState=1; // Menu button option 
+byte talkingItem=1; // Talking Menu item number
 byte subMenu[MAX_SUBMENUS]={0,0,0,0,0,0,0,0,0,0}; // 0 = setting Alarm1, 1 = setting Alarm 2, 2 for setting Time/Date, 3 for System Settings,
 //   4 for setting custom alrm 1, 5 = custom alarm 2, 6 = UserOptions, 7= Infodisplay options, 8 = Voice Prompts, 9 = Photocell
 byte lightLevel; // Light level from photocensor
@@ -350,17 +351,17 @@ void IR_process () {
         break;
       case IR_ENTER: // Talk All Items
         //Serial.println ("Received ENTER");
-        lastButtonTime=millis()+BOUNCE_TIME_QUICK;
-        buttonReleased=true;
-        last_ms=millis()+heldTime;
-        quickDisplay();
+//        lastButtonTime=millis()+BOUNCE_TIME_QUICK;
+//        buttonReleased=true;
+//        last_ms=millis()+heldTime;
+        quickDisplay(true);
         break;
       case IR_TALK: // Start Talk function
         //Serial.println ("Received MUTE");
-        lastButtonTime=millis()+BOUNCE_TIME_QUICK;
-        buttonReleased=true;
-        last_ms=millis();
-        quickDisplay();
+ //       lastButtonTime=millis()+BOUNCE_TIME_QUICK;
+ //       buttonReleased=true;
+ //       last_ms=millis();
+        quickDisplay(false);
         break;
     //Serial.println(results.value, HEX);
     }
@@ -548,7 +549,7 @@ void loop ()
   procAlarm(0);
   procAlarm(1);
   buttonProc();
-  quickMenu();
+//  quickMenu();
   rearmAlrm(0);
   rearmAlrm(1);
   infoDisplay();

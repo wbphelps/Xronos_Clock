@@ -631,7 +631,7 @@ boolean showDate(byte color){
 // ---- Process Quick display function (to show Date/Temperature/Clock, etc.) ----
 // ---- by LensDigital
 // =======================================================================================
-void quickDisplay()
+void quickDisplay(boolean doAll)
 {
   // ==== BEGIN Alarm Functions ====
   if ( !isInMenu && soundAlarm[0]) { // If pressed Stops Alarm (snooze)
@@ -644,37 +644,11 @@ void quickDisplay()
    }
   // ==== END Alarm Functions ====
   
-  // Read button, but only act after button is RELEASED! This will detect "HELD" or "PRESSED" state
-  if (currStatusInc == HIGH) { //Button Was pressed
-  // debouncing;
-    if ((millis() - lastButtonTime) < BOUNCE_TIME_QUICK) return; //Debounce
-    buttonReleased=false;
-    buttonPressedInc=true;
-    last_ms=millis(); // Set Held Timer
-  }
-  else { // Button was released (LOW)
-    if ((millis() - lastButtonTime) < BOUNCE_TIME_QUICK) return; //Debounce
-     if (buttonPressedInc) { // Checks if buttone was previously HIGH. This Eliminates bug with HOLD state
-       buttonReleased=true;  
-       buttonPressedInc=false; // Resets button pressed state
-     }
-  }
-  
   if (soundAlarm[0]) interruptAlrm[0]=true; // If pressed Stops Alarm
   if (soundAlarm[1]) interruptAlrm[1]=true; // If pressed Stops Alarm
   isInQMenu=true;
   lastButtonTime = millis();
-  if (buttonReleased) 
-      if ( (millis() - last_ms ) > heldTime) {
-        buttonReleased=false;
-        talkingMenu(true); 
-      }
-      else {
-        buttonReleased=false;
-        talkingMenu(false);
-      }
-  
-  
+  talkingMenu(doAll);
 }
 
 // ====================================================================================================
@@ -684,16 +658,16 @@ void quickDisplay()
 // ====================================================================================================
 void talkingMenu (boolean mmode) {
   isSettingAlarm=false;
-  if (mbutState > 6) mbutState=1; // Go back to beginning of the menu
+  if (talkingItem > 6) talkingItem=1; // Go back to beginning of the menu
   if (!mmode) { //Single item talk mode
-    sayItem();
-    mbutState++;
+    sayItem(talkingItem);
+    talkingItem = talkingLogic(++talkingItem);
   }
   else { // Multiple items talk mode (say all of them)
-    mbutState=1;
-    while (mbutState < 7) { // Go thru all 6 items
-      sayItem();
-     mbutState++;
+    talkingItem=1;
+    while (talkingItem < 7) { // Go thru all 6 items
+      sayItem(talkingItem);
+      talkingItem = talkingLogic(++talkingItem);
     } // End While
     lastButtonTime = 0;// Exit QMenu
   } // End Else 
@@ -707,9 +681,9 @@ void talkingMenu (boolean mmode) {
 // ---- Will announce time/date/temperature, etc. if these options enabled
 // ---- by LensDigital
 // ====================================================================================================
-void sayItem () {
-  talkingLogic ();
-  switch (mbutState) {
+void sayItem (byte item) {
+//  item = talkingLogic (item);
+  switch (item) {
    case 1: // Show/Say Time
       cls();
       okClock=true; 
@@ -766,30 +740,30 @@ void sayItem () {
    break; 
    default: // failsafe
    lastButtonTime = 0;// Exit QMenu
-   // mbutState=1;
+   // talkingItem=1;
    break;
   } 
 }
 
 
 // Decide which item needs to be skipped in talking menu
-void talkingLogic () {
+byte talkingLogic (byte talkingItem) {
   
-    switch (mbutState){ // Skip item if it's disabled in EEProm
+    switch (talkingItem){ // Skip item if it's disabled in EEProm
      case 1: 
      if (!(Settings.sayOptions & 64)) {
-       mbutState++;
+       talkingItem++;
        if (!(Settings.sayOptions & 32)) {
-         mbutState++; 
+         talkingItem++; 
          if (!(Settings.sayOptions & 16)) { 
-           mbutState++;
+           talkingItem++;
            if (!(Settings.sayOptions & 4)) {
-             mbutState++;
+             talkingItem++;
              if (!(Settings.sayOptions & 2)) {
-               mbutState++;
+               talkingItem++;
                if (!(Settings.sayOptions & 8)) {
-                 mbutState++;
-                 return;
+                 talkingItem++;
+                 return talkingItem;
                }
              }
            }
@@ -800,15 +774,15 @@ void talkingLogic () {
      break;
      case 2:
      if (!(Settings.sayOptions & 32)) {
-       mbutState++; 
+       talkingItem++; 
        if (!(Settings.sayOptions & 16)) { 
-           mbutState++;
+           talkingItem++;
            if (!(Settings.sayOptions & 4)) {
-             mbutState++;
+             talkingItem++;
              if (!(Settings.sayOptions & 2)) {
-               mbutState++;
+               talkingItem++;
                if (!(Settings.sayOptions & 8)) {
-                 mbutState++;
+                 talkingItem++;
                }
              }
            }
@@ -817,13 +791,13 @@ void talkingLogic () {
      break;
      case 3:
      if (!(Settings.sayOptions & 16)) {
-       mbutState++; 
+       talkingItem++; 
        if (!(Settings.sayOptions & 4)) {
-             mbutState++;
+             talkingItem++;
              if (!(Settings.sayOptions & 2)) {
-               mbutState++;
+               talkingItem++;
                if (!(Settings.sayOptions & 8)) {
-                 mbutState++;
+                 talkingItem++;
                }
              }
            }
@@ -831,28 +805,28 @@ void talkingLogic () {
      break;
      case 4:
      if (!(Settings.sayOptions & 4)) {
-       mbutState++;
+       talkingItem++;
        if (!(Settings.sayOptions & 2)) {
-               mbutState++;
+               talkingItem++;
          if (!(Settings.sayOptions & 8)) {
-               mbutState++;
+               talkingItem++;
          }
        }
      }
      break;
      case 5:
        if (!(Settings.sayOptions & 2)) {
-               mbutState++;
+               talkingItem++;
          if (!(Settings.sayOptions & 8)) {
-               mbutState++;
+               talkingItem++;
          }
        }
      break;
      case 6:
-     if (!(Settings.sayOptions & 8)) mbutState++;
+     if (!(Settings.sayOptions & 8)) talkingItem++;
      break;
     }
-    
+  return talkingItem;    
 }
 
 void startBlinking(){

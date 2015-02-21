@@ -985,49 +985,49 @@ void showOpt(){
   }
 }
 
-// =======================================================================================
-// ---- Check Incr button to show Quick Menu ----
-// ---- Press and quickly release to go thru one item at a time
-// ---- Hold button for more than a second to autoamtically go thru all items.
-// ---- by LensDigital
-// =======================================================================================
-void quickMenu() {
-  // check MENU/INCR button;
-    currStatusInc=digitalRead(INC_BUTTON_PIN);
-    if (currStatusInc!=lastStatusInc) {// Change Occured 
-       lastStatusInc=currStatusInc;
-       if (isInMenu) return; //Make sure we are not in settings menu
-       quickDisplay(); // Process Quick Menu functions
-    }
-  if (isInQMenu)
-    if ( (digitalRead(SET_BUTTON_PIN) == HIGH) || (digitalRead(MENU_BUTTON_PIN) == HIGH) ){
-       lastButtonTime = 0; // Exit Quick Menu if any button other than INC was pres
-      //processSetButton(); // Only to control alarm
-    }
-   // display the menu option for 10 sec after menu button was pressed;
-  if ((lastButtonTime > 0) && (millis() - lastButtonTime < 10000))  // wbp
-    return;
-  
-  // Finished with menus, return to normal operations
-  if (isInQMenu) {
-    putstring_nl ("Exiting QMenu");
-    cls ();
-    okClock=true; // Enable Big Clock display
-    isSettingDate=false;
-    isInQMenu=false;
-    mbutState=1; // Reset Menu Button State
-    isIncrementing = false;
-    blinking = false;
-    isSettingAlarm=false;
-    isSettingDST=false; // wbp
-    menuItem=0; 
-    subMenu[0]=0;
-    subMenu[1]=0;
-    subMenu[9]=0; // wbp
-    mbutState=1;
-    cls();
-  }
-}
+//// =======================================================================================
+//// ---- Check Incr button to show Quick Menu ----
+//// ---- Press and quickly release to go thru one item at a time
+//// ---- Hold button for more than a second to autoamtically go thru all items.
+//// ---- by LensDigital
+//// =======================================================================================
+//void quickMenu() {
+//  // check MENU/INCR button;
+//    currStatusInc=digitalRead(INC_BUTTON_PIN);
+//    if (currStatusInc!=lastStatusInc) {// Change Occured 
+//       lastStatusInc=currStatusInc;
+//       if (isInMenu) return; //Make sure we are not in settings menu
+//       quickDisplay(true); // Process Quick Menu functions
+//    }
+//  if (isInQMenu)
+//    if ( (digitalRead(SET_BUTTON_PIN) == HIGH) || (digitalRead(MENU_BUTTON_PIN) == HIGH) ){
+//       lastButtonTime = 0; // Exit Quick Menu if any button other than INC was pres
+//      //processSetButton(); // Only to control alarm
+//    }
+//   // display the menu option for 10 sec after menu button was pressed;
+//  if ((lastButtonTime > 0) && (millis() - lastButtonTime < 10000))  // wbp
+//    return;
+//  
+//  // Finished with menus, return to normal operations
+//  if (isInQMenu) {
+//    putstring_nl ("Exiting QMenu");
+//    cls ();
+//    okClock=true; // Enable Big Clock display
+//    isSettingDate=false;
+//    isInQMenu=false;
+//    mbutState=1; // Reset Menu Button State
+//    isIncrementing = false;
+//    blinking = false;
+//    isSettingAlarm=false;
+//    isSettingDST=false; // wbp
+//    menuItem=0; 
+//    subMenu[0]=0;
+//    subMenu[1]=0;
+//    subMenu[9]=0; // wbp
+//    mbutState=1;
+//    cls();
+//  }
+//}
 
 // =======================================================================================
 // ---- Play menu sounds (sFX) ----
