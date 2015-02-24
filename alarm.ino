@@ -137,13 +137,16 @@ void rearmAlrm(byte alrmnum){
 // By: LensDigital
 // =======================================================================================
 boolean resetAlrm(byte alrmnum){
-  //if (alarmon[alrmnum] & 128){ // Is global alarm switch on?  (1st bit is set?)
   if ( (soundAlarm[alrmnum]) || ( (!isInMenu) && snoozeTime[alrmnum]<10)) { // If pressed Stops Alarm for today. If snoozing cancelss snooze
     interruptAlrm[alrmnum]=true;
     soundAlarm[alrmnum]=false;
-    snoozeTime[alrmnum]=10;
+    snoozeTime[alrmnum]=10;  // reset snooze
     wave.stop();
     playcomplete("alrm_res.WAV");
+    char myString[15];
+    snprintf(myString,sizeof(myString), "Alarm Reset");
+    scrolltextsizexcolor(4,myString,RED,10);
+    delay(500);
     if (Settings.alarmProgVol[alrmnum]) alrmVol[alrmnum]=ALARM_PROG_STARTVOL; //Set low volume for escalating alarms (wbp)
     else alrmVol[alrmnum]=0; // Set High volume for non-escalating alarms
     return true;
@@ -169,7 +172,7 @@ void snoozeProc(byte alrmnum){
   isInQMenu=false;
   delay(500);
 //  cls();
-  char myString[30];
+  char myString[15];
   snprintf(myString,sizeof(myString), "Snoozing...");
   scrolltextsizexcolor(4,myString,RED,10);
   delay(500);

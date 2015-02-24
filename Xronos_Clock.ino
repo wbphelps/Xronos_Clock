@@ -1,6 +1,6 @@
 /***********************************************************************
 * December 2014 - February 2015 - mods by William Phelps (wm@usa.net)
-* Ver 2.26 (02/20/2015)
+* Ver 2.27 (02/24/2015)
 * logarithmic brightness levels
 * bugfix: brightness set to auto by error
 * auto bright - adjust at 1 second intervals (was 10)
@@ -38,6 +38,7 @@
 * option to enable/disable blinking colon
 * global blink timers, bug fixes
 * rewrite button logic, merge button checks to common routine
+* add "alarm reset" scroll message
 *
 * Add TZ Hr & TZ Mn to settings?
 * more compact text scrolling
@@ -78,7 +79,7 @@
 #include "myIR_Remote.h" // IR Codes defintion file (comment out if IR receiver not present)
 
 //#define firmware_ver 209 // Current Firmware version
-#define FIRMWARE_VER 225 // Current Firmware version (wbp)
+#define FIRMWARE_VER 227 // Current Firmware version (wbp)
 // EE version - change this to force reset of EE memory
 #define EE_VERSION 13
 
