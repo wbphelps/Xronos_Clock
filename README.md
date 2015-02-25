@@ -2,7 +2,7 @@
 Custom firmware for the Xronos Clock from LensDigital
 
 Latest update Feb 17, 2015 - William Phelps - wm (at) usa.net 
-* Ver 2.23 (02/17/2015)
+* Ver 2.27 (02/24/2015)
  
 ## **Includes the following modifications:** ##
 
@@ -41,3 +41,8 @@ Latest update Feb 17, 2015 - William Phelps - wm (at) usa.net
 * fix green/red color bug
 * fix debounce timer, hold button to reset alarm
 * add button debounce/hold/repeat 
+* add tick sound for setting time
+* option to enable/disable blinking colon
+* global blink timers, bug fixes
+* rewrite button logic, merge button checks to common routine
+* add "alarm reset" scroll message

@@ -844,7 +844,7 @@ void setBrightness(byte nLevel)
  * Original functions by Bill Ho
  * modified by LensDigital (added interrupt by buttons)
  ***********************************************************************/
-boolean scrolltextsizexcolor(int y, char Str1[ ], byte color, int delaytime){
+boolean scrolltextsizexcolor(int y, char Str1[ ], byte color, int delaytime, boolean buttonChk) {
    int messageLength = strlen(Str1)+ 1;
    byte showcolor,showsecondcolor;
   int xa = 0;
@@ -855,7 +855,8 @@ boolean scrolltextsizexcolor(int y, char Str1[ ], byte color, int delaytime){
         if (color==4) color=random(3)+1;
         ht1632_putchar(xpos + (7 * i),  y, Str1[i], color);  // wbp: 7 instead of 8
       }
-      if ( (digitalRead(SET_BUTTON_PIN) == HIGH) || (digitalRead(MENU_BUTTON_PIN) == HIGH) || (digitalRead(INC_BUTTON_PIN) == HIGH)  ) {cls (); return false; } // Interrupt
+      if (buttonChk)  // wbp
+        if ( (digitalRead(SET_BUTTON_PIN) == HIGH) || (digitalRead(MENU_BUTTON_PIN) == HIGH) || (digitalRead(INC_BUTTON_PIN) == HIGH)  ) {cls (); return false; } // Interrupt
       delay(delaytime);// reduce speed of scroll
       xpos--;
     }

@@ -113,7 +113,7 @@ void		ht1632_putTinyString(int x, int y, const char* str, byte color);
 void		displayStaticLine(char* text, byte y, byte color);
 void		setBrightness(byte level);
 void            ht1632_putcharsizecolor(int x, int y,unsigned char c,  char size, byte color, byte secondcolor,  int columncountfont, char rowcountfont, char oddeven);
-boolean            scrolltextsizexcolor(int y,char Str1[ ], byte color, int delaytime);
+boolean         scrolltextsizexcolor(int y,char Str1[ ], byte color, int delaytime, boolean buttonChk=true);
 void            showDigit(int x, int y, int digit, int fontW, byte fontNum, byte color);
 void            showText(int x, int y, char * myString, int fntsz, byte color);
 

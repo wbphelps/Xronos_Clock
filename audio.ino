@@ -60,6 +60,7 @@ void playfile(char *name) {
     putstring_nl("Not a valid WAV"); return;
   }
   wave.volume=Settings.soundVol; // Set Playback Sound
+  delay(100); // try to avoid clicks when volume changed (wbp)???
   // ok time to play! start playback
   wave.play();
  
@@ -95,7 +96,7 @@ void playalarmfile(char *name, byte alrmnum) {
   }
   else alrmVol[alrmnum]=0;
   wave.volume=alrmVol[alrmnum]; // Set Alarm Volume
-  delay(100); // try to avoid clicks when volume changed ???
+  delay(100); // try to avoid clicks when volume changed (wbp)???
   // ok time to play! start playback
   wave.play();
   //radio.Wakeup(); // Disable RF12B

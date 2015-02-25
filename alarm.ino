@@ -141,11 +141,12 @@ boolean resetAlrm(byte alrmnum){
     interruptAlrm[alrmnum]=true;
     soundAlarm[alrmnum]=false;
     snoozeTime[alrmnum]=10;  // reset snooze
+    char string1[15];
+    snprintf(string1,sizeof(string1), "Alarm Reset");
     wave.stop();
-    playcomplete("alrm_res.WAV");
-    char myString[15];
-    snprintf(myString,sizeof(myString), "Alarm Reset");
-    scrolltextsizexcolor(4,myString,RED,10);
+//    playcomplete("alrm_res.WAV");
+    playfile("alrm_res.WAV");
+    scrolltextsizexcolor(4,string1,RED,5, false);  // scroll without checking buttons (wbp)
     delay(500);
     if (Settings.alarmProgVol[alrmnum]) alrmVol[alrmnum]=ALARM_PROG_STARTVOL; //Set low volume for escalating alarms (wbp)
     else alrmVol[alrmnum]=0; // Set High volume for non-escalating alarms
@@ -174,7 +175,7 @@ void snoozeProc(byte alrmnum){
 //  cls();
   char myString[15];
   snprintf(myString,sizeof(myString), "Snoozing...");
-  scrolltextsizexcolor(4,myString,RED,10);
+  scrolltextsizexcolor(4,myString,RED,5,false);  // scroll without checking buttons (wbp)
   delay(500);
 }
 
