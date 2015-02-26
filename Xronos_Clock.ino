@@ -1,6 +1,6 @@
 /***********************************************************************
 * December 2014 - February 2015 - mods by William Phelps (wm@usa.net)
-* Ver 2.27 (02/24/2015)
+* Ver 2.28 (02/26/2015)
 * logarithmic brightness levels
 * bugfix: brightness set to auto by error
 * auto bright - adjust at 1 second intervals (was 10)
@@ -39,6 +39,7 @@
 * global blink timers, bug fixes
 * rewrite button logic, merge button checks to common routine
 * add "alarm reset" scroll message
+* hold Alarm Reset to skip upcoming alarm
 *
 * Add TZ Hr & TZ Mn to settings?
 * more compact text scrolling
@@ -79,7 +80,7 @@
 #include "myIR_Remote.h" // IR Codes defintion file (comment out if IR receiver not present)
 
 //#define firmware_ver 209 // Current Firmware version
-#define FIRMWARE_VER 227 // Current Firmware version (wbp)
+#define FIRMWARE_VER 228 // Current Firmware version (wbp)
 // EE version - change this to force reset of EE memory
 #define EE_VERSION 13
 
@@ -178,8 +179,9 @@ boolean isSettingOptions = false;
 boolean okClock = true; // Can we show time? Normally true, unless we showing something else
 boolean interruptAlrm[2] = {false,false};
 boolean soundAlarm[2] = {false,false};
+boolean skipAlarm[2] = {false,false};
 boolean interruptAlrm2 = false;
-boolean soundAlarm2 = false;
+//boolean soundAlarm2 = false;
 boolean isIncrementing = false;
 boolean blinking=false;
 boolean buttonPressedInc=false; // Tracks High state of INC button

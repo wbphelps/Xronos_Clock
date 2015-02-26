@@ -1,11 +1,33 @@
 // =======================================================================================
+// ---- Calculate time until next alarm ----
+// By: wbp
+// only checks alarm times for today & possibly tomorrow
+// returns 99 if alarm not happening within 24 hours
+// =======================================================================================
+int timeToNextAlarm(byte alrmnum) {
+  int dAlrm, iAlrm, iNow, wd;
+  unsigned long tNow = now();
+  wd = weekday(tNow);  // today's weekday number
+  dAlrm = 99; // assume no alarm within 24 hours
+  iAlrm = Settings.alarmHH[alrmnum]*60 + Settings.alarmMM[alrmnum];  // alarm time in minutes
+  iNow = hour(tNow)*60 + minute(tNow);  // time now in minutes
+  if (iNow>iAlrm) { // is iAlrm in the past?
+    iAlrm+=1440;  // set iAlrm ahead by one day
+    wd+=1;  // let's look at tomorrow
+    if (wd>7)  wd=1;  // wrap if necessary
+  }
+  if (Settings.alarmOn[alrmnum] & weekdays[wd]) {  // is alarm on and set for the day in question?
+    dAlrm = iAlrm-iNow;  // calculate how long until next alarm
+  }
+}
+
+// =======================================================================================
 // ---- Process Alarm Function ----
 // By: LensDigital
 // =======================================================================================
 //static unsigned long alarmBlinkTime=0; // controls blinking of alarm indicators
 void procAlarm(byte alrmnum) {
   int blinkDuration = 1000; // How frequently dots should blink (wbp)
-  int iAlrm, iNow, wd;
   unsigned long tNow = now();
   if (isInMenu) return; // Do not sound alarm if changing settings
 ///  if (digitalRead(SET_BUTTON_PIN) == HIGH) processSetButton(); // Poll Set Button, that will reArm (cancel for today) alarm  ???
@@ -33,32 +55,23 @@ void procAlarm(byte alrmnum) {
 
       else  { // not sounding and not snoozing...
         // check to see if alarm will sound again within 24 hours
-        alarmColor=RED;  // assume it won't
-        wd = weekday(tNow);  // today's weekday number
-        iAlrm = Settings.alarmHH[alrmnum]*60 + Settings.alarmMM[alrmnum];  // time of alarm in minutes
-        iNow = hour(tNow)*60 + minute(tNow);  // time now in minutes
-        if (iNow>iAlrm) { // is tAlrm in the past?
-          iAlrm+=1440;  // set tAlrm ahead by one day
-          wd+=1;  // let's look at tomorrow
-          if (wd>7)  wd=1;  // wrap if necessary
-        }
-        if (Settings.alarmOn[alrmnum] & weekdays[wd]) {  // is alarm on and set for the day in question?
-          if ((iAlrm-iNow)<=1440)  // is alarm set to go off in next 24 hours?
-            alarmColor=GREEN;  // change LED to red
-        }
+        if (timeToNextAlarm(alrmnum) < 1440)
+          alarmColor=GREEN;  // change LED to green
+        else
+          alarmColor=RED;  // assume it won't
         plot (alrmnum*31,14,alarmColor); // show alarm status
       } 
 //  }
 // ==== END alarm LED indicator ====
       
-    if (soundAlarm[alrmnum]) {  // already sounding alarm?
+    if (soundAlarm[alrmnum] && !skipAlarm[alrmnum]) {  // sounding the alarm and not skipping the alarm?
       playAlarm(alrmnum);
     }
     // ==== Begin Snooze Check ====
     else {
       // Are We Snoozing?
       if ( snoozeTime[alrmnum]!=10 ) { // Snooze was pressed
-        // Is it time reset Snooze?
+        // Is it time to reset Snooze?
         if ( (minute(tNow)%10) == snoozeTime[alrmnum]) {
           soundAlarm[alrmnum]=true; // Check last digit of current minute
 //        if (alrmToneNum[alrmnum]<=ALARM_PROGRESSIVE)  alrmVol[alrmnum]=7; // Reset Alarm Volume
@@ -75,15 +88,17 @@ void procAlarm(byte alrmnum) {
          */
           if ( Settings.alarmOn[alrmnum] & weekdays[weekday()] ) { // Alarm is scheduled for this day!
             if ( (hour(tNow)==Settings.alarmHH[alrmnum]) && ( minute(tNow)==Settings.alarmMM[alrmnum]) ) {
-              if (alrmnum==0) { // It's first alarm processor
+              if (alrmnum==0 && soundAlarm[1]) { // It's first alarm processor
                 soundAlarm[1]=false; // Interrupts 2nd alarm if it's playing
+                skipAlarm[1]=false; // not skipping any more
                 snoozeTime[1]=10; // Disable snooze for 2nd alarm
               }
-            else { // It's second alarm processor
-              soundAlarm[0]=false; // Interrupts 1st alarm if it's playing
-              snoozeTime[0]=10; // Disable snooze for 1st alarm
-            }
-            soundAlarm[alrmnum]=true; // If it's time to sound alarm!
+              else if (soundAlarm[0]) { // It's second alarm processor
+                soundAlarm[0]=false; // Interrupts 1st alarm if it's playing
+                skipAlarm[0]=false; // not skipping any more
+                snoozeTime[0]=10; // Disable snooze for 1st alarm
+              }
+              soundAlarm[alrmnum]=true; // If it's time to sound alarm!
             }
           }
       }
@@ -119,7 +134,8 @@ void rearmAlrm(byte alrmnum){
   unsigned long tNow = now();
   if (Settings.alarmOn[alrmnum] & 128) { // Is global alarm switch on? (1st bit is set?)
     if ( ( hour(tNow)==Settings.alarmHH[alrmnum]+1) && ( minute(tNow)==Settings.alarmMM[alrmnum]) ) { // It's been 1 hour since Alarm sounded
-      soundAlarm[alrmnum]=false;
+      soundAlarm[alrmnum]=false;  // stop sounding alarm
+      skipAlarm[alrmnum]=false;  // stop skipping too
       interruptAlrm[alrmnum]=false;
 //      if (alrmToneNum[alrmnum]<6) alrmVol[alrmnum]=7; //Set low volume for escalating alarms
       if (Settings.alarmProgVol[alrmnum]) alrmVol[alrmnum]=ALARM_PROG_STARTVOL; //Set low volume for escalating alarms (wbp)
@@ -139,7 +155,8 @@ void rearmAlrm(byte alrmnum){
 boolean resetAlrm(byte alrmnum){
   if ( (soundAlarm[alrmnum]) || ( (!isInMenu) && snoozeTime[alrmnum]<10)) { // If pressed Stops Alarm for today. If snoozing cancelss snooze
     interruptAlrm[alrmnum]=true;
-    soundAlarm[alrmnum]=false;
+    soundAlarm[alrmnum]=false;  // stop sounding alarm
+    skipAlarm[alrmnum]=false;  // stop skipping too
     snoozeTime[alrmnum]=10;  // reset snooze
     char string1[15];
     snprintf(string1,sizeof(string1), "Alarm Reset");
@@ -166,7 +183,8 @@ void snoozeProc(byte alrmnum){
   //Serial.println ("Snooze was pressed!");
   if ((minute()%10)==0)  snoozeTime[alrmnum]=9;
   else  snoozeTime[alrmnum]=(minute()%10)-1;
-  soundAlarm[alrmnum]=false; 
+  soundAlarm[alrmnum]=false;  // turn off alarm while snoozing
+  skipAlarm[alrmnum]=false;  // no longer skipping (odd case but possible)
   interruptAlrm[alrmnum]=true;
   wave.stop();
   interruptAlrm[alrmnum]=false;
