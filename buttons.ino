@@ -61,9 +61,13 @@ void buttonProc(){
   showOpt();
   showDST(clockColor);
 
-  checkButton(MENU_BUTTON_PIN,0);  // get button status update
-  checkButton(SET_BUTTON_PIN,1);  // get button status update
-  checkButton(INC_BUTTON_PIN,2);  // get button status update
+  // check the buttons. Menu button takes priority, then Set, then Inc
+  checkButton(MENU_BUTTON_PIN,0);  // check Menu button
+  if (buttonState[0]==0) {
+     checkButton(SET_BUTTON_PIN,1);  // check Set button
+     if (buttonState[1]==0)
+       checkButton(INC_BUTTON_PIN,2);  // check Inc button
+  }
 
   // check MENU button;
   if (buttonState[0]>=BS_RELEASED)  processMenuButton(buttonState[0]);
@@ -89,7 +93,7 @@ void buttonProc(){
   }  // if (isInMenu)
   else {  // not in Menu
     if (buttonState[2]==BS_REPEATING)  quickDisplay(true);  // button held, do long Quick menu
-    else if (lastButtonTime && buttonState[2]==3)  quickDisplay(false);  // button released, do short Quick Menu
+    else if (lastButtonTime && buttonState[2]==BS_RELEASED)  quickDisplay(false);  // button released, do short Quick Menu
     if (isInQMenu) {
       if ( (buttonState[1]>BS_DEBOUNCE) || (buttonState[2]>BS_DEBOUNCE) ) {
          lastButtonTime = 0; // Exit Quick Menu if any button other than INC was pres

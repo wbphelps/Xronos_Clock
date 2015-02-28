@@ -105,9 +105,6 @@ const byte GPS_PRESENT=true; // Set to True if GPS receiver is present
 #define SS_SD 4 // Pin for SS on SD Card
 //#define SS_RF 18 // Pin for SS on RF12B receiver
 
-//#define MENU_BUTTON_PIN A4// "Menu Button" button on analog 4;
-//#define SET_BUTTON_PIN A3// "set time" button on digital 17 (analog 3);
-//#define INC_BUTTON_PIN A2// "inc time" button on digital 16 (analog 2);
 const byte MENU_BUTTON_PIN = 28; // "Menu Button" button on analog 4;
 const byte SET_BUTTON_PIN = 27;  // "set time" button on digital 27 (analog 3);
 const byte INC_BUTTON_PIN = 26;  // "inc time" button on digital 26 (analog 2);
