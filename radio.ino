@@ -7,7 +7,7 @@ void receiveTemp() {
   if (!Settings.RadioEnabled) return;
   if (isInMenu) return;
   
-  if (soundAlarm[0] || soundAlarm[1]) return;
+  if ((alarmState[0]==AS_SOUNDING) || (alarmState[1]==AS_SOUNDING)) return;
   if (wave.isplaying) return;
   //if (isInQMenu) return;
   if (!__radioOn) {

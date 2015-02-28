@@ -60,9 +60,7 @@ void showMenu()
 // =======================================================================================
 void setAlarm(byte alrmNum) {
   char myString[11];
-  interruptAlrm[alrmNum]=false; //Rearm Button interrupt
-  soundAlarm[alrmNum]=false; // Make sure alarm that just sounded doesn't resume
-  snoozeTime[alrmNum]=10; // Disable Snooze
+  alarmState[alrmNum] = AS_OFF; // Make sure alarm that just sounded doesn't resume
 //  if (alrmToneNum[alrmNum]<=ALARM_PROGRESSIVE) alrmVol[alrmNum]=7; // Set initial alarm volume (for escalating alarms)
   if (Settings.alarmProgVol[alrmNum]) alrmVol[alrmNum]=ALARM_PROG_STARTVOL; // Set initial alarm volume (for escalating alarms)
 //  if (subMenu[alrmNum] >0 && subMenu[alrmNum] <4) playSFX(1); // Don't play sound if not setting anything, i.e. submenu=0 or setting hrs, minutes, tone

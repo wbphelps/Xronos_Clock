@@ -85,10 +85,10 @@
 #define EE_VERSION 13
 
 // ============================================================================================
-// Importante User Hardware config settings, modify as needed
+// Important User Hardware config settings, modify as needed
 // ============================================================================================
 const byte RFM12B_PRESENT=false; // Defines if RFM12B Chip present.  Set to true to enable. Must also have ATMega1284p! Will not work with ATMega644p chip
-const byte IR_PRESENT=true; // Set to True if IR receiver is present. Must also have ATMega1284p! Will not work with ATMega644p chip
+const byte IR_PRESENT=false; // Set to True if IR receiver is present. Must also have ATMega1284p! Will not work with ATMega644p chip
 const byte GPS_PRESENT=true; // Set to True if GPS receiver is present
 #define AUTO_BRIGHTNESS_ON 0  //Set to 1 to disable autobrightness menu feature, 0 to enable if photocell is present.
 // ============================End of User Hardware Settings ==================================
@@ -99,14 +99,18 @@ const byte GPS_PRESENT=true; // Set to True if GPS receiver is present
 #define BUTTON_HOLD_TIME 1000  // button hold time before repeating
 #define BUTTON_REPEAT_TIME 200  // button repeat interval - 5/second
 #define BOUNCE_TIME_QUICK   50  // bounce time in ms for quickMenu
-#define RESET_BUTTON_TIME 500  // hold time for alarm reset
+//#define RESET_BUTTON_TIME 500  // hold time for alarm reset
 #define tempPin A0 //Pin for temperature sensor DS18B20
 #define photoCellPin A1 // Pin for Photo Resistor
 #define SS_SD 4 // Pin for SS on SD Card
 //#define SS_RF 18 // Pin for SS on RF12B receiver
-#define MENU_BUTTON_PIN A4// "Menu Button" button on analog 4;
-#define SET_BUTTON_PIN A3// "set time" button on digital 17 (analog 3);
-#define INC_BUTTON_PIN A2// "inc time" button on digital 16 (analog 2);
+
+//#define MENU_BUTTON_PIN A4// "Menu Button" button on analog 4;
+//#define SET_BUTTON_PIN A3// "set time" button on digital 17 (analog 3);
+//#define INC_BUTTON_PIN A2// "inc time" button on digital 16 (analog 2);
+const byte MENU_BUTTON_PIN = 28; // "Menu Button" button on analog 4;
+const byte SET_BUTTON_PIN = 27;  // "set time" button on digital 27 (analog 3);
+const byte INC_BUTTON_PIN = 26;  // "inc time" button on digital 26 (analog 2);
 
 // ===================================================================================
 
@@ -177,11 +181,17 @@ boolean isSettingAlrmMM   = false;
 boolean isSettingAlrmHH   = false;
 boolean isSettingOptions = false;
 boolean okClock = true; // Can we show time? Normally true, unless we showing something else
-boolean interruptAlrm[2] = {false,false};
-boolean soundAlarm[2] = {false,false};
-boolean skipAlarm[2] = {false,false};
-boolean interruptAlrm2 = false;
-//boolean soundAlarm2 = false;
+
+// Alarm status variables
+#define AS_OFF       0
+#define AS_WAIT      1  // wait before checking alarm again
+#define AS_SKIPPING  2  // skipping pending alarm
+#define AS_SOUNDING  3  // sounding now
+#define AS_SNOOZING  4  // snoozing now
+byte alarmState[2] = {AS_OFF,AS_OFF};  // alarm states
+unsigned long alarmTime[2] = {0,0};  // time in ms until next alarm event
+//byte snoozeTime[2]={10,10}; // Keeps last digit of minutes for snooze
+
 boolean isIncrementing = false;
 boolean blinking=false;
 boolean buttonPressedInc=false; // Tracks High state of INC button
@@ -212,7 +222,6 @@ byte yyColor=BLACK; // Set color of the year (last 2 digits)
 byte alrmonColor=BLACK; // Set color of the 2 hour digits
 byte alrmhhColor=BLACK; // Set color of the 2 hour digits
 byte alrmmmColor=BLACK; // Set color of the 2 minute digits
-byte snoozeTime[2]={10,10}; // Keeps last digit of minutes for snooze
 int  extTemp=300; // External Temperature in C
 int  extHum=300; // External Humidity
 
@@ -328,29 +337,29 @@ void IR_process () {
       case IR_ON:
         //Serial.println ("Received ON/OFF");
 //        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
-        processMenuButton();
+        processMenuButton(3);
         break;
       case IR_PLUS:
         //Serial.println ("Received PLUS");
         decrement=false;
 //        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
-        processIncButton();
+        processIncButton(3);
         break;
       case IR_MINUS:
         //Serial.println ("Received MINUS");
         decrement=true;
 //        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
-        processIncButton();
+        processIncButton(3);
         break;
       case IR_UP:
         //Serial.println ("Received UP");
 //        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
-        processSetButton();
+        processSetButton(3);
         break;
       case IR_DOWN:
         //Serial.println ("Received DOWN");
 //        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
-        processSetButton();
+        processSetButton(3);
         break;
       case IR_ENTER: // Talk All Items
         //Serial.println ("Received ENTER");
@@ -416,7 +425,7 @@ void initTimer2()
 }
 
 //#ifdef HAVE_GPS
-static uint8_t gps_counter = 0;
+static uint16_t gps_counter = 0;
 //#endif
 // runs every 0.000128 seconds
 ISR(TIMER2_OVF_vect)
@@ -468,6 +477,7 @@ void setup ()
   // ========= Read Settings from EEPROM ===============================
   loadSettings(); // load variables saved in EE (load defaults if needed)
   Settings.clockVer = FIRMWARE_VER;  // update clock firmware version
+  Settings.GPSenabled = true; // temp ???
   clockColor = Settings.clockColor;  // set working copy of clock color
   if ( !RFM12B_PRESENT )  Settings.RadioEnabled=false;
   if (!Settings.RadioEnabled) { // Disable saying ext temperature/humidity
@@ -479,11 +489,11 @@ void setup ()
   
   // Print FW Version
   char welcome[15];
-  byte ver = Settings.clockVer;  // 3 digit version number
-  byte temp = (ver%100) %10; //temp holder
+  unsigned int ver = Settings.clockVer;  // 3 digit version number
+  byte temp = ver%100; // last 2 digits
   byte ver3 = temp % 10; // Last digit
   byte ver2 = (temp - ver3) / 10; // Second Digit
-  ver = (ver - ver2) / 100; // First digit
+  ver = (ver - temp) / 100; // First digit
   snprintf(welcome, sizeof(welcome),"Firmware:V%d.%d%d",ver,ver2,ver3); 
   Serial.println (welcome);
   
@@ -506,29 +516,38 @@ void setup ()
   if (Settings.brightness==0) autoBrightness();
   else
     setBrightness(Settings.brightness);
-  // Initialize Radio module 
-  if (Settings.RadioEnabled) radio.Initialize(NODEID, RF12_915MHZ, NETWORKID);
-//  if (isIRPresent) {
-//    irrecv.enableIRIn(); // Start the IR receiver. Comment out if IR not present
-//  }
 
-  gpsInit(9600);  // init GPS & Serial port for 9600 BPS
-//	if (g_DST_mode == 2)  // DST set to AUTO?
+  startup(); // Show welcoming screen
+
+  if (Settings.GPSenabled) {
+    Serial.println("GPS Enabled");
+    gpsInit(9600);  // init GPS & Serial port for 9600 BPS
+  }
+  else
+    Serial.println("GPS Disabled");
+
+  // Initialize Radio module 
+  if (Settings.RadioEnabled) {
+    Serial.println("Radio Enabled");
+    radio.Initialize(NODEID, RF12_915MHZ, NETWORKID);
+  }
+  else
+    Serial.println("Radio Disabled");
+
 tmElements_t tm;
   breakTime(now(), tm);
   DSTinit(&tm, g_DST_Rules);  // compute DST start, end	
 
-  startup(); // Show welcoming screen
 //  Serial.println (FreeRam());
 //  radio.Sleep();
 
-  delay(1000); 
   if (Settings.IRenabled) {
-    Serial.println("IR Present");
+    delay(1000); 
+    Serial.println("IR Enabled");
     irrecv.enableIRIn(); // Start the IR receiver. Comment out if IR not present
   }
   else
-    Serial.println("NO IR!");
+    Serial.println("IR Disabled");
 
   initTimer2();  // start timer interrupt running for GPS read (wbp)
 
@@ -553,8 +572,8 @@ void loop ()
   procAlarm(1);
   buttonProc();
 //  quickMenu();
-  rearmAlrm(0);
-  rearmAlrm(1);
+//  rearmAlrm(0);
+//  rearmAlrm(1);
   infoDisplay();
   autoBrightness();
   receiveTemp();

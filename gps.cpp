@@ -31,8 +31,8 @@
 unsigned long tGPSupdate;
 
 // we double buffer: read into one line and leave one for the main program
-volatile char gpsBuffer1[GPSBUFFERSIZE];
-volatile char gpsBuffer2[GPSBUFFERSIZE];
+volatile char gpsBuffer1[GPSBUFFERSIZE+1];
+volatile char gpsBuffer2[GPSBUFFERSIZE+1];
 // our index into filling the current line
 volatile uint8_t gpsBufferPtr;
 // pointers to the double buffers
@@ -75,10 +75,7 @@ void setRTCTime(time_t t)
 void GPSread(void) 
 {
   char c = 0;
-// if ((g_gps_enabled) && (UCSR0A & _BV(RXC0))) {
-//		c=UDR0;  // get a byte from the port
   if (Serial.available()) {  // wbp - check g_gps_enabled ???
-//    plot (31,0,GREEN); // Show data received on Serial port
     c=Serial.read();
     if (c == '$') {
       gpsNextBuffer[gpsBufferPtr] = 0;
@@ -96,13 +93,11 @@ void GPSread(void)
       gpsBufferPtr = 0;
       gpsDataReady_ = true;  // signal data ready
     }
-    gpsNextBuffer[gpsBufferPtr++] = c;  // add char to current buffer, then increment index
-    if (gpsBufferPtr >= GPSBUFFERSIZE) { // if buffer full
-      gpsBufferPtr = GPSBUFFERSIZE-1;  // decrement index to make room (overrun)
+    gpsNextBuffer[gpsBufferPtr] = c;  // add char to current buffer, then increment index
+    if (gpsBufferPtr < GPSBUFFERSIZE) { // if buffer is not full
+      gpsBufferPtr++;  // advance to next character
     }
   }
-//  else
-//    plot (31,0,BLACK); //Plot Indicator dot (radio signal was received)
 }
 
 uint8_t gpsDataReady(void) {
@@ -180,7 +175,9 @@ void parseGPSdata(char *gpsBuffer) {
   plot(31,3,BLACK);  // clear checksum error LED
   plot(31,4,BLACK);  // clear parse error LED
   plot(31,5,BLACK);  // clear time error LED
+//  Serial.print("GPS: "); Serial.println(gpsBuffer);
   if ( strncmp( gpsBuffer, "$GPRMC,", 7 ) == 0 ) {
+//    Serial.print("GPS: ");  Serial.println(gpsBuffer);
 //    alarm_status = true;  // wbp - debugging
     //beep(1000, 1);
     //Calculate checksum from the received data
@@ -196,6 +193,7 @@ void parseGPSdata(char *gpsBuffer) {
     // now get the checksum from the string itself, which is in hex
     gpsCheck2 = atoh(*(ptr+1)) * 16 + atoh(*(ptr+2));
     if (gpsCheck1 == gpsCheck2) {  // if checksums match, process the data
+//      Serial.println("GPS: CKS OK");
       //beep(1000, 1);
       ptr = &gpsBuffer[1];  // start at beginning of buffer
       ptr = ntok(ptr);  // Find the time string
@@ -239,6 +237,7 @@ void parseGPSdata(char *gpsBuffer) {
           goto GPSerrorT;  // it's probably an error
         }
         else {
+//          Serial.println("GPS: RMC OK");
           tLast = tNow;
           tDelta = tNow - tGPSupdate;
 //          if ((tm.Second == 0) || ((tNow - tGPSupdate)>=60))   // update RTC once/minute or if it's been 60 seconds
@@ -252,8 +251,7 @@ void parseGPSdata(char *gpsBuffer) {
             else
               tNow = tNow + (long)g_TZ_minute * SECS_PER_HOUR;
             setRTCTime(tNow);  // set RTC from adjusted GPS time & date
-//            if ((shield != SHIELD_IV18) && (shield != SHIELD_IV17))
-//              flash_display(50);  // flash display to show GPS update 16apr15/wbp - even shorter blink
+//            Serial.println("GPS: Time set");
           }
           else
             g_gps_updating = false;

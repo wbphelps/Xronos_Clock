@@ -1,8 +1,8 @@
 # Xronos_Clock
 Custom firmware for the Xronos Clock from LensDigital
 
-Latest update Feb 17, 2015 - William Phelps - wm (at) usa.net 
-* Ver 2.27 (02/24/2015)
+Latest update Feb 27, 2015 - William Phelps - wm (at) usa.net 
+* Ver 2.28 (02/27/2015)
  
 ## **Includes the following modifications:** ##
 
@@ -46,3 +46,4 @@ Latest update Feb 17, 2015 - William Phelps - wm (at) usa.net
 * global blink timers, bug fixes
 * rewrite button logic, merge button checks to common routine
 * add "alarm reset" scroll message
+* hold Alarm Reset to skip upcoming alarm

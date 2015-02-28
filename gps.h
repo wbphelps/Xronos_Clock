@@ -30,8 +30,8 @@
 extern unsigned long tGPSupdate;  // really time_t
 
 // we double buffer: read into one line and leave one for the main program
-extern volatile char gpsBuffer1[GPSBUFFERSIZE];
-extern volatile char gpsBuffer2[GPSBUFFERSIZE];
+extern volatile char gpsBuffer1[GPSBUFFERSIZE+1];
+extern volatile char gpsBuffer2[GPSBUFFERSIZE+1];
 // our index into filling the current line
 extern volatile uint8_t gpsBufferPtr;
 // pointers to the double buffers

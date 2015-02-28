@@ -49,7 +49,7 @@ void showDivider(byte color){
 void infoDisplay() {
   if (Settings.infoFreq == 0) return; // User choose to never show this screen
   if (! ((Settings.infoOptions & 128) || (Settings.infoOptions & 64) || (Settings.infoOptions & 32) || (Settings.infoOptions & 16) || (Settings.infoOptions & 8) ) ) return; // All display options disabled
-  if (soundAlarm[0] || soundAlarm[1]) return; // Do not show if Alarm is playing
+  if ((alarmState[0]==AS_SOUNDING) || (alarmState[1]==AS_SOUNDING)) return; // Do not show if Alarm is playing
   if (isInMenu) return; // Do not show when in menu
   if (isInQMenu) return; // Do not show when in quick menu
   // Check if it's time to Show Info display 
@@ -109,7 +109,7 @@ boolean alarmInfo(byte alrmNum){
      char myString[54]; // String to keep Alarm msg
      char wkdays[28]; //Days of week
      showSmTime(0,clockColor); // Show time on top
-     if ( snoozeTime[alrmNum]!=10 ) { // Are we snoozing?
+     if ( alarmState[alrmNum] == AS_SNOOZING ) { // Are we snoozing?
        snprintf(myString,sizeof(myString), "Alarm%d on! Snoozing...Z Z z z z z...",alrmNum+1);
        return scrolltextsizexcolor(8,myString,RED,5);
      }
@@ -634,18 +634,18 @@ boolean showDate(byte color){
 void quickDisplay(boolean doAll)
 {
   // ==== BEGIN Alarm Functions ====
-  if ( !isInMenu && soundAlarm[0]) { // If pressed Stops Alarm (snooze)
+  if ( !isInMenu && (alarmState[0] == AS_SOUNDING)) { // If pressed Stops Alarm (snooze)
     snoozeProc(0);
     return; //will prevent from entering menu for 1 minute since alarm sounded
    }
-   if (!isInMenu && soundAlarm[1]) { // If pressed Stops Alarm (snooze)
+   if (!isInMenu && (alarmState[1] == AS_SOUNDING)) { // If pressed Stops Alarm (snooze)
     snoozeProc(1);
     return; //will prevent from entering menu for 1 minute since alarm sounded
    }
   // ==== END Alarm Functions ====
   
-  if (soundAlarm[0]) interruptAlrm[0]=true; // If pressed Stops Alarm
-  if (soundAlarm[1]) interruptAlrm[1]=true; // If pressed Stops Alarm
+//  if (soundAlarm[0]) interruptAlrm[0]=true; // If pressed Stops Alarm
+//  if (soundAlarm[1]) interruptAlrm[1]=true; // If pressed Stops Alarm
   isInQMenu=true;
   lastButtonTime = millis();
   talkingMenu(doAll);

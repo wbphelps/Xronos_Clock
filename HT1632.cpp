@@ -55,9 +55,9 @@ extern volatile byte g_IR_receive;  // flag set to show IR signal received
 #define HT1632_WRCLK	12	// Write clock pin (pin 5 of display connector)
 #define HT1632_CLK	15	// clock pin (pin 2 of display connector)
 
-#define MENU_BUTTON_PIN A4// "Menu Button" button on analog 4;
-#define SET_BUTTON_PIN A3// "set time" button on digital 17 (analog 3);
-#define INC_BUTTON_PIN A2// "inc time" button on digital 16 (analog 2);
+#define MENU_BUTTON_PIN A4// "Menu Button" button on digital 28 (analog 4);
+#define SET_BUTTON_PIN A3// "set time" button on digital 27 (analog 3);
+#define INC_BUTTON_PIN A2// "inc time" button on digital 26 (analog 2);
 
 //Atmega644/1284 Version of fastWrite - for pins 0-15
 #define fWriteA(_pin_, _state_) ( _pin_ < 8 ? (_state_ ? PORTB |= 1 << _pin_ : \
