@@ -1,6 +1,6 @@
 /***********************************************************************
 * December 2014 - February 2015 - mods by William Phelps (wm@usa.net)
-* Ver 2.28 (02/26/2015)
+* Ver 2.29 (03/02/2015)
 * logarithmic brightness levels
 * bugfix: brightness set to auto by error
 * auto bright - adjust at 1 second intervals (was 10)
@@ -40,6 +40,7 @@
 * rewrite button logic, merge button checks to common routine
 * add "alarm reset" scroll message
 * hold Alarm Reset to skip upcoming alarm
+* add settable alarm snooze time 1 to 15 minutes
 *
 * Add TZ Hr & TZ Mn to settings?
 * more compact text scrolling
@@ -80,7 +81,7 @@
 #include "myIR_Remote.h" // IR Codes defintion file (comment out if IR receiver not present)
 
 //#define firmware_ver 209 // Current Firmware version
-#define FIRMWARE_VER 228 // Current Firmware version (wbp)
+#define FIRMWARE_VER 229 // Current Firmware version (wbp)
 // EE version - change this to force reset of EE memory
 #define EE_VERSION 13
 
@@ -88,7 +89,7 @@
 // Important User Hardware config settings, modify as needed
 // ============================================================================================
 const byte RFM12B_PRESENT=false; // Defines if RFM12B Chip present.  Set to true to enable. Must also have ATMega1284p! Will not work with ATMega644p chip
-const byte IR_PRESENT=false; // Set to True if IR receiver is present. Must also have ATMega1284p! Will not work with ATMega644p chip
+const byte IR_PRESENT=true; // Set to True if IR receiver is present. Must also have ATMega1284p! Will not work with ATMega644p chip
 const byte GPS_PRESENT=true; // Set to True if GPS receiver is present
 #define AUTO_BRIGHTNESS_ON 0  //Set to 1 to disable autobrightness menu feature, 0 to enable if photocell is present.
 // ============================End of User Hardware Settings ==================================
@@ -138,7 +139,7 @@ RFM12B radio;
 #define MAX_SUBMENUS 10 // Maximum number of submenus
 #define MAX_SETTINGS 6 // Maximum number of settings menu items
 #define MAX_SYSSETTINGS 12 // Maximum number of System menu items
-#define MAX_OPTIONS 4 // Max number of options menu items 
+#define MAX_OPTIONS 5 // Max number of options menu items 
 
 #define ALARM_PROG_STARTVOL 6 // Progressive alarm starting volume
 

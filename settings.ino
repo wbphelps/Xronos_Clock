@@ -51,6 +51,7 @@ __Settings Settings = {
   {false,false}, // alarm progressive volume
   10, // photocell minimum
   400, // photocell maximum
+  9, // alarm snooze time
 
   EE_VERSION, // EE version;
 };

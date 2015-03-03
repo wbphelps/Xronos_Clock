@@ -39,7 +39,7 @@ void checkButton(byte btn, byte idx) {
     }
   }
   else {  // button not down
-    if (buttonState[idx]==BS_HOLDING) {  // was it pressed but not held?
+    if (buttonState[idx] == BS_HOLDING) {  // was it pressed but not held?
       buttonState[idx] = BS_RELEASED;  // button released
 //      Serial.println("b1 3");
     }
@@ -72,11 +72,11 @@ void buttonProc(){
   // check MENU button;
   if (buttonState[0]>=BS_RELEASED)  processMenuButton(buttonState[0]);
   // Check Set button
-  if (buttonState[1]>=BS_RELEASED)  processSetButton(buttonState[1]);
+  if (buttonState[1]>BS_RELEASED)  processSetButton(buttonState[1]);
 
   // If in Menu, check INCR button, check for Menu timeout
   if (isInMenu) {
-    if (buttonState[2]>=BS_RELEASED)  processIncButton(buttonState[2]);
+    if (buttonState[2]>BS_RELEASED)  processIncButton(buttonState[2]);
     // display the menu option for 5 seconds after menu button was pressed;
     // start blinking again if no button pushed for 1 second
     if ((lastButtonTime > 0) && (millis() - lastButtonTime < 5000)) {  // wbp
@@ -145,6 +145,8 @@ void processMenuButton(byte buttonState)
     return;
     }
   }
+  else
+    if (buttonState==BS_RELEASED)  return;  // ignore button release if already in menu
   
   //putstring_nl ("Is In Menu Button Proc");
   timeSettings();  // reset Settings timer

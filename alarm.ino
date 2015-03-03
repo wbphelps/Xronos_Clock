@@ -88,7 +88,7 @@ void procAlarm(byte alrmnum) {
     // ==== Begin Snooze Check ====
     else if ( alarmState[alrmnum] == AS_SNOOZING ) {  // Are We Snoozing?
       // Is it time to reset Snooze?
-      if ( (tNow - alarmTime[alrmnum]) > 9*60 ) {  // snooze time 9 minutes (for now)
+      if ( (tNow - alarmTime[alrmnum]) > (Settings.alarmSnoozeTime*60) ) {  // snooze time 9 minutes (for now)
         alarmState[alrmnum] = AS_SOUNDING;  // turn alarm back on
         alarmTime[alrmnum] = tNow;  // remember when state was changed
 //        Serial.print("alarmState: "); Serial.println(alarmState[alrmnum]);

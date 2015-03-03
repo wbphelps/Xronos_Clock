@@ -797,6 +797,14 @@ void optSetting(){
          break;
      }
    break;
+  
+  case 5: // snooze time
+     if (decrement) Settings.alarmSnoozeTime--;
+     else Settings.alarmSnoozeTime++;
+     if (Settings.alarmSnoozeTime > 15)  Settings.alarmSnoozeTime=1;  // wrap at 15
+     if (Settings.alarmSnoozeTime < 1)  Settings.alarmSnoozeTime=15;  // wrap at 1
+     cls();
+   break;
  
  }
  
@@ -883,8 +891,8 @@ void showOpt(){
       break;
      }
    break;
+   
    case 2: // Talk Items selection (Submenu 7)
-     
      if (subMenu[8]==0) { // Will skip showing this text if we are deeper in submenu
        showText(0,0,"Talk",1,color);
        showText(0,8,"Items",1,color);
@@ -939,6 +947,7 @@ void showOpt(){
        break;
      }
    break;
+
    case 3: // Temperature offset
      showText(0,0,"Temp",1,color);
      showText(0,8,"Offs:-",3,color);
@@ -978,6 +987,13 @@ void showOpt(){
        showText(0,0,"Exit",1,color);
       break;
      }
+   break;
+
+   case 5: // alarm snooze time
+     showText(0,0,"Snooze",1,color);
+     showText(0,8,"Time:",3,color);
+     snprintf(myString,3, "%02d",Settings.alarmSnoozeTime); // Make string
+     showText(20,8,myString,1,hhColor);
    break;
 
   }

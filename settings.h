@@ -60,6 +60,7 @@ struct __Settings
   byte alarmProgVol[2]; // Alarm progressive volume?
   unsigned int photoCellMin; // Photocell minimum value
   unsigned int photoCellMax; // Photocell maximum value
+  byte alarmSnoozeTime;  // how long to snooze for, in minutes
 
   byte EEcheck2; // EE version check
 };
