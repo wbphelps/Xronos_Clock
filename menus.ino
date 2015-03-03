@@ -138,8 +138,8 @@ void setAlarm(byte alrmNum) {
       if (decrement) Settings.alarmTone[alrmNum]--;
       else Settings.alarmTone[alrmNum]++;
       wave.stop();
-      if (Settings.alarmTone[alrmNum] == 255) Settings.alarmTone[alrmNum] = 10; // Negative number (byte) will be 255
-      else if (Settings.alarmTone[alrmNum] > 10) Settings.alarmTone[alrmNum] = 1;
+      if (Settings.alarmTone[alrmNum] == 255) Settings.alarmTone[alrmNum] = ALARM_TONES; // Negative number (byte) will be 255
+      else if (Settings.alarmTone[alrmNum] > ALARM_TONES) Settings.alarmTone[alrmNum] = 1;
       snprintf(myString,sizeof(myString), "ALRM%d.WAV",Settings.alarmTone[alrmNum]); // Make Alarm Filename
       playfile(myString);
       cls();

@@ -1,6 +1,6 @@
 /***********************************************************************
 * December 2014 - February 2015 - mods by William Phelps (wm@usa.net)
-* Ver 2.29 (03/02/2015)
+* Ver 2.30 (03/02/2015)
 * logarithmic brightness levels
 * bugfix: brightness set to auto by error
 * auto bright - adjust at 1 second intervals (was 10)
@@ -41,6 +41,7 @@
 * add "alarm reset" scroll message
 * hold Alarm Reset to skip upcoming alarm
 * add settable alarm snooze time 1 to 15 minutes
+* increase # of alarm tones to 12, use define
 *
 * Add TZ Hr & TZ Mn to settings?
 * more compact text scrolling
@@ -81,7 +82,7 @@
 #include "myIR_Remote.h" // IR Codes defintion file (comment out if IR receiver not present)
 
 //#define firmware_ver 209 // Current Firmware version
-#define FIRMWARE_VER 229 // Current Firmware version (wbp)
+#define FIRMWARE_VER 230 // Current Firmware version (wbp)
 // EE version - change this to force reset of EE memory
 #define EE_VERSION 13
 
@@ -142,6 +143,7 @@ RFM12B radio;
 #define MAX_OPTIONS 5 // Max number of options menu items 
 
 #define ALARM_PROG_STARTVOL 6 // Progressive alarm starting volume
+#define ALARM_TONES 12  // number of alarm tones
 
 //#ifdef HAVE_GPS
 ///volatile uint8_t g_gps_enabled = 2;  // zero: off, 1: 4800 bps, 2: 9600 bps
