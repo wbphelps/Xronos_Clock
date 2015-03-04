@@ -3,11 +3,14 @@
  * print error message and halt
  */
 void error_P(const char *str) {
-//  PgmPrint("Error: ");
-//  SerialPrint_P(str);
+#ifdef PRT_ERROR
+  PgmPrint("Error: ");
+  SerialPrint_P(str);
+#endif
   char string1[20];
   snprintf(string1,sizeof(string1), "Error: $s", str);
   scrolltextsizexcolor(4,string1,RED,5, false);  // scroll without checking buttons (wbp)
+  delay(1000);
   sdErrorCheck();
   while(1);
 }
@@ -16,14 +19,28 @@ void error_P(const char *str) {
  */
 void sdErrorCheck(void) {
   if (!card.errorCode()) return;
-//  PgmPrint("\r\nSD I/O error: ");
-//  Serial.print(card.errorCode(), HEX);
-//  PgmPrint(", ");
-//  Serial.println(card.errorData(), HEX);
-//  while(1);
+#ifdef PRT_ERROR
+  PgmPrint("\r\nSD I/O error: ");
+  Serial.print(card.errorCode(), HEX);
+  PgmPrint(", ");
+  Serial.println(card.errorData(), HEX);
+#endif
   scrolltextsizexcolor(4,"SD Card Error",RED,5, false);  // scroll without checking buttons (wbp)
   delay(1000);
+  while(1);
 }
+
+/*
+ * set volume on wave device
+ */
+void setVol(byte vol) {
+  byte v1 = MAX_VOLUME-vol;  // volume on wave device is inverted - 0 = loudest
+  if (v1 != wave.volume) {
+    wave.volume=v1; // Set Playback Sound - 0 is loudest, 7 is lowest
+    delay(100); // try to avoid clicks when volume changed ???
+  }
+}
+
 // =======================================================================================
 // ---- Plays a full file from beginning to end with no pause.   ----
 // =======================================================================================
@@ -52,25 +69,29 @@ void playfile(char *name) {
   }
   // look in the root directory and open the file
   if (!f.open(root, name)) {
-    //putstring("Couldn't open file "); 
+#ifdef PRT_ERROR
+    putstring("Couldn't open file "); 
+#endif
     delay (20);
     // Retry
     if (!f.open(root, name)) {
-//      putstring("Couldn't open file "); Serial.print(name);
+#ifdef PRT_ERROR
+      putstring("Couldn't open file "); Serial.print(name);
+#endif
+      scrolltextsizexcolor(4,"File Error",RED,5, false);  // scroll without checking buttons 
+      delay(1000);
       return; 
     }
   }
   
   // OK read the file and turn it into a wave object
   if (!wave.create(f)) {
-//    putstring_nl("Not a valid WAV");
+#ifdef PRT_ERROR
+    putstring_nl("Not a valid WAV");
+#endif
     return;
   }
-  byte vol = MAX_VOLUME-Settings.soundVol;
-  if (vol != wave.volume) {
-    wave.volume=vol; // Set Playback Sound - 0 is loudest, 7 is lowest
-    delay(100); // try to avoid clicks when volume changed (wbp)???
-  }
+  setVol(Settings.soundVol);  // set volume if changed
   // ok time to play! start playback
   wave.play();
  
@@ -87,17 +108,24 @@ void playalarmfile(char *name, byte alrmnum) {
   }
   // look in the root directory and open the file
   if (!f.open(root, name)) {
-    //putstring("Couldn't open file "); 
+#ifdef PRT_ERROR
+    putstring("Couldn't open file "); 
+#endif
     delay (20);
     // Retry
     if (!f.open(root, name)) {
-//      putstring("Couldn't open file "); Serial.print(name);
+#ifdef PRT_ERROR
+      putstring("Couldn't open file "); Serial.print(name);
+#endif
       return; 
     }
   }
   // OK read the file and turn it into a wave object
   if (!wave.create(f)) {
-    putstring_nl("Not a valid WAV");  return;
+#ifdef PRT_ERROR
+    putstring_nl("Not a valid WAV");
+#endif
+    return;
   }
   // Check if Alarm should be escalated
 //  if (alrmToneNum[alrmnum]<=ALARM_PROGRESSIVE){ // wbp
@@ -106,10 +134,7 @@ void playalarmfile(char *name, byte alrmnum) {
     if (alrmVol[alrmnum]<MAX_VOLUME)  alrmVol[alrmnum]++;
   }
   else alrmVol[alrmnum]=MAX_VOLUME;
-  if (alrmVol[alrmnum] != wave.volume) {
-    wave.volume=alrmVol[alrmnum]; // Set Playback Sound - 0 is loudest, 7 is lowest
-    delay(100); // try to avoid clicks when volume changed (wbp)???
-  }
+  setVol(alrmVol[alrmnum]);
   // ok time to play! start playback
   wave.play();
   //radio.Wakeup(); // Disable RF12B
@@ -123,7 +148,9 @@ void WaveShieldInit () {
  // ------ Wave Shield init
  // if (!card.init(true)) { //play with 4 MHz spi if 8MHz isn't working for you
   if (!card.init()) {         //play with 8 MHz spi (default faster!)  
+#ifdef PRT_ERROR
     putstring_nl("Card init. failed!");  // Something went wrong, lets print out why
+#endif
     sdErrorCheck();
     while(1);                            // then 'halt' - do nothing!
   }
@@ -136,21 +163,28 @@ void WaveShieldInit () {
       break;                             // we found one, lets bail
   }
   if (part == 5) {                       // if we ended up not finding one  :(
+#ifdef PRT_ERROR
     putstring_nl("No valid FAT partition!");
+#endif
     sdErrorCheck();      // Something went wrong, lets print out why
     while(1);                            // then 'halt' - do nothing!
   }
-   // Lets tell the user about what we found
-  //putstring("Using partition ");
-  //Serial.print(part, DEC);
- // putstring(", type is FAT");
- // Serial.println(vol.fatType(),DEC);     // FAT16 or FAT32?
+  // Lets tell the user about what we found
+#ifdef PRT_DEBUG
+  putstring("Using partition ");
+  Serial.print(part, DEC);
+  putstring(", type is FAT");
+  Serial.println(vol.fatType(),DEC);     // FAT16 or FAT32?
+#endif
   // Try to open the root directory
   if (!root.openRoot(vol)) {
+#ifdef PRT_ERROR
     putstring_nl("Can't open root dir!"); // Something went wrong,
+#endif
     while(1);                             // then 'halt' - do nothing!
   }
   // Whew! We got past the tough parts.
-  //  putstring_nl("Ready!"); 
-  
+#ifdef PRT_DEBUG
+  putstring_nl("Ready!");  
+#endif
 }

@@ -1,8 +1,8 @@
 # Xronos_Clock
 Custom firmware for the Xronos Clock from LensDigital
 
-Latest update Feb 27, 2015 - William Phelps - wm (at) usa.net 
-* Ver 2.32 (03/03/2015)
+Latest update March 4, 2015 - William Phelps - wm (at) usa.net 
+* Ver 2.33
  
 ## **Includes the following modifications:** ##
 
@@ -51,3 +51,4 @@ Latest update Feb 27, 2015 - William Phelps - wm (at) usa.net
 * increase # of alarm tones to 12, use define
 * Menu button exits QMenu
 * fix alarm volume display (& rework volume code)
+* add #define for Radio, IR, GPS - conditional compile

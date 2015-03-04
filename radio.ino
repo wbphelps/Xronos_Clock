@@ -1,8 +1,9 @@
 // =======================================================================================
 // ---- Receives Temperature from remote RF12B transmitter ----
 // =======================================================================================
-static boolean __radioOn=true;
+static boolean __radioOn=false;
 
+#ifdef RFM12B_PRESENT
 void receiveTemp() {
   if (!Settings.RadioEnabled) return;
   if (isInMenu) return;
@@ -68,10 +69,12 @@ void receiveTemp() {
       
     }
 }
+#endif
 
 // ==================================================
 // -- Turns off radio and keeps track of it's status
 void turnOffRadio() {
+#ifdef RFM12B_PRESENT
  if (!Settings.RadioEnabled) return;
  //radio.Sleep();
  if (__radioOn) {
@@ -80,6 +83,8 @@ void turnOffRadio() {
    //putstring_nl ("Radio Sleep!"); 
   delay (5);
  }
+#else
+ return;  // no radio
+#endif
 }
-
 

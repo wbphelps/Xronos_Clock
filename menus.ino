@@ -527,38 +527,43 @@ void sysSetting(){
         //playSFX(1);
         break;
       case 10: // GPS
-        cls(); 
-        if (GPS_PRESENT) { // If GPS Hardware defined globally
-          if (Settings.GPSenabled) Settings.GPSenabled=false; // Turn off GPS
-          else Settings.GPSenabled=true; // Turn on GPS
-          //playSFX(1);
+        cls();
+#ifdef GPS_PRESENT  // If GPS Hardware defined globally
+        if (Settings.GPSenabled)  Settings.GPSenabled=false; // Toggle GPS
+        else {
+          Settings.GPSenabled=true; // Turn on GPS
+          gpsInit(9600);  // init GPS & Serial port for 9600 BPS
         }
+#else
+        playSFX(5);
+        Settings.GPSenabled=false;
+#endif
       break;
       case 11: // IR
         cls(); 
-        if (IR_PRESENT) { // If IR Hardware defined globally
-          if (Settings.IRenabled) Settings.IRenabled=false; // Turn off IR
-          else {
-            Settings.IRenabled=true; // Turn on IR
-            irrecv.enableIRIn(); // Start the IR receiver. Comment out if IR not present
-          }
-          //playSFX(1);
+#ifdef IR_PRESENT  // If IR Hardware defined globally
+        if (Settings.IRenabled) Settings.IRenabled=false; // Toggle IR setting
+        else {
+          Settings.IRenabled=true; // Turn on IR
+          irrecv.enableIRIn(); // Start the IR receiver. Comment out if IR not present
         }
+#else
+        playSFX(5);
+        Settings.IRenabled=false;
+#endif
       break;
       case 12: // RFM
         cls();
-        if ( RFM12B_PRESENT ) { // If chip phisically present
-          if (Settings.RadioEnabled) Settings.RadioEnabled=false;
-          else {
-            Settings.RadioEnabled=true;
-            delay (15);
-          }
-          //playSFX(1);
-        }
+#ifdef RFM12B_PRESENT  // If chip phisically present
+        if (Settings.RadioEnabled)  Settings.RadioEnabled=false;  // toggle Radio
         else {
-          playSFX(5);
-          Settings.RadioEnabled=false;
+          Settings.RadioEnabled=true;
+          delay (15);
         }
+#else
+        playSFX(5);
+        Settings.RadioEnabled=false;
+#endif
       break;
   }
 
@@ -660,18 +665,30 @@ void showSys(){
     break;
     case 10: // GPS Receiver
       showText(2,0,"GPS",1,color); 
+#ifdef GPS_PRESENT  // If GPS Hardware defined globally
       if (Settings.GPSenabled) showText(10,8,"ON",1,hhColor); 
-      else showText(10,8,"OFF",1,hhColor);  
+      else showText(10,8,"OFF",1,hhColor);
+#else
+      showText(10,8,"N/A",1,hhColor);
+#endif
     break;
     case 11: // IR Receiver
       showText(2,0,"IR",1,color); 
+#ifdef IR_PRESENT  // If IR Hardware defined globally
       if (Settings.IRenabled) showText(10,8,"ON",1,hhColor); 
-      else showText(10,8,"OFF",1,hhColor);  
+      else showText(10,8,"OFF",1,hhColor);
+#else
+      showText(10,8,"N/A",1,hhColor);
+#endif
     break;
     case 12: // RF Module
       showText(2,0,"RFM12",1,color); 
+#ifdef RFM12B_PRESENT  // If IR Hardware defined globally
       if (Settings.RadioEnabled) showText(10,8,"ON",1,hhColor); 
       else showText(10,8,"OFF",1,hhColor);  
+#else
+      showText(10,8,"N/A",1,hhColor);
+#endif
     break;
   }
 }
@@ -707,25 +724,28 @@ void optSetting(){
          Settings.infoOptions = Settings.infoOptions ^ 64; //Toggle
          break;
        case 4: // Scroll External Temp
-         if ( RFM12B_PRESENT ) {
-           Settings.infoOptions = Settings.infoOptions ^ 32; //Toggle
-         } 
-         else playSFX(5);
+#ifdef RFM12B_PRESENT
+         Settings.infoOptions = Settings.infoOptions ^ 32; //Toggle
+#else
+         playSFX(5);  // no radio
+#endif
          break;
        case 5: // Scroll  Alarm
          Settings.infoOptions = Settings.infoOptions ^ 16; //Toggle
          break;
        case 6: // Scroll  Sensor Data
-         if ( RFM12B_PRESENT ) {
-           Settings.infoOptions = Settings.infoOptions ^ 8; //Toggle
-         }
-         else playSFX(5);
+#ifdef RFM12B_PRESENT
+         Settings.infoOptions = Settings.infoOptions ^ 8; //Toggle
+#else
+         playSFX(5);
+#endif
          break;
        case 7: // Scroll  Humidity data
-         if ( RFM12B_PRESENT ) {
-           Settings.infoOptions = Settings.infoOptions ^ 4; //Toggle
-         }
-         else playSFX(5);
+#ifdef RFM12B_PRESENT
+         Settings.infoOptions = Settings.infoOptions ^ 4; //Toggle
+#else
+         playSFX(5);
+#endif
          break;
        case 8: // Exit
          subMenu[7]=0;
@@ -751,16 +771,18 @@ void optSetting(){
          break;
       case 4: // Say External Temp
          //Serial.println ("Saving say Ext Temp");
-         if ( RFM12B_PRESENT ) {
-           Settings.sayOptions = Settings.sayOptions ^ 4; //Toggle
-         }
-         else playSFX(5);
+#ifdef RFM12B_PRESENT
+         Settings.sayOptions = Settings.sayOptions ^ 4; //Toggle
+#else
+         playSFX(5);
+#endif
          break;
       case 5: // Say External Humidity
-         if ( RFM12B_PRESENT ) {
-           Settings.sayOptions = Settings.sayOptions ^ 2; //Toggle
-         }
-         else playSFX(5);
+#ifdef RFM12B_PRESENT
+         Settings.sayOptions = Settings.sayOptions ^ 2; //Toggle
+#else
+         playSFX(5);
+#endif
          break;
       case 6: // Say  Alarm
          Settings.sayOptions = Settings.sayOptions ^ 8; //Toggle

@@ -1,6 +1,6 @@
 /***********************************************************************
 * December 2014 - February 2015 - mods by William Phelps (wm@usa.net)
-* Ver 2.32 (03/03/2015)
+* Ver 2.33 (03/04/2015)
 * logarithmic brightness levels
 * bugfix: brightness set to auto by error
 * auto bright - adjust at 1 second intervals (was 10)
@@ -44,6 +44,7 @@
 * increase # of alarm tones to 12, use define
 * Menu button exits QMenu
 * fix alarm volume display (& rework volume code)
+* add #define for Radio, IR, GPS - conditional compile
 *
 * Add TZ Hr & TZ Mn to settings?
 * more compact text scrolling
@@ -73,28 +74,37 @@
 #include <DS1307RTC.h>  // a basic DS1307 library that returns time as a time_t
 #include <stdlib.h> // Used for string manipulations and string to int conversions
 #include "settings.h" // settings & options stored in EE memory
-#include "gps.h"  // wbp
 #include "WaveUtil.h" // Used by wave shield
 #include "WaveHC.h" // Used by wave shield (library modified by LensDigital to accomodate ATMega644p/ATMega1284p)
 //#include <EEPROM.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#include <RFM12B.h>
-#include "IRremote.h" // Comment out if IR receiver not present
-#include "myIR_Remote.h" // IR Codes defintion file (comment out if IR receiver not present)
 
-#define FIRMWARE_VER 232 // Current Firmware version (wbp)
+#define FIRMWARE_VER 233 // Current Firmware version (wbp)
 // EE version - change this to force reset of EE memory
 #define EE_VERSION 13
+
+//#define PRT_DEBUG
+//#define PRT_ERROR
 
 // ============================================================================================
 // Important User Hardware config settings, modify as needed
 // ============================================================================================
-const byte RFM12B_PRESENT=false; // Defines if RFM12B Chip present.  Set to true to enable. Must also have ATMega1284p! Will not work with ATMega644p chip
-const byte IR_PRESENT=true; // Set to True if IR receiver is present. Must also have ATMega1284p! Will not work with ATMega644p chip
-const byte GPS_PRESENT=true; // Set to True if GPS receiver is present
+//#define RFM12B_PRESENT  // Defines if RFM12B Chip present.  Set to true to enable. Must also have ATMega1284p! Will not work with ATMega644p chip
+#define IR_PRESENT  // Set to True if IR receiver is present. Must also have ATMega1284p! Will not work with ATMega644p chip
+#define GPS_PRESENT // Set to True if GPS receiver is present
 #define AUTO_BRIGHTNESS_ON 0  //Set to 1 to disable autobrightness menu feature, 0 to enable if photocell is present.
 // ============================End of User Hardware Settings ==================================
+#ifdef GPS_PRESENT
+#include "gps.h"  // wbp
+#endif
+#ifdef IR_PRESENT
+#include "IRremote.h" // Comment out if IR receiver not present
+#include "myIR_Remote.h" // IR Codes defintion file (comment out if IR receiver not present)
+#endif
+#ifdef RFM12B_PRESENT
+#include <RFM12B.h>
+#endif
 
 // Pins Declarations
 // ===================================================================================
@@ -133,7 +143,9 @@ const byte INC_BUTTON_PIN = 26;  // "inc time" button on digital 26 (analog 2);
 #define NODEID           1  //network ID used for this unit
 #define NETWORKID       1  //the network ID we are on
 // Need an instance of the Radio Module
+#ifdef RFM12B_PRESENT
 RFM12B radio;
+#endif
 // ===================================================================================
 // MISC declarations
 // ===================================================================================
@@ -305,15 +317,17 @@ void TempInit(){
   // Temperature sensor init
   //Serial.print("Locating DS18B20 temperature devices...");
   sensors.begin();
-//  putstring("Found ");
-//  Serial.print(sensors.getDeviceCount(), DEC);
-//  putstring_nl(" devices.");
+#ifdef PRT_DEBUG
+  putstring("Found ");
+  Serial.print(sensors.getDeviceCount(), DEC);
+  putstring_nl(" devices.");
   // report parasite power requirements
-//  putstring("DS18B20 parasite power is: "); 
-//  if (sensors.isParasitePowerMode()) putstring_nl("ON");
-//  else putstring_nl("OFF");
-//   if (!sensors.getAddress(insideThermometer, 0)) putstring_nl("Unable to find address for Device 0"); 
- // set the resolution to 9 bit (Each Dallas/Maxim device is capable of several different resolutions)
+  putstring("DS18B20 parasite power is: "); 
+  if (sensors.isParasitePowerMode())  putstring_nl("ON");
+  else  putstring_nl("OFF");
+  if (!sensors.getAddress(insideThermometer, 0))  putstring_nl("Unable to find address for Device 0");
+#endif
+  // set the resolution to 9 bit (Each Dallas/Maxim device is capable of several different resolutions)
   sensors.setResolution(insideThermometer, 9); 
   
 }
@@ -323,6 +337,7 @@ void TempInit(){
 // * Decode IR Codes *
 // Comment out if IR receiver not present
 // ===================================================================
+#ifdef IR_PRESENT
 void IR_process () {
   if (!Settings.IRenabled) return;
   if ((millis()-g_IR_timer) > 1000) { // leave IR signal indicator on for 1 second
@@ -382,6 +397,7 @@ void IR_process () {
     irrecv.resume(); // Receive the next value
   }
 }
+#endif
 
 //// Timer1 16 bits
 //// 16mHz / 16000 = 1000 hZ
@@ -426,7 +442,7 @@ void initTimer2()
   TCNT2 = 0; // Initialize counter
 }
 
-//#ifdef HAVE_GPS
+#ifdef GPS_PRESENT
 static uint16_t gps_counter = 0;
 //#endif
 // runs every 0.000128 seconds
@@ -454,6 +470,7 @@ void checkGPS() {
     g_GPS_receive = 3; // 
   }
 }
+#endif
 
 void checkDST() {
 //#ifdef HAVE_AUTO_DST
@@ -479,38 +496,49 @@ void setup ()
   // ========= Read Settings from EEPROM ===============================
   loadSettings(); // load variables saved in EE (load defaults if needed)
   Settings.clockVer = FIRMWARE_VER;  // update clock firmware version
-  Settings.GPSenabled = true; // temp ???
   clockColor = Settings.clockColor;  // set working copy of clock color
-  if ( !RFM12B_PRESENT )  Settings.RadioEnabled=false;
+
+#ifdef RFM12B_PRESENT
   if (!Settings.RadioEnabled) { // Disable saying ext temperature/humidity
     if (Settings.sayOptions & 4) Settings.sayOptions = Settings.sayOptions ^ 4;
     if (Settings.sayOptions & 2) Settings.sayOptions = Settings.sayOptions ^ 2;
   }
-  if ( !IR_PRESENT )  Settings.IRenabled=false;
-  if ( !GPS_PRESENT )  Settings.GPSenabled = false;
-  
+#else
+  Settings.RadioEnabled=false;
+#endif
+#ifndef IR_PRESENT
+  Settings.IRenabled=false;
+#endif
+#ifndef GPS_PRESENT
+  Settings.GPSenabled = false;
+#endif
+
   // Print FW Version
-//  char welcome[15];
-//  unsigned int ver = Settings.clockVer;  // 3 digit version number
-//  byte temp = ver%100; // last 2 digits
-//  byte ver3 = temp % 10; // Last digit
-//  byte ver2 = (temp - ver3) / 10; // Second Digit
-//  ver = (ver - temp) / 100; // First digit
-//  snprintf(welcome, sizeof(welcome),"Firmware:V%d.%d%d",ver,ver2,ver3); 
-//  Serial.println (welcome);
+#ifdef PRT_DEBUG
+  char welcome[15];
+  unsigned int ver = Settings.clockVer;  // 3 digit version number
+  byte temp = ver%100; // last 2 digits
+  byte ver3 = temp % 10; // Last digit
+  byte ver2 = (temp - ver3) / 10; // Second Digit
+  ver = (ver - temp) / 100; // First digit
+  snprintf(welcome, sizeof(welcome),"Firmware:V%d.%d%d",ver,ver2,ver3); 
+  Serial.println (welcome);
+#endif
   
   setSyncProvider(RTC.get);   // the function to get the time from the RTC
-//  if(timeStatus()!= timeSet) 
-//     putstring_nl("Unable to sync with the RTC");
-//  else
-//     putstring_nl("RTC has set the system time");    
+#ifdef PRT_ERROR
+  if(timeStatus()!= timeSet) 
+     putstring_nl("Unable to sync with the RTC");
+  else
+     putstring_nl("RTC has set the system time");
+#endif
   ht1632_setup();  // Setup LED Deisplay
 
   // Uncomment following two lines and modify to set time. After setting time, commend them and re-upload sketch
   //setTime(13,04,0,9,11,12); // Set time on Arduino (hr,min,sec,day,month,yr). Use with RTC.set(now());
   //RTC.set(now()); // Write Time data to RTC Chip. Use with previous command
 
-  wave.volume = Settings.soundVol; // Change System Sound Volume
+  setVol(Settings.soundVol); // Change System Sound Volume
   WaveShieldInit();
   TempInit();
 
@@ -521,20 +549,24 @@ void setup ()
 
   startup(); // Show welcoming screen
 
+#ifdef GPS_PRESENT
   if (Settings.GPSenabled) {
 //    Serial.println("GPS Enabled");
     gpsInit(9600);  // init GPS & Serial port for 9600 BPS
   }
 //  else
 //    Serial.println("GPS Disabled");
+#endif
 
   // Initialize Radio module 
+#ifdef RFM12B_PRESENT
   if (Settings.RadioEnabled) {
 //    Serial.println("Radio Enabled");
     radio.Initialize(NODEID, RF12_915MHZ, NETWORKID);
   }
 //  else
 //    Serial.println("Radio Disabled");
+#endif
 
 tmElements_t tm;
   breakTime(now(), tm);
@@ -543,6 +575,7 @@ tmElements_t tm;
 //  Serial.println (FreeRam());
 //  radio.Sleep();
 
+#ifdef IR_PRESENT
   if (Settings.IRenabled) {
     delay(1000); 
 //    Serial.println("IR Enabled");
@@ -550,8 +583,11 @@ tmElements_t tm;
   }
 //  else
 //    Serial.println("IR Disabled");
+#endif
 
+#ifdef GPS_PRESENT
   initTimer2();  // start timer interrupt running for GPS read (wbp)
+#endif
 
 }
 
@@ -578,9 +614,15 @@ void loop ()
 //  rearmAlrm(1);
   infoDisplay();
   autoBrightness();
+#ifdef RFM12B_PRESENT
   receiveTemp();
+#endif
+#ifdef IR_PRESENT
   IR_process();
+#endif
+#ifdef GPS_PRESENT
   checkGPS();  // wbp
+#endif
   checkDST();  // wbp
   saveSettings(false);  // wbp
 
