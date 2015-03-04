@@ -3,8 +3,11 @@
  * print error message and halt
  */
 void error_P(const char *str) {
-  PgmPrint("Error: ");
-  SerialPrint_P(str);
+//  PgmPrint("Error: ");
+//  SerialPrint_P(str);
+  char string1[20];
+  snprintf(string1,sizeof(string1), "Error: $s", str);
+  scrolltextsizexcolor(4,string1,RED,5, false);  // scroll without checking buttons (wbp)
   sdErrorCheck();
   while(1);
 }
@@ -13,11 +16,13 @@ void error_P(const char *str) {
  */
 void sdErrorCheck(void) {
   if (!card.errorCode()) return;
-  PgmPrint("\r\nSD I/O error: ");
-  Serial.print(card.errorCode(), HEX);
-  PgmPrint(", ");
-  Serial.println(card.errorData(), HEX);
-  while(1);
+//  PgmPrint("\r\nSD I/O error: ");
+//  Serial.print(card.errorCode(), HEX);
+//  PgmPrint(", ");
+//  Serial.println(card.errorData(), HEX);
+//  while(1);
+  scrolltextsizexcolor(4,"SD Card Error",RED,5, false);  // scroll without checking buttons (wbp)
+  delay(1000);
 }
 // =======================================================================================
 // ---- Plays a full file from beginning to end with no pause.   ----
@@ -51,16 +56,21 @@ void playfile(char *name) {
     delay (20);
     // Retry
     if (!f.open(root, name)) {
-      putstring("Couldn't open file "); Serial.print(name);   return; 
+//      putstring("Couldn't open file "); Serial.print(name);
+      return; 
     }
   }
   
   // OK read the file and turn it into a wave object
   if (!wave.create(f)) {
-    putstring_nl("Not a valid WAV"); return;
+//    putstring_nl("Not a valid WAV");
+    return;
   }
-  wave.volume=Settings.soundVol; // Set Playback Sound
-  delay(100); // try to avoid clicks when volume changed (wbp)???
+  byte vol = MAX_VOLUME-Settings.soundVol;
+  if (vol != wave.volume) {
+    wave.volume=vol; // Set Playback Sound - 0 is loudest, 7 is lowest
+    delay(100); // try to avoid clicks when volume changed (wbp)???
+  }
   // ok time to play! start playback
   wave.play();
  
@@ -81,7 +91,8 @@ void playalarmfile(char *name, byte alrmnum) {
     delay (20);
     // Retry
     if (!f.open(root, name)) {
-      putstring("Couldn't open file "); Serial.print(name);   return; 
+//      putstring("Couldn't open file "); Serial.print(name);
+      return; 
     }
   }
   // OK read the file and turn it into a wave object
@@ -92,11 +103,13 @@ void playalarmfile(char *name, byte alrmnum) {
 //  if (alrmToneNum[alrmnum]<=ALARM_PROGRESSIVE){ // wbp
   if (Settings.alarmProgVol[alrmnum]){ // wbp
     // Escalate alarm volume
-    if (alrmVol[alrmnum]>0) alrmVol[alrmnum]--;
+    if (alrmVol[alrmnum]<MAX_VOLUME)  alrmVol[alrmnum]++;
   }
-  else alrmVol[alrmnum]=0;
-  wave.volume=alrmVol[alrmnum]; // Set Alarm Volume
-  delay(100); // try to avoid clicks when volume changed (wbp)???
+  else alrmVol[alrmnum]=MAX_VOLUME;
+  if (alrmVol[alrmnum] != wave.volume) {
+    wave.volume=alrmVol[alrmnum]; // Set Playback Sound - 0 is loudest, 7 is lowest
+    delay(100); // try to avoid clicks when volume changed (wbp)???
+  }
   // ok time to play! start playback
   wave.play();
   //radio.Wakeup(); // Disable RF12B

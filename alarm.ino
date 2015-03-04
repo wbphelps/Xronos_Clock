@@ -80,7 +80,7 @@ void procAlarm(byte alrmnum) {
         alarmTime[alrmnum] = tNow;  // remember when state was changed
 //        Serial.print("alarmState: "); Serial.println(alarmState[alrmnum]);
         if (Settings.alarmProgVol[alrmnum]) alrmVol[alrmnum]=ALARM_PROG_STARTVOL; //Set low volume for escalating alarms (wbp)
-        else alrmVol[alrmnum]=0; // Set High volume for non-escalating alarms
+        else alrmVol[alrmnum]=MAX_VOLUME; // Set High volume for non-escalating alarms
       }
       else
         playAlarm(alrmnum);  // restart alarm sound if needed
@@ -94,7 +94,7 @@ void procAlarm(byte alrmnum) {
 //        Serial.print("alarmState: "); Serial.println(alarmState[alrmnum]);
         if (Settings.alarmProgVol[alrmnum])  // progressive alarm volume?
           alrmVol[alrmnum]=ALARM_PROG_STARTVOL; // Reset Alarm Volume
-        else  alrmVol[alrmnum]=0;  // alarm volume to max
+        else  alrmVol[alrmnum]=MAX_VOLUME;  // alarm volume to max
       }
     }
     // ==== End Snooze Check ====
@@ -176,7 +176,7 @@ boolean resetAlrm(byte alrmnum){
     scrolltextsizexcolor(4,string1,RED,5, false);  // scroll without checking buttons (wbp)
     delay(500);
     if (Settings.alarmProgVol[alrmnum]) alrmVol[alrmnum]=ALARM_PROG_STARTVOL; //Set low volume for escalating alarms (wbp)
-    else alrmVol[alrmnum]=0; // Set High volume for non-escalating alarms
+    else alrmVol[alrmnum]=MAX_VOLUME; // Set High volume for non-escalating alarms
     return true;
     }
   return false;
@@ -195,7 +195,7 @@ void skipAlrm(byte alrmnum){
     alarmState[alrmnum] = AS_OFF;  // reset it back to normal
     alarmTime[alrmnum] = now();  // set time of state change
 //    Serial.print("alarmState: "); Serial.println(alarmState[alrmnum]);
-    snprintf(string1,sizeof(string1), "Alarm %d Reset", alrmnum+1);
+    snprintf(string1,sizeof(string1), "Alarm %d Restored", alrmnum+1);
     scrolltextsizexcolor(4,string1,RED,5, false);  // scroll without checking buttons (wbp)
   }
   else {

@@ -4,14 +4,14 @@
 // =======================================================================================
 void showMenu() 
 {
- playSFX(2);
+  playSFX(2);
   for (int i=0;i<MAX_SUBMENUS;i++) { // Initialize SubMenus  (wbp)
       subMenu[i]=0;
    }
      
   switch (menuItem) {
     case 1: // Set Alarm 1 Menu Item (Display Only)
-      putstring_nl ("Display Alrm 1 Menu");
+      //putstring_nl ("Display Alrm 1 Menu");
       okClock=false;
       isSettingSys=false;
       isSettingOptions=false;
@@ -20,7 +20,7 @@ void showMenu()
       showText(3,8,"Alrm1",1,ORANGE);
       break;
     case 2: // Set Alarm 2 Menu Item (Display Only)
-      putstring_nl ("Display Alrm 2 Menu");
+      //putstring_nl ("Display Alrm 2 Menu");
       okClock=false;
       isSettingSys=false;
       cls();
@@ -28,7 +28,7 @@ void showMenu()
       showText(3,8,"Alrm2",1,ORANGE);
       break;
     case 3: // Time and Date setting menu
-      putstring_nl ("Display Date/Time Menu");
+      //putstring_nl ("Display Date/Time Menu");
       okClock=false;
       isSettingSys=false;
       cls();
@@ -36,14 +36,14 @@ void showMenu()
       showText(5,8,"Date",1,ORANGE);
       break;
    case 4: // System Settings (preferences/setup)
-      putstring_nl ("Display System Menu");
+      //putstring_nl ("Display System Menu");
       okClock=false;
       cls();
       showText(1,0,"Sys",1,ORANGE);
       showText(3,8,"Setup",1,ORANGE);
       break;
    case 5: // User Options menu
-      putstring_nl ("Display Options Menu");
+      //putstring_nl ("Display Options Menu");
       okClock=false;
       isSettingSys=false;
       cls();
@@ -281,8 +281,9 @@ void showAlarm(byte color){
 
     case 6: // Alarm Tone selection
       showText(1,0,"Tone:",1,color);
-      snprintf(myString,sizeof(myString), "ALRM%d",Settings.alarmTone[alrmNum]); // Make Alarm Filename
-      showText(0,8,myString,1,hhColor); 
+//      showText(0,8,"Alm",1,hhColor);
+      snprintf(myString,sizeof(myString), "%02d",Settings.alarmTone[alrmNum]); // Make Alarm Filename
+      showText(20,8,myString,1,hhColor); 
       break;
 
     case 7: // Alarm Progressive Volume On/off
@@ -444,9 +445,10 @@ void setTimeDate() {
 // ---- by LensDigital
 // =======================================================================================
 void sysSetting(){
+  char string1[10];
  //putstring_nl ("Setting System");
- if (subMenu[3])  playSFX(1); // Don't play sound if not setting anything, i.e. submenu=0
- switch (subMenu[3]) {
+  if (subMenu[3] && (subMenu[3]!=7))  playSFX(1); // Don't play sound if not setting anything, i.e. submenu=0
+  switch (subMenu[3]) {
     case 1: // 12/24 Hour Mode
         if (!Settings.time12hr) Settings.time12hr=true; 
         else Settings.time12hr=false ; 
@@ -502,13 +504,15 @@ void sysSetting(){
        if (Settings.tempUnit) Settings.tempUnit=false;
        else  Settings.tempUnit=true;
        break;
-      case 7: // Sound Volume
+      case 7: // Sound Volume - 0 is lowest, 7 is loudest
         cls();
-        if (decrement) Settings.soundVol++;
-        else Settings.soundVol--;
-        if (Settings.soundVol == 255) Settings.soundVol=8;
-        else if (Settings.soundVol > 8) Settings.soundVol=0;
-        //playSFX(1);
+        if (decrement) Settings.soundVol--;
+        else Settings.soundVol++;
+        if (Settings.soundVol == 255)  Settings.soundVol=7;
+        else if (Settings.soundVol > 7)  Settings.soundVol=0;
+//        playSFX(1);  // play tone AFTER changing volume!
+        snprintf(string1,10, "%d.WAV",Settings.soundVol+1); // Make Filename
+        playfile(string1);  // play it
         break;
       case 8: // cursor blink
         cls(); 
@@ -640,9 +644,9 @@ void showSys(){
       byte barColor; // Color of volume bar
       showText(0,0,"Sound",1,color);
       showText(2,9,"VOL",1,color);
-      for (int y=8;y>Settings.soundVol;y--)
-         for (int x=0;x<y-Settings.soundVol;x++)
-          plot ( (x+24)+(8-y),(y+8)-1, color); 
+      for (int x=0;x<=Settings.soundVol;x++)  // x value, 0 to volume level
+        for (int y=0;y<=x;y++)  // y value
+          plot ( (x+23),(15-y), color);  // plot volume bar graph
       break; 
     case 8: // blink
       showText(2,0,"Blink",1,color);
@@ -695,11 +699,11 @@ void optSetting(){
          cls();
        break;
        case 2: // Scroll Date
-         putstring_nl ("Scroll Date");
+//         putstring_nl ("Scroll Date");
          Settings.infoOptions = Settings.infoOptions ^ 128; //Toggle
         break;
        case 3: // Scroll inernal temp
-         putstring_nl ("Scroll Temp");
+//         putstring_nl ("Scroll Temp");
          Settings.infoOptions = Settings.infoOptions ^ 64; //Toggle
          break;
        case 4: // Scroll External Temp

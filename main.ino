@@ -647,7 +647,7 @@ void quickDisplay(boolean doAll)
 //  if (soundAlarm[0]) interruptAlrm[0]=true; // If pressed Stops Alarm
 //  if (soundAlarm[1]) interruptAlrm[1]=true; // If pressed Stops Alarm
   isInQMenu=true;
-  lastButtonTime = millis();
+//  lastButtonTime = millis();
   talkingMenu(doAll);
 }
 

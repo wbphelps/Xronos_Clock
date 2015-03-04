@@ -1,6 +1,6 @@
 /***********************************************************************
 * December 2014 - February 2015 - mods by William Phelps (wm@usa.net)
-* Ver 2.30 (03/02/2015)
+* Ver 2.32 (03/03/2015)
 * logarithmic brightness levels
 * bugfix: brightness set to auto by error
 * auto bright - adjust at 1 second intervals (was 10)
@@ -42,6 +42,8 @@
 * hold Alarm Reset to skip upcoming alarm
 * add settable alarm snooze time 1 to 15 minutes
 * increase # of alarm tones to 12, use define
+* Menu button exits QMenu
+* fix alarm volume display (& rework volume code)
 *
 * Add TZ Hr & TZ Mn to settings?
 * more compact text scrolling
@@ -81,8 +83,7 @@
 #include "IRremote.h" // Comment out if IR receiver not present
 #include "myIR_Remote.h" // IR Codes defintion file (comment out if IR receiver not present)
 
-//#define firmware_ver 209 // Current Firmware version
-#define FIRMWARE_VER 230 // Current Firmware version (wbp)
+#define FIRMWARE_VER 232 // Current Firmware version (wbp)
 // EE version - change this to force reset of EE memory
 #define EE_VERSION 13
 
@@ -97,10 +98,10 @@ const byte GPS_PRESENT=true; // Set to True if GPS receiver is present
 
 // Pins Declarations
 // ===================================================================================
-#define BUTTON_DEBOUNCE_TIME 20  // debounce time in ms for the buttons
+#define BUTTON_DEBOUNCE_TIME 10  // debounce time in ms for the buttons
 #define BUTTON_HOLD_TIME 1000  // button hold time before repeating
 #define BUTTON_REPEAT_TIME 200  // button repeat interval - 5/second
-#define BOUNCE_TIME_QUICK   50  // bounce time in ms for quickMenu
+//#define BOUNCE_TIME_QUICK   50  // bounce time in ms for quickMenu
 //#define RESET_BUTTON_TIME 500  // hold time for alarm reset
 #define tempPin A0 //Pin for temperature sensor DS18B20
 #define photoCellPin A1 // Pin for Photo Resistor
@@ -142,7 +143,8 @@ RFM12B radio;
 #define MAX_SYSSETTINGS 12 // Maximum number of System menu items
 #define MAX_OPTIONS 5 // Max number of options menu items 
 
-#define ALARM_PROG_STARTVOL 6 // Progressive alarm starting volume
+#define MAX_VOLUME 7  // loudest volume (0 is lowest)
+#define ALARM_PROG_STARTVOL 1 // Progressive alarm starting volume
 #define ALARM_TONES 12  // number of alarm tones
 
 //#ifdef HAVE_GPS
@@ -303,14 +305,14 @@ void TempInit(){
   // Temperature sensor init
   //Serial.print("Locating DS18B20 temperature devices...");
   sensors.begin();
-  putstring("Found ");
-  Serial.print(sensors.getDeviceCount(), DEC);
-  putstring_nl(" devices.");
+//  putstring("Found ");
+//  Serial.print(sensors.getDeviceCount(), DEC);
+//  putstring_nl(" devices.");
   // report parasite power requirements
-  putstring("DS18B20 parasite power is: "); 
-  if (sensors.isParasitePowerMode()) putstring_nl("ON");
-  else putstring_nl("OFF");
-   if (!sensors.getAddress(insideThermometer, 0)) putstring_nl("Unable to find address for Device 0"); 
+//  putstring("DS18B20 parasite power is: "); 
+//  if (sensors.isParasitePowerMode()) putstring_nl("ON");
+//  else putstring_nl("OFF");
+//   if (!sensors.getAddress(insideThermometer, 0)) putstring_nl("Unable to find address for Device 0"); 
  // set the resolution to 9 bit (Each Dallas/Maxim device is capable of several different resolutions)
   sensors.setResolution(insideThermometer, 9); 
   
@@ -488,27 +490,27 @@ void setup ()
   if ( !GPS_PRESENT )  Settings.GPSenabled = false;
   
   // Print FW Version
-  char welcome[15];
-  unsigned int ver = Settings.clockVer;  // 3 digit version number
-  byte temp = ver%100; // last 2 digits
-  byte ver3 = temp % 10; // Last digit
-  byte ver2 = (temp - ver3) / 10; // Second Digit
-  ver = (ver - temp) / 100; // First digit
-  snprintf(welcome, sizeof(welcome),"Firmware:V%d.%d%d",ver,ver2,ver3); 
-  Serial.println (welcome);
+//  char welcome[15];
+//  unsigned int ver = Settings.clockVer;  // 3 digit version number
+//  byte temp = ver%100; // last 2 digits
+//  byte ver3 = temp % 10; // Last digit
+//  byte ver2 = (temp - ver3) / 10; // Second Digit
+//  ver = (ver - temp) / 100; // First digit
+//  snprintf(welcome, sizeof(welcome),"Firmware:V%d.%d%d",ver,ver2,ver3); 
+//  Serial.println (welcome);
   
   setSyncProvider(RTC.get);   // the function to get the time from the RTC
-  if(timeStatus()!= timeSet) 
-     putstring_nl("Unable to sync with the RTC");
-  else
-     putstring_nl("RTC has set the system time");    
+//  if(timeStatus()!= timeSet) 
+//     putstring_nl("Unable to sync with the RTC");
+//  else
+//     putstring_nl("RTC has set the system time");    
   ht1632_setup();  // Setup LED Deisplay
 
   // Uncomment following two lines and modify to set time. After setting time, commend them and re-upload sketch
   //setTime(13,04,0,9,11,12); // Set time on Arduino (hr,min,sec,day,month,yr). Use with RTC.set(now());
   //RTC.set(now()); // Write Time data to RTC Chip. Use with previous command
 
-  wave.volume=Settings.soundVol; // Change System Sound Volume
+  wave.volume = Settings.soundVol; // Change System Sound Volume
   WaveShieldInit();
   TempInit();
 
@@ -520,19 +522,19 @@ void setup ()
   startup(); // Show welcoming screen
 
   if (Settings.GPSenabled) {
-    Serial.println("GPS Enabled");
+//    Serial.println("GPS Enabled");
     gpsInit(9600);  // init GPS & Serial port for 9600 BPS
   }
-  else
-    Serial.println("GPS Disabled");
+//  else
+//    Serial.println("GPS Disabled");
 
   // Initialize Radio module 
   if (Settings.RadioEnabled) {
-    Serial.println("Radio Enabled");
+//    Serial.println("Radio Enabled");
     radio.Initialize(NODEID, RF12_915MHZ, NETWORKID);
   }
-  else
-    Serial.println("Radio Disabled");
+//  else
+//    Serial.println("Radio Disabled");
 
 tmElements_t tm;
   breakTime(now(), tm);
@@ -543,11 +545,11 @@ tmElements_t tm;
 
   if (Settings.IRenabled) {
     delay(1000); 
-    Serial.println("IR Enabled");
+//    Serial.println("IR Enabled");
     irrecv.enableIRIn(); // Start the IR receiver. Comment out if IR not present
   }
-  else
-    Serial.println("IR Disabled");
+//  else
+//    Serial.println("IR Disabled");
 
   initTimer2();  // start timer interrupt running for GPS read (wbp)
 

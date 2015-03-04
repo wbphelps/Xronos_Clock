@@ -39,7 +39,7 @@ void checkButton(byte btn, byte idx) {
     }
   }
   else {  // button not down
-    if (buttonState[idx] == BS_HOLDING) {  // was it pressed but not held?
+    if (buttonState[idx] == BS_HOLDING) {  // was it held for at least the debounce time?
       buttonState[idx] = BS_RELEASED;  // button released
 //      Serial.println("b1 3");
     }
@@ -95,17 +95,17 @@ void buttonProc(){
     if (buttonState[2]==BS_REPEATING)  quickDisplay(true);  // button held, do long Quick menu
     else if (lastButtonTime && buttonState[2]==BS_RELEASED)  quickDisplay(false);  // button released, do short Quick Menu
     if (isInQMenu) {
-      if ( (buttonState[1]>BS_DEBOUNCE) || (buttonState[2]>BS_DEBOUNCE) ) {
-         lastButtonTime = 0; // Exit Quick Menu if any button other than INC was pres
-      //processSetButton(); // Only to control alarm
-      }
-    
+//      if ( (buttonState[0]>BS_DEBOUNCE) || (buttonState[1]>BS_DEBOUNCE) ) {
+//         lastButtonTime = 0; // Exit Quick Menu if any button other than INC was pres
+//      //processSetButton(); // Only to control alarm
+//      }
+//    
       // display the menu option for 10 sec after menu button was pressed;
       if ((lastButtonTime > 0) && (millis() - lastButtonTime < 10000))  // wbp
         return;
   
       // Finished with menus, return to normal operations
-      putstring_nl ("Exiting QMenu");
+      //putstring_nl ("Exiting QMenu");
       exitMenus();
     }
   }
@@ -118,7 +118,10 @@ void buttonProc(){
 // =======================================================================================
 void processMenuButton(byte buttonState)
 {
-  if (isInQMenu) return; // We are in quick menu, so don't show settings menu
+//  if (isInQMenu) return; // We are in quick menu, so don't show settings menu
+  if (isInQMenu) {  // exit quick menu if active
+    isInQMenu=false;
+  }
 //  Serial.print("Menu: "); Serial.println(buttonState);
     
  // ====  Alarm control  ====

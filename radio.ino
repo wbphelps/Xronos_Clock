@@ -26,7 +26,7 @@ void receiveTemp() {
        if (radio.CRCPass())
       {
         //Serial.println (now());
-        putstring_nl ("Receiving Temp...");
+        //putstring_nl ("Receiving Temp...");
         last_RF=millis();
         plot (31,0,GREEN); //Plot Indicator dot (radio signal was received)
         //Serial.println (radio.GetDataLen());

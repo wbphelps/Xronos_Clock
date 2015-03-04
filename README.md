@@ -2,7 +2,7 @@
 Custom firmware for the Xronos Clock from LensDigital
 
 Latest update Feb 27, 2015 - William Phelps - wm (at) usa.net 
-* Ver 2.28 (02/27/2015)
+* Ver 2.32 (03/03/2015)
  
 ## **Includes the following modifications:** ##
 
@@ -47,3 +47,7 @@ Latest update Feb 27, 2015 - William Phelps - wm (at) usa.net
 * rewrite button logic, merge button checks to common routine
 * add "alarm reset" scroll message
 * hold Alarm Reset to skip upcoming alarm
+* add settable alarm snooze time 1 to 15 minutes
+* increase # of alarm tones to 12, use define
+* Menu button exits QMenu
+* fix alarm volume display (& rework volume code)
