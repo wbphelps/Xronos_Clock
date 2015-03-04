@@ -6,12 +6,12 @@ static byte buttonState[3] = {0,0,0};
 static unsigned int buttonHoldTime = 20;  // how long button must be held
 // note: only supports one button down at a time, Menu takes priority
 // button states:
-#define BS_OFF       0  // 0 - not down
-#define BS_DEBOUNCE  1  // 1 - down, debouncing
-#define BS_HOLDING   2  // 2 - held, waiting for repeat
-#define BS_RELEASED  3  // 3 - pressed & released, no hold
-#define BS_PRESSED   4  // 4 - pressed, still down, not repeating
-#define BS_REPEATING 5  // 5 - held, repeat
+//#define BS_OFF       0  // 0 - not down
+//#define BS_DEBOUNCE  1  // 1 - down, debouncing
+//#define BS_HOLDING   2  // 2 - held, waiting for repeat
+//#define BS_RELEASED  3  // 3 - pressed & released, no hold
+//#define BS_PRESSED   4  // 4 - pressed, still down, not repeating
+//#define BS_REPEATING 5  // 5 - held, repeat
 void checkButton(byte btn, byte idx) {
   if (digitalRead(btn) == HIGH) {
     if (buttonState[idx] == 0) {  // was the button just pressed?
@@ -89,6 +89,7 @@ void buttonProc(){
     }
     // return the main mode if no button was pressed for 5 seconds;
     // Exit and reinitialize
+    putstring_nl ("Exiting QMenu");
     exitMenus();
   }  // if (isInMenu)
   else {  // not in Menu
@@ -105,7 +106,7 @@ void buttonProc(){
         return;
   
       // Finished with menus, return to normal operations
-      //putstring_nl ("Exiting QMenu");
+      putstring_nl ("Exiting QMenu");
       exitMenus();
     }
   }
@@ -118,11 +119,11 @@ void buttonProc(){
 // =======================================================================================
 void processMenuButton(byte buttonState)
 {
+//  Serial.print("Menu: "); Serial.println(buttonState);
 //  if (isInQMenu) return; // We are in quick menu, so don't show settings menu
   if (isInQMenu) {  // exit quick menu if active
     isInQMenu=false;
   }
-//  Serial.print("Menu: "); Serial.println(buttonState);
     
  // ====  Alarm control  ====
   if ( (alarmState[0] >= AS_SOUNDING) || (alarmState[1] >= AS_SOUNDING) ) {  // sounding alarm or snoozing?
@@ -149,7 +150,8 @@ void processMenuButton(byte buttonState)
     }
   }
   else
-    if (buttonState==BS_RELEASED)  return;  // ignore button release if already in menu
+    if (buttonState==BS_RELEASED)
+      return;  // ignore button release if already in menu
   
   //putstring_nl ("Is In Menu Button Proc");
   timeSettings();  // reset Settings timer

@@ -1,6 +1,6 @@
 /***********************************************************************
 * December 2014 - February 2015 - mods by William Phelps (wm@usa.net)
-* Ver 2.33 (03/04/2015)
+* Ver 2.34 (03/04/2015)
 * logarithmic brightness levels
 * bugfix: brightness set to auto by error
 * auto bright - adjust at 1 second intervals (was 10)
@@ -80,7 +80,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#define FIRMWARE_VER 233 // Current Firmware version (wbp)
+#define FIRMWARE_VER 234 // Current Firmware version (wbp)
 // EE version - change this to force reset of EE memory
 #define EE_VERSION 13
 
@@ -195,6 +195,14 @@ boolean isSettingAlrmMM   = false;
 boolean isSettingAlrmHH   = false;
 boolean isSettingOptions = false;
 boolean okClock = true; // Can we show time? Normally true, unless we showing something else
+
+// button states:
+#define BS_OFF       0  // 0 - not down
+#define BS_DEBOUNCE  1  // 1 - down, debouncing
+#define BS_HOLDING   2  // 2 - held, waiting for repeat
+#define BS_RELEASED  3  // 3 - pressed & released, no hold
+#define BS_PRESSED   4  // 4 - pressed, still down, not repeating
+#define BS_REPEATING 5  // 5 - held, repeat
 
 // Alarm status variables
 #define AS_OFF       0
@@ -352,44 +360,40 @@ void IR_process () {
     g_IR_timer = millis();  // reset timer
     switch (results.value) {
       case IR_ON:
-        //Serial.println ("Received ON/OFF");
-//        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
-        processMenuButton(3);
+//        Serial.println ("Received ON/OFF");
+        lastButtonTime=millis();
+        processMenuButton(BS_PRESSED);
         break;
       case IR_PLUS:
-        //Serial.println ("Received PLUS");
+//        Serial.println ("Received PLUS");
         decrement=false;
-//        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
-        processIncButton(3);
+        lastButtonTime=millis();
+        processIncButton(BS_PRESSED);
         break;
       case IR_MINUS:
-        //Serial.println ("Received MINUS");
+//        Serial.println ("Received MINUS");
         decrement=true;
-//        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
-        processIncButton(3);
+        lastButtonTime=millis();
+        processIncButton(BS_PRESSED);
         break;
       case IR_UP:
-        //Serial.println ("Received UP");
-//        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
-        processSetButton(3);
+//        Serial.println ("Received UP");
+        lastButtonTime=millis();
+        processSetButton(BS_PRESSED);
         break;
       case IR_DOWN:
-        //Serial.println ("Received DOWN");
-//        lastButtonTime=millis()+ BOUNCE_TIME_BUTTON;
-        processSetButton(3);
+//        Serial.println ("Received DOWN");
+        lastButtonTime=millis();
+        processSetButton(BS_PRESSED);
         break;
       case IR_ENTER: // Talk All Items
-        //Serial.println ("Received ENTER");
-//        lastButtonTime=millis()+BOUNCE_TIME_QUICK;
-//        buttonReleased=true;
-//        last_ms=millis()+heldTime;
+//        Serial.println ("Received ENTER");
+        lastButtonTime=millis();
         quickDisplay(true);
         break;
       case IR_TALK: // Start Talk function
-        //Serial.println ("Received MUTE");
- //       lastButtonTime=millis()+BOUNCE_TIME_QUICK;
- //       buttonReleased=true;
- //       last_ms=millis();
+//        Serial.println ("Received MUTE");
+        lastButtonTime=millis();
         quickDisplay(false);
         break;
     //Serial.println(results.value, HEX);
