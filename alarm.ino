@@ -79,8 +79,6 @@ void procAlarm(byte alrmnum) {
         alarmState[alrmnum] = AS_OFF;  // stop sounding alarm
         alarmTime[alrmnum] = tNow;  // remember when state was changed
 //        Serial.print("alarmState: "); Serial.println(alarmState[alrmnum]);
-        if (Settings.alarmProgVol[alrmnum]) alrmVol[alrmnum]=ALARM_PROG_STARTVOL; //Set low volume for escalating alarms (wbp)
-        else alrmVol[alrmnum]=MAX_VOLUME; // Set High volume for non-escalating alarms
       }
       else
         playAlarm(alrmnum);  // restart alarm sound if needed
@@ -93,7 +91,7 @@ void procAlarm(byte alrmnum) {
         alarmTime[alrmnum] = tNow;  // remember when state was changed
 //        Serial.print("alarmState: "); Serial.println(alarmState[alrmnum]);
         if (Settings.alarmProgVol[alrmnum])  // progressive alarm volume?
-          alrmVol[alrmnum]=ALARM_PROG_STARTVOL; // Reset Alarm Volume
+          alrmVol[alrmnum]=ALARM_STARTVOL; // Reset Alarm Volume
         else  alrmVol[alrmnum]=MAX_VOLUME;  // alarm volume to max
       }
     }
@@ -110,8 +108,11 @@ void procAlarm(byte alrmnum) {
           }
           if (alarmState[alrmnum] == AS_SKIPPING)  // is this alarm being skipped?
             alarmState[alrmnum] = AS_WAIT; // Alarm time reached, turn it off without sounding it
-          else
+          else {
             alarmState[alrmnum] = AS_SOUNDING; // If it's time to sound alarm!
+            if (Settings.alarmProgVol[alrmnum]) alrmVol[alrmnum]=ALARM_STARTVOL; //Set low volume for escalating alarms (wbp)
+            else alrmVol[alrmnum]=MAX_VOLUME; // Set High volume for non-escalating alarms
+          }
           alarmTime[alrmnum] = tNow;  // remember when state was changed
 //          Serial.print("alarmState: "); Serial.println(alarmState[alrmnum]);
         }
@@ -175,8 +176,6 @@ boolean resetAlrm(byte alrmnum){
     playfile("alrm_res.WAV");
     scrolltextsizexcolor(4,string1,RED,5, false);  // scroll without checking buttons (wbp)
     delay(500);
-    if (Settings.alarmProgVol[alrmnum]) alrmVol[alrmnum]=ALARM_PROG_STARTVOL; //Set low volume for escalating alarms (wbp)
-    else alrmVol[alrmnum]=MAX_VOLUME; // Set High volume for non-escalating alarms
     return true;
     }
   return false;

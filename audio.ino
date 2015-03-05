@@ -129,12 +129,11 @@ void playalarmfile(char *name, byte alrmnum) {
   }
   // Check if Alarm should be escalated
 //  if (alrmToneNum[alrmnum]<=ALARM_PROGRESSIVE){ // wbp
-  if (Settings.alarmProgVol[alrmnum]){ // wbp
+  if (Settings.alarmProgVol[alrmnum]) { // wbp
     // Escalate alarm volume
     if (alrmVol[alrmnum]<MAX_VOLUME)  alrmVol[alrmnum]++;
+    setVol(alrmVol[alrmnum]);
   }
-  else alrmVol[alrmnum]=MAX_VOLUME;
-  setVol(alrmVol[alrmnum]);
   // ok time to play! start playback
   wave.play();
   //radio.Wakeup(); // Disable RF12B

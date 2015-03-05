@@ -44,7 +44,7 @@ struct __Settings
   byte infoFreq; // Info Display frequency and what to show
   byte infoOptions; // Info Display frequency and what to show
   byte sayOptions; // Define which options to speak
-  byte doStartup; // Display startup message?
+  byte startup; // Display startup message?
   byte tempOffset; // Temperature Offset
   byte RadioEnabled; // Defines if RF receiver is enabled
   byte IRenabled; // Defines if IR receiver is enabled

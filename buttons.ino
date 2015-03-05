@@ -180,36 +180,35 @@ void processSetButton(byte buttonState)
   snoozeProc(0);
   snoozeProc(1);
  
-  if (!isInMenu) return; // failsafe
+//  if (!isInMenu) return; // failsafe
   timeSettings();  // reset Settings timer
   //isInMenu    = true;
   playSFX(2);
   switch (menuItem) {
     case 1: // Begin Set Alarm 1
     //putstring_nl ("SET: Alarm1");
-    butSetAlarm(0);
+      butSetAlarm(0);
     break; // End set Alarm 1
     case 2: // Begin Set Alarm 2
     //putstring_nl ("SET: Alarm2");
-    butSetAlarm(1);
+      butSetAlarm(1);
     break; // End set Alarm
     case 3: // Begin Set Time and Date
-        butSetClock();
+      butSetClock();
     break;
-
     case 4: // Begin System Settings
-        cls();
-        isSettingAlarm = false;
-        isSettingTime   = false;
-        isSettingSys=true;
-        subMenu[3]++; // Increment button press count
-        if (subMenu[3] > MAX_SYSSETTINGS) subMenu[3]=1; // Goes back to first menu item
+      cls();
+      isSettingAlarm = false;
+      isSettingTime   = false;
+      isSettingSys=true;
+      subMenu[3]++; // Increment button press count
+      if (subMenu[3] > MAX_SYSSETTINGS) subMenu[3]=1; // Goes back to first menu item
     break;
     case 5: // User options
-        cls();
-        userMenu();
+      cls();
+      userMenu();
     break;
-    }
+  }
 }
 
 

@@ -1,6 +1,8 @@
-/***********************************************************************
+//***********************************************************************
+#define FIRMWARE_VER 235 // Current Firmware version (wbp)
+/*
 * December 2014 - February 2015 - mods by William Phelps (wm@usa.net)
-* Ver 2.34 (03/04/2015)
+* Ver 2.35 (03/05/2015)
 * logarithmic brightness levels
 * bugfix: brightness set to auto by error
 * auto bright - adjust at 1 second intervals (was 10)
@@ -45,6 +47,8 @@
 * Menu button exits QMenu
 * fix alarm volume display (& rework volume code)
 * add #define for Radio, IR, GPS - conditional compile
+* set alarm vol when starting alarm
+* add Startup Quiet option
 *
 * Add TZ Hr & TZ Mn to settings?
 * more compact text scrolling
@@ -80,12 +84,12 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#define FIRMWARE_VER 234 // Current Firmware version (wbp)
 // EE version - change this to force reset of EE memory
 #define EE_VERSION 13
 
 //#define PRT_DEBUG
 //#define PRT_ERROR
+//#define BTN_DEBUG  // for button debugging?
 
 // ============================================================================================
 // Important User Hardware config settings, modify as needed
@@ -156,7 +160,7 @@ RFM12B radio;
 #define MAX_OPTIONS 5 // Max number of options menu items 
 
 #define MAX_VOLUME 7  // loudest volume (0 is lowest)
-#define ALARM_PROG_STARTVOL 1 // Progressive alarm starting volume
+#define ALARM_STARTVOL 1 // Progressive alarm starting volume
 #define ALARM_TONES 12  // number of alarm tones
 
 //#ifdef HAVE_GPS

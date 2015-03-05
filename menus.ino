@@ -61,8 +61,7 @@ void showMenu()
 void setAlarm(byte alrmNum) {
   char myString[11];
   alarmState[alrmNum] = AS_OFF; // Make sure alarm that just sounded doesn't resume
-//  if (alrmToneNum[alrmNum]<=ALARM_PROGRESSIVE) alrmVol[alrmNum]=7; // Set initial alarm volume (for escalating alarms)
-  if (Settings.alarmProgVol[alrmNum]) alrmVol[alrmNum]=ALARM_PROG_STARTVOL; // Set initial alarm volume (for escalating alarms)
+//  if (Settings.alarmProgVol[alrmNum]) alrmVol[alrmNum]=ALARM_PROG_STARTVOL; // Set initial alarm volume (for escalating alarms)
 //  if (subMenu[alrmNum] >0 && subMenu[alrmNum] <4) playSFX(1); // Don't play sound if not setting anything, i.e. submenu=0 or setting hrs, minutes, tone
   switch (subMenu[alrmNum]) {
     case 1: // Alarm On/off
@@ -522,8 +521,10 @@ void sysSetting(){
       break;
       case 9: // Startup on/off
         cls();
-        if (Settings.doStartup) Settings.doStartup=false;
-        else Settings.doStartup=true;
+//        if (Settings.doStartup) Settings.doStartup=false;
+//        else Settings.doStartup=true;
+        Settings.startup++;
+        if (Settings.startup>2)  Settings.startup=0;
         //playSFX(1);
         break;
       case 10: // GPS
@@ -659,9 +660,18 @@ void showSys(){
       else showText(10,8,"OFF",1,hhColor);
     break;
     case 9: // Startup on/off
-      showText(2,0,"Startup",3,color);
-      if (Settings.doStartup) showText(10,8,"ON",1,hhColor); 
-      else showText(10,8,"OFF",1,hhColor); 
+      showText(0,0,"Startup",3,color);
+      switch ( Settings.startup) {
+        case 0:
+          showText(5,8,"OFF",1,hhColor); 
+        break;
+        case 1:
+          showText(5,8,"OM",1,hhColor); 
+        break;
+        case 2:
+          showText(2,8,"Quiet",1,hhColor); 
+        break;
+      }
     break;
     case 10: // GPS Receiver
       showText(2,0,"GPS",1,color); 
@@ -1076,7 +1086,9 @@ void showOpt(){
 // =======================================================================================
 void playSFX(byte item){
   if (!Settings.sFX) return; // Global Sound Effects are off
+#ifdef RFM12B_PRESENT
   turnOffRadio(); // Disable RF12B
+#endif
   switch (item) {
    case 1: 
     playfile("MENU1.WAV");

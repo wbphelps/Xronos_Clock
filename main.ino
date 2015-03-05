@@ -3,9 +3,9 @@
 // ---------------------------------------------------------------------------------------
 void startup ()
 {
-  if (!Settings.doStartup) return; // Startup Disabled?
-  //void initEPROM();
-  playfile("startup1.wav");
+  if (!Settings.startup) return; // Startup Disabled?
+  if (Settings.startup == 1)
+    playfile("startup1.wav");
   showText(0,0,"Welcome",3,GREEN);
   showVersion();
   cls();
