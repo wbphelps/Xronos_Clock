@@ -1,8 +1,8 @@
 //***********************************************************************
-#define FIRMWARE_VER 235 // Current Firmware version (wbp)
+#define FIRMWARE_VER 236 // Current Firmware version (wbp)
 /*
-* December 2014 - February 2015 - mods by William Phelps (wm@usa.net)
-* Ver 2.35 (03/05/2015)
+* December 2014 - March 2015 - mods by William Phelps (wm@usa.net)
+* Ver 2.36 (03/07/2015)
 * logarithmic brightness levels
 * bugfix: brightness set to auto by error
 * auto bright - adjust at 1 second intervals (was 10)
@@ -49,6 +49,7 @@
 * add #define for Radio, IR, GPS - conditional compile
 * set alarm vol when starting alarm
 * add Startup Quiet option
+* Auto DST working, fix some typos, move DSTmode & DSToffset to Settings
 *
 * Add TZ Hr & TZ Mn to settings?
 * more compact text scrolling
@@ -90,6 +91,7 @@
 //#define PRT_DEBUG
 //#define PRT_ERROR
 //#define BTN_DEBUG  // for button debugging?
+//#define DST_DEBUG
 
 // ============================================================================================
 // Important User Hardware config settings, modify as needed
@@ -167,11 +169,8 @@ RFM12B radio;
 ///volatile uint8_t g_gps_enabled = 2;  // zero: off, 1: 4800 bps, 2: 9600 bps
 volatile int8_t g_TZ_hour = -8;
 volatile int8_t g_TZ_minute = 0;
-//volatile bool g_gps_signal = false;  // GPRMC message received
 volatile bool g_gps_updating = false;  // for signalling GPS update on some displays
 volatile unsigned long g_gps_timer = 0;  // for tracking how long since GPS last updated
-volatile uint8_t g_DST_mode = 0;  // off: 0, on: 1, auto: 2
-volatile int8_t g_DST_offset = 0;
 volatile bool g_DST_updated = false;  // DST update flag = allow update only once per day
 uint8_t g_DST_Rules[9] = {3,1,2,2,11,1,1,2,1};   // initial values from US DST rules as of 2011
 // DST Rules: Start(month, dotw, n, hour), End(month, dotw, n, hour), Offset
@@ -485,15 +484,16 @@ void checkDST() {
 time_t t;
 tmElements_t tm;
   if (isInMenu) return;
-  if (g_DST_mode < 2) return; // nothing to do if DST not set to AUTO
+  if (Settings.DSTmode < 2) return; // nothing to do if DST not set to AUTO
   t = now();
   if ((hour(t) == 0) && (minute(t) == 0) && (second(t) == 0)) {  // MIDNIGHT!
     g_DST_updated = false;
     breakTime(t, tm);
+    tm.Year = tmYearToY2k(tm.Year);  // convert (yyyy-1970) year to yy (subtract 30) 
     DSTinit(&tm, g_DST_Rules);  // re-compute DST start, end
   }
   if (second(t) % 10 == 0) { // check DST Offset every 10 seconds (60?)
-    setDSToffset(g_DST_mode);
+    setDSToffset(Settings.DSTmode);
   }
 //#endif // HAVE_AUTO_DST
 }
@@ -578,6 +578,7 @@ void setup ()
 
 tmElements_t tm;
   breakTime(now(), tm);
+  tm.Year = tmYearToY2k(tm.Year);  // convert (yyyy-1970) year to yy (subtract 30) 
   DSTinit(&tm, g_DST_Rules);  // compute DST start, end	
 
 //  Serial.println (FreeRam());
@@ -596,6 +597,19 @@ tmElements_t tm;
 #ifdef GPS_PRESENT
   initTimer2();  // start timer interrupt running for GPS read (wbp)
 #endif
+
+// Test breakTime/makeTime Year handling
+unsigned long tNow = now();
+  Serial.print("tNow "); Serial.println(tNow);
+  Serial.print("year "); Serial.println(year(tNow));
+//  tmElements_t tm;
+  breakTime(now(), tm);  // get the time and convert to structure tmElements_t
+  tm.Year = tmYearToY2k(tm.Year);  // convert (yyyy-1970) year to yy (subtract 30) 
+  Serial.print("yr "); Serial.println(tm.Year);
+  tm.Year = y2kYearToTm(tm.Year);  // convert yy year to (yyyy-1970) (add 30) // not for Xronos/Arduino clock
+  tNow = makeTime(tm);  // convert to time_t - seconds since 0/0/1970
+  Serial.print("tNow "); Serial.println(tNow);
+  Serial.print("year "); Serial.println(year(tNow));
 
 }
 

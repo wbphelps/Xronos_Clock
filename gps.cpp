@@ -21,6 +21,7 @@
 #include <avr/interrupt.h>
 #include <string.h>
 #include <util/delay.h>
+#include "settings.h"
 #include "gps.h"
 #include <Time.h>
 #include <DS1307RTC.h>  // a basic DS1307 library that returns time as a time_t
@@ -63,11 +64,11 @@ uint16_t gpsTimeout;  // how long since we received valid GPS data?
 time_t tLast = 0;  // for checking GPS messages
 //extern WireRtcLib rtc;
 
-void setRTCTime(time_t t)
+void setRTCtime(time_t t)
 {
   tmElements_t tm;    
   breakTime(t, tm);
-//    rtc.setTime_s(tm.Hour, tm.Minute, tm.Second);
+  tm.Year = tmYearToY2k(tm.Year);  // convert (yyyy-1970) year to yy (subtract 30) - not on Xronos ???
   setTime(tm.Hour,tm.Minute,tm.Second,tm.Day,tm.Month,tm.Year); // Sets System time (and converts year string to integer)
   RTC.set(now()); // Writes time change to RTC chip     
 }
@@ -228,8 +229,7 @@ void parseGPSdata(char *gpsBuffer) {
         tm.Year = tmp % 100;
         ptr = strchr(ptr, '*');  // Find Checksum
         if (ptr == NULL) goto GPSerrorP;
-//        tm.Year = y2kYearToTm(tm.Year);  // convert yy year to (yyyy-1970) (add 30) // not for Xronos/Arduino clock!
-//        tNow = rtc.makeTime(&tm);  // convert to time_t - seconds since 0/0/1970
+        tm.Year = y2kYearToTm(tm.Year);  // convert yy year to (yyyy-1970) (add 30) 
         tNow = makeTime(tm);  // convert to time_t - seconds since 0/0/1970
 // If time jumps by more than a minute, complain about it. Either poor GPS signal or an error in the data
         if ( (tLast>0) && (abs(tNow - tLast)>60) )  // Beep if over 60 seconds since last GPRMC?
@@ -245,12 +245,12 @@ void parseGPSdata(char *gpsBuffer) {
             //beep(1000, 1);  // debugging
             g_gps_updating = true;  // time is being set from GPS data
             tGPSupdate = tNow;  // remember time of this update
-            tNow = tNow + (long)(g_TZ_hour + g_DST_offset) * SECS_PER_HOUR;  // add time zone hour offset & DST offset
+            tNow = tNow + (long)(g_TZ_hour + Settings.DSToffset) * SECS_PER_HOUR;  // add time zone hour offset & DST offset
             if (g_TZ_hour < 0)  // add or subtract time zone minute offset
               tNow = tNow - (long)g_TZ_minute * SECS_PER_HOUR;
             else
               tNow = tNow + (long)g_TZ_minute * SECS_PER_HOUR;
-            setRTCTime(tNow);  // set RTC from adjusted GPS time & date
+            setRTCtime(tNow);  // set RTC from adjusted GPS time & date
 //            Serial.println("GPS: Time set");
           }
           else

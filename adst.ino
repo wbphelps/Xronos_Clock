@@ -26,9 +26,9 @@
 #include <DS1307RTC.h>  // a basic DS1307 library that returns time as a time_t
 #include "adst.h"
 
-extern volatile int8_t g_DST_offset;
+//extern volatile int8_t g_DST_offset;
 extern volatile bool g_DST_updated;  // DST update flag = allow update only once per day
-extern volatile uint8_t g_DST_mode;  // off: 0, on: 1, auto: 2
+//extern volatile uint8_t g_DST_mode;  // off: 0, on: 1, auto: 2
 extern uint8_t g_DST_Rules[];
 
 const uint8_t mDays[]={31,28,31,30,31,30,31,31,30,31,30,31};
@@ -81,7 +81,9 @@ long DSTseconds(uint16_t year, uint8_t month, uint8_t doftw, uint8_t week, uint8
 
 void DSTinit(tmElements_t* te, uint8_t rules[9])
 {
+//  Serial.println("DSTinit");
   uint16_t yr = 2000 + te->Year;  // Year as 20yy; te.Year is not 1970 based
+//  Serial.print("yr "); Serial.println(yr);
   // seconds til start of DST this year
   DSTstart = DSTseconds(yr, rules[0], rules[1], rules[2], rules[3]);  
 	// seconds til end of DST this year
@@ -95,10 +97,14 @@ void DSTinit(tmElements_t* te, uint8_t rules[9])
 // 		3,1,2,2,  11,1,1,2,  1
 uint8_t getDSToffset(tmElements_t* te, uint8_t rules[9])
 {
+//  Serial.println("getDST");
   uint16_t yr = 2000 + te->Year;  // Year as 20yy; te.Year is not 1970 based
+//  Serial.print("yr "); Serial.println(yr);
+//  Serial.print("DSstart "); Serial.print(DSTstart); Serial.print(", DSend   "); Serial.println(DSTend);
   // if current time & date is at or past the first DST rule and before the second, return 1
   // otherwise return 0
   long seconds_now = yearSeconds(yr, te->Month, te->Day, te->Hour, te->Minute, te->Second);
+//  Serial.print("now "); Serial.println(seconds_now);
   if (DSTstart<DSTend) {  // northern hemisphere
     if ((seconds_now >= DSTstart) && (seconds_now < DSTend))  // spring ahead
       return(rules[8]);  // return Offset
@@ -106,7 +112,7 @@ uint8_t getDSToffset(tmElements_t* te, uint8_t rules[9])
       return(0);  // return 0
   }
   else {  // southern hemisphere
-		if ((seconds_now >= DSTstart) || (seconds_now < DSTend))  // fall ahead
+    if ((seconds_now >= DSTstart) || (seconds_now < DSTend))  // fall ahead
       return(rules[8]);  // return Offset
     else  // fall back
       return(0);  // return 0
@@ -121,15 +127,20 @@ void setDSToffset(uint8_t mode) {
   int8_t adjOffset;
   uint8_t newOffset;
 //#ifdef HAVE_AUTO_DST
-  breakTime(now(), tm);  // get the time and convert to structure tmElements_t
+//  Serial.println("setDST");
 //  if (mode == 2) {  // Auto DST
   if (g_DST_updated) return;  // already done it once today
+  breakTime(now(), tm);  // get the time and convert to structure tmElements_t
+  tm.Year = tmYearToY2k(tm.Year);  // convert (yyyy-1970) year to yy (subtract 30) 
+//  Serial.print("yr "); Serial.println(yr);
   newOffset = getDSToffset(&tm, g_DST_Rules);  // get current DST offset based on DST Rules
+//  Serial.print("newOffset "); Serial.println(newOffset);
 //  }
 //  else
 //#endif // HAVE_AUTO_DST
 //    newOffset = mode;  // 0 or 1
-  adjOffset = newOffset - g_DST_offset;  // offset delta
+  adjOffset = newOffset - Settings.DSToffset;  // offset delta
+//  Serial.print("adjOffset "); Serial.println(adjOffset);
   if (adjOffset == 0)  return;  // nothing to do
 ///	if (adjOffset > 0)
 ///		tone(PinMap::piezo, 1760, 100);  // spring ahead
@@ -140,12 +151,12 @@ void setDSToffset(uint8_t mode) {
 // we rely on the fact that the time change always occurs at a "safe" time, when the date won't change...
 // there may be some locations on the planet where this is not true...
   tm.Hour += adjOffset;  // adjust the Hour
-  tm.Year = tmYearToY2k(tm.Year);  // convert (yyyy-1970) year to yy (subtract 30) 
+//  tm.Year = tmYearToY2k(tm.Year);  // convert (yyyy-1970) year to yy (subtract 30) - not on Xronos...
 ///  rtc.setTime(tm);  // adjust RTC
   playSFX(2);  // play sound for changing something
   setTime(tm.Hour,tm.Minute,tm.Second,tm.Day,tm.Month,tm.Year); // Sets System time (and converts year string to integer)
   RTC.set(now()); // Writes time change to RTC chip     
-  g_DST_offset = newOffset;
+  Settings.DSToffset = newOffset;
 //	save_settings();
   g_DST_updated = true;
 // save DST_updated in ee ???

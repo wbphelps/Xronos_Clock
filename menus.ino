@@ -305,7 +305,7 @@ void showDST(byte color) {
   showText(6,0,"DST",1,color);
   hhColor = color; 
   if (blinkDigit)  hhColor = BLACK;  // blink setting value
-  switch (g_DST_mode) {
+  switch (Settings.DSTmode) {
     case 0: // DST off
     showText(6,8,"Off ",1,hhColor);
     break;
@@ -400,15 +400,15 @@ void setTimeDate() {
 //      break;
     case 6: // DST
       playSFX(1);
-      g_DST_mode = ++g_DST_mode % 3;  // off, on, Auto
-      if (g_DST_mode == 1) { // on
+      Settings.DSTmode = ++Settings.DSTmode % 3;  // off, on, Auto
+      if (Settings.DSTmode == 1) { // on
         hours++;  // spring ahead
-        g_DST_offset = 1;  // remember offset
+        Settings.DSToffset = 1;  // remember offset
       }
       else { // off or Auto
-        if (g_DST_offset) { // was it set?
+        if (Settings.DSToffset) { // was it set?
           hours--;  // fall back
-          g_DST_offset = 0;
+          Settings.DSToffset = 0;
         }
       }
       if (hours == 255)  hours = 23;  // handle wrap
@@ -666,7 +666,7 @@ void showSys(){
           showText(5,8,"OFF",1,hhColor); 
         break;
         case 1:
-          showText(5,8,"OM",1,hhColor); 
+          showText(5,8,"ON",1,hhColor); 
         break;
         case 2:
           showText(2,8,"Quiet",1,hhColor); 

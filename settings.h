@@ -49,6 +49,7 @@ struct __Settings
   byte RadioEnabled; // Defines if RF receiver is enabled
   byte IRenabled; // Defines if IR receiver is enabled
   byte DSTmode; // DST mode
+  byte DSToffset; // current DST offset
   byte GPSenabled; // GPS receiver enabled
   byte alarmHH[2]; // Alarm hours
   byte alarmMM[2]; // Alarm minutes

@@ -33,7 +33,7 @@ __Settings Settings = {
   true, // blinking colon
   true, // SFX
   true, // temperature units
-  0, // sound volume
+  6, // sound volume - default 1 less than max
   2, // info freq
   2, // info options
   255, // say options
@@ -42,6 +42,7 @@ __Settings Settings = {
   false, // radio receiver
   false, // IR receiver
   false, // DST mode
+  0, // DST offset
   false, // GPS on
   {0,0}, // alarm hours
   {0,0}, // alarm minutes
