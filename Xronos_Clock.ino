@@ -1,8 +1,8 @@
 //***********************************************************************
-#define FIRMWARE_VER 236 // Current Firmware version (wbp)
 /*
 * December 2014 - March 2015 - mods by William Phelps (wm@usa.net)
-* Ver 2.36 (03/07/2015)
+* Ver 2.37 (03/10/2015)
+#define FIRMWARE_VER 237 // Current Firmware version (wbp)
 * logarithmic brightness levels
 * bugfix: brightness set to auto by error
 * auto bright - adjust at 1 second intervals (was 10)
@@ -29,8 +29,7 @@
 * set alarm LED color if alarm is due within next 24 hours
 * atomic (single fetch) time/date
 * flip alarm LED colors - green=alarm in next 24 hours, red if not
-* add display & set for photocell levels (min, max)
-*  BrtLo (0 to 100 by 10) and BrtHi (200 to 750 by 50)
+* add display & set for photocell levels (min, max), BrtLo (0 to 100 by 10) and BrtHi (200 to 750 by 50)
 * use structure for settings saved in EE
 * fix temp<20 bug in sayTemp(); (from Len)
 * fix green/red color bug
@@ -50,6 +49,7 @@
 * set alarm vol when starting alarm
 * add Startup Quiet option
 * Auto DST working, fix some typos, move DSTmode & DSToffset to Settings
+* change auto bright Hi limits (100, 500)
 *
 * Add TZ Hr & TZ Mn to settings?
 * more compact text scrolling
@@ -74,14 +74,14 @@
  ***********************************************************************/
 #include <Wire.h>
 #include "HT1632.h"
-#include <avr/pgmspace.h>
+//#include <avr/pgmspace.h> - not used
 #include <Time.h>  
 #include <DS1307RTC.h>  // a basic DS1307 library that returns time as a time_t
 #include <stdlib.h> // Used for string manipulations and string to int conversions
 #include "settings.h" // settings & options stored in EE memory
 #include "WaveUtil.h" // Used by wave shield
 #include "WaveHC.h" // Used by wave shield (library modified by LensDigital to accomodate ATMega644p/ATMega1284p)
-//#include <EEPROM.h>
+//#include <EEPROM.h> - not used, see settings.h, settings.ino
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
@@ -96,7 +96,7 @@
 // ============================================================================================
 // Important User Hardware config settings, modify as needed
 // ============================================================================================
-//#define RFM12B_PRESENT  // Defines if RFM12B Chip present.  Set to true to enable. Must also have ATMega1284p! Will not work with ATMega644p chip
+#define RFM12B_PRESENT  // Defines if RFM12B Chip present.  Set to true to enable. Must also have ATMega1284p! Will not work with ATMega644p chip
 #define IR_PRESENT  // Set to True if IR receiver is present. Must also have ATMega1284p! Will not work with ATMega644p chip
 #define GPS_PRESENT // Set to True if GPS receiver is present
 #define AUTO_BRIGHTNESS_ON 0  //Set to 1 to disable autobrightness menu feature, 0 to enable if photocell is present.

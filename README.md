@@ -1,8 +1,8 @@
 # Xronos_Clock
 Custom firmware for the Xronos Clock from LensDigital
 
-Latest update March 7, 2015 - William Phelps - wm (at) usa.net 
-* Ver 2.36
+Latest update March 10, 2015 - William Phelps - wm (at) usa.net 
+* Ver 2.37
  
 ## **Includes the following modifications:** ##
 
@@ -55,3 +55,4 @@ Latest update March 7, 2015 - William Phelps - wm (at) usa.net
 * set alarm vol when starting alarm
 * add Startup Quiet option
 * Auto DST working, fix some typos, move DSTmode & DSToffset to Settings
+* change auto bright Hi limits (100, 500)

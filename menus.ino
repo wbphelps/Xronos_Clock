@@ -826,7 +826,7 @@ void optSetting(){
          break;
        case 3:
          Settings.photoCellMax += 50;
-         if (Settings.photoCellMax > 750)  Settings.photoCellMax = 200;
+         if (Settings.photoCellMax > 500)  Settings.photoCellMax = 100;
          break;
        case 4:
          subMenu[9]=0;  // exit from pcell submenu
