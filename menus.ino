@@ -61,8 +61,6 @@ void showMenu()
 void setAlarm(byte alrmNum) {
   char myString[11];
   alarmState[alrmNum] = AS_OFF; // Make sure alarm that just sounded doesn't resume
-//  if (Settings.alarmProgVol[alrmNum]) alrmVol[alrmNum]=ALARM_PROG_STARTVOL; // Set initial alarm volume (for escalating alarms)
-//  if (subMenu[alrmNum] >0 && subMenu[alrmNum] <4) playSFX(1); // Don't play sound if not setting anything, i.e. submenu=0 or setting hrs, minutes, tone
   switch (subMenu[alrmNum]) {
     case 1: // Alarm On/off
       Settings.alarmOn[alrmNum]=Settings.alarmOn[alrmNum] ^ 128; //Toggle first bit (on/off)
@@ -144,7 +142,9 @@ void setAlarm(byte alrmNum) {
       cls();
       break;
     case 7: // Alarm Progressive On/off
-      Settings.alarmProgVol[alrmNum]=!Settings.alarmProgVol[alrmNum]; //Toggle Progressive Alarm Vol
+//      Settings.alarmProgVol[alrmNum]=!Settings.alarmProgVol[alrmNum]; //Toggle Progressive Alarm Vol
+      Settings.alarmProgVol[alrmNum]+=5;  // add 5 seconds to progressive alarm interval
+      if (Settings.alarmProgVol[alrmNum]>60)  Settings.alarmProgVol[alrmNum]=0;  // wrap to Off at 30 seconds
       cls();
       playSFX(1);
       break;
@@ -287,7 +287,12 @@ void showAlarm(byte color){
 
     case 7: // Alarm Progressive Volume On/off
       showText(1,0,"P.Vol:",1,color);
-      if (Settings.alarmProgVol[alrmNum]) showText(10,8,"ON",1,hhColor); 
+      if (Settings.alarmProgVol[alrmNum]>0) {
+//        showText(10,8,"ON",1,hhColor);
+        snprintf(myString,sizeof(myString), "%02d",Settings.alarmProgVol[alrmNum]);
+        showText(3,8,myString,1,hhColor);
+        showText(15,8,"sec",1,color);
+      }
       else showText(10,8,"OFF",1,hhColor); 
       break;
     

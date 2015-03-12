@@ -89,7 +89,7 @@ void buttonProc(){
     }
     // return the main mode if no button was pressed for 5 seconds;
     // Exit and reinitialize
-    putstring_nl ("Exiting QMenu");
+//    putstring_nl ("Exiting QMenu");
     exitMenus();
   }  // if (isInMenu)
   else {  // not in Menu
@@ -106,7 +106,7 @@ void buttonProc(){
         return;
   
       // Finished with menus, return to normal operations
-      putstring_nl ("Exiting QMenu");
+//      putstring_nl ("Exiting QMenu");
       exitMenus();
     }
   }
@@ -119,39 +119,42 @@ void buttonProc(){
 // =======================================================================================
 void processMenuButton(byte buttonState)
 {
-//  Serial.print("Menu: "); Serial.println(buttonState);
-//  if (isInQMenu) return; // We are in quick menu, so don't show settings menu
+//  Serial.print("Menu: "); Serial.print(buttonState); Serial.print(", isInMenu: "); Serial.println(isInMenu);
   if (isInQMenu) {  // exit quick menu if active
     isInQMenu=false;
   }
     
  // ====  Alarm control  ====
   if ( (alarmState[0] >= AS_SOUNDING) || (alarmState[1] >= AS_SOUNDING) ) {  // sounding alarm or snoozing?
-    if (buttonState < BS_REPEATING)  return;  // If button not held, ignore it
+    if (buttonState < BS_REPEATING) {
+      return;  // If button not held, ignore it
+    }
     resetAlrm(0);  // reset both alarms
     resetAlrm(1);
     return;  // all done
   }
 
   // ===  Skip Alarm  ===
-  // not already in the menu, and either alarm is due in less than 2 hours, and Menu held down, set alarm skip flag
-  if (!isInMenu && buttonState>BS_RELEASED) {  // if not in menu, check to see if either alarm is pending
-    unsigned int alarmt1 = timeToNextAlarm(0);
-    unsigned int alarmt2 = timeToNextAlarm(1);
-//    Serial.print("at1 = "); Serial.println(alarmt1);
-//    Serial.print("at2 = "); Serial.println(alarmt2);
-    if ( alarmt1<=60 || alarmt2<60) {  // is there an alarm pending?
-      // need to add check for skip already set, so we can toggle it back off...
-      if (buttonState == BS_REPEATING) {  // hold Menu/Reset button to skip pending alarm
-        if (alarmt1<120)  skipAlrm(0);
-        if (alarmt2<120)  skipAlrm(1);
+  // not already in the menu, and either alarm is due in less than 1 hour, and Menu held down, set alarm skip flag
+  if (!isInMenu) {  // if not currently in menu
+    if (buttonState>BS_RELEASED) {  // if button pressed or held, check to see if either alarm is pending
+      unsigned int alarmt1 = timeToNextAlarm(0);
+      unsigned int alarmt2 = timeToNextAlarm(1);
+//      Serial.print("at1 = "); Serial.println(alarmt1);
+//      Serial.print("at2 = "); Serial.println(alarmt2);
+      if ( alarmt1<=ALARM_PENDING || alarmt2<ALARM_PENDING) {  // is there an alarm pending? (due within 60 minutes)
+        if (buttonState == BS_REPEATING) {  // hold Menu/Reset button to skip pending alarm or re-enable skipped alarm
+          if (alarmt1<ALARM_PENDING)  skipAlrm(0);
+          if (alarmt2<ALARM_PENDING)  skipAlrm(1);
+        }
+      return;  // alarm pending, not in Menu, only Release will invoke menu
       }
-    return;
     }
   }
-  else
+  else {
     if (buttonState==BS_RELEASED)
       return;  // ignore button release if already in menu
+  }
   
   //putstring_nl ("Is In Menu Button Proc");
   timeSettings();  // reset Settings timer

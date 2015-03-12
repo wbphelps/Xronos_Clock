@@ -1,58 +1,64 @@
 //***********************************************************************
+#define FIRMWARE_VER 238 // Current Firmware version (wbp)
 /*
 * December 2014 - March 2015 - mods by William Phelps (wm@usa.net)
-* Ver 2.37 (03/10/2015)
-#define FIRMWARE_VER 237 // Current Firmware version (wbp)
-* logarithmic brightness levels
-* bugfix: brightness set to auto by error
+* Ver 2.38 (03/10/2015)
+*
+* CHANGES & BUG FIXES (Most recent first)
+* progressive alarm: adjust vol at preset intervals; fix alarm skip bug
+* change auto bright Hi limits (100, 500)
+* Auto DST working, fix some typos, move DSTmode & DSToffset to Settings
+* add Startup Quiet option
+* set alarm vol when starting alarm
+* add #define for Radio, IR, GPS - conditional compile
+* fix alarm volume display (& rework volume code)
+* Menu button exits QMenu
+* increase # of alarm tones to 12, use define
+* add settable alarm snooze time 1 to 15 minutes
+* hold Alarm Reset to skip upcoming alarm
+* add "alarm reset" scroll message
+* rewrite button logic, merge button checks to common routine
+* global blink timers, bug fixes
+* option to enable/disable blinking colon
+* add tick sound for setting time
+* add button debounce/hold/repeat 
+* fix debounce timer, hold button to reset alarm
+* fix green/red color bug
+* fix temp<20 bug in sayTemp(); (from Len)
+* use structure for settings saved in EE
+* add display & set for photocell levels (min, max), BrtLo (0 to 100 by 10) and BrtHi (200 to 750 by 50)
+* flip alarm LED colors - green=alarm in next 24 hours, red if not
+* atomic (single fetch) time/date
+* set alarm LED color if alarm is due within next 24 hours
+* add progressive alarm volume on/off option for alarm setting
+* blink alarm indicators if playing or snoozing
+* change menu timeout to 5 seconds
+* move alarm indicators to edges
+* auto color, depending on light level
+* adjust some menu spacings
+* set IR & GPS status LED's after clear
+* small changes to fonts 3 & 4
+* switch IRRemote to use Timer3 interrupt instead of Timer2
+* Add GPS On/Off in System settings
+* AUTO DST working!
+* DST setting: Off, On, Auto
+* fix bug in brightness averaging
+* audio: if 12hr mode & minute == 0, don't say "hundred"
+* change colon display & offset
+* GPS support
+* "Temp:" (no In/Out) if no radio
+* "Temp In:" instead of "In Temp"
+* PM LED instead of AM
 * auto bright - adjust at 1 second intervals (was 10)
 * auto bright - average last 3 readings to smooth out changes
-* PM LED instead of AM
-* "Temp In:" instead of "In Temp"
-* "Temp:" (no In/Out) if no radio
-* GPS support
-* change colon display & offset
-* audio: if 12hr mode & minute == 0, don't say "hundred"
-* fix bug in brightness averaging
-* DST setting: Off, On, Auto
-* AUTO DST working!
-* Add GPS On/Off in System settings
-* switch IRRemote to use Timer3 interrupt instead of Timer2
-* small changes to fonts 3 & 4
-* set IR & GPS status LED's after clear
-* adjust some menu spacings
-* auto color, depending on light level
-* move alarm indicators to edges
-* change menu timeout to 5 seconds
-* blink alarm indicators if playing or snoozing
-* add progressive alarm volume on/off option for alarm setting
-* set alarm LED color if alarm is due within next 24 hours
-* atomic (single fetch) time/date
-* flip alarm LED colors - green=alarm in next 24 hours, red if not
-* add display & set for photocell levels (min, max), BrtLo (0 to 100 by 10) and BrtHi (200 to 750 by 50)
-* use structure for settings saved in EE
-* fix temp<20 bug in sayTemp(); (from Len)
-* fix green/red color bug
-* fix debounce timer, hold button to reset alarm
-* add button debounce/hold/repeat 
-* add tick sound for setting time
-* option to enable/disable blinking colon
-* global blink timers, bug fixes
-* rewrite button logic, merge button checks to common routine
-* add "alarm reset" scroll message
-* hold Alarm Reset to skip upcoming alarm
-* add settable alarm snooze time 1 to 15 minutes
-* increase # of alarm tones to 12, use define
-* Menu button exits QMenu
-* fix alarm volume display (& rework volume code)
-* add #define for Radio, IR, GPS - conditional compile
-* set alarm vol when starting alarm
-* add Startup Quiet option
-* Auto DST working, fix some typos, move DSTmode & DSToffset to Settings
-* change auto bright Hi limits (100, 500)
+* bugfix: brightness set to auto by error
+* logarithmic brightness levels
+*
+*** TODO ***
+* progressive alarm: display alarm volume graphically (vertical bar) 
+* decrement settings using some button logic/trick
 *
 * Add TZ Hr & TZ Mn to settings?
-* more compact text scrolling
 *
 ***********************************************************************/
 /***********************************************************************
@@ -92,6 +98,10 @@
 //#define PRT_ERROR
 //#define BTN_DEBUG  // for button debugging?
 //#define DST_DEBUG
+//#define DBG_ALARM
+
+// function headers...
+void setVol(byte vol, byte force=false);
 
 // ============================================================================================
 // Important User Hardware config settings, modify as needed
@@ -164,6 +174,8 @@ RFM12B radio;
 #define MAX_VOLUME 7  // loudest volume (0 is lowest)
 #define ALARM_STARTVOL 1 // Progressive alarm starting volume
 #define ALARM_TONES 12  // number of alarm tones
+//#define ALARM_INTERVAL 20 // number of seconds between volume increases (progressive alarm)
+#define ALARM_PENDING 60 // number of minutes before a pending alarm that it can be skipped
 
 //#ifdef HAVE_GPS
 ///volatile uint8_t g_gps_enabled = 2;  // zero: off, 1: 4800 bps, 2: 9600 bps
@@ -215,18 +227,19 @@ boolean okClock = true; // Can we show time? Normally true, unless we showing so
 #define AS_SNOOZING  4  // snoozing now
 byte alarmState[2] = {AS_OFF,AS_OFF};  // alarm states
 unsigned long alarmTime[2] = {0,0};  // time in ms until next alarm event
-//byte snoozeTime[2]={10,10}; // Keeps last digit of minutes for snooze
+unsigned long alarmProgTime[2] = {0,0};  // time in seconds of last alarm volume change
+
+// alarmon moved to Settings.alarmOn
+//byte alarmon[2]; // Alarm Freq. Controlled by 8 bits. If first bit is 0 alarm is off. Example in in decimal (not counting 1st bit):
+                 // Mon=64, Tue=32, Wed=16, Thu=8, Fri=4, Sat=2, Sun=1, Daily=127, Weekdays=124, Custom=126
+byte alarmVol[2]={7,7}; // Alarm Volume (0-12, smaller = louder)
+
+const byte weekdays[8]={0,1,64,32,16,8,4,2}; // Lookup table to convert Weekday number to my day code used for Custom Alarm schedule
 
 boolean isIncrementing = false;
 boolean blinking=false;
 boolean buttonPressedInc=false; // Tracks High state of INC button
 boolean decrement; // Only used with IR remote to decrement digits (--)
-
-//byte alarmon[2]; // Alarm Freq. Controlled by 8 bits. If first bit is 0 alarm is off. Example in in decimal (not counting 1st bit):
-                 // Mon=64, Tue=32, Wed=16, Thu=8, Fri=4, Sat=2, Sun=1, Daily=127, Weekdays=124, Custom=126
-byte alrmVol[2]={7,7}; // Alarm Volume (0-12, smaller = louder)
-
-const byte weekdays[8]={0,1,64,32,16,8,4,2}; // Lookup table to convert Weekday number to my day code used for Custom Alarm schedule
 
 unsigned long blinkTime=0; // controls blinking of the dots
 unsigned long blinkDigitTime=0; // controls blinking of the digits
@@ -546,8 +559,8 @@ void setup ()
   //setTime(13,04,0,9,11,12); // Set time on Arduino (hr,min,sec,day,month,yr). Use with RTC.set(now());
   //RTC.set(now()); // Write Time data to RTC Chip. Use with previous command
 
-  setVol(Settings.soundVol); // Change System Sound Volume
   WaveShieldInit();
+  setVol(Settings.soundVol); // Change System Sound Volume
   TempInit();
 
   // Set initial brightness

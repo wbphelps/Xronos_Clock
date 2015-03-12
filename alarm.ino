@@ -1,5 +1,5 @@
 // =======================================================================================
-// ---- Calculate time until next alarm, in seconds ----
+// ---- Calculate time until next alarm, in minutes ----
 // By: wbp
 // only checks alarm times for today & possibly tomorrow
 // returns 9999 if alarm not happening within 24 hours
@@ -55,7 +55,7 @@ void procAlarm(byte alrmnum) {
 
       else  { // not sounding and not snoozing...
         // check to see if alarm will sound again within 24 hours
-        if (timeToNextAlarm(alrmnum) < 1440) {
+        if (timeToNextAlarm(alrmnum) < 1440) {  // 24 hours * 60 minutes
           if (alarmState[alrmnum] == AS_SKIPPING)
             alarmColor=ORANGE;  // change LED to yellow
           else
@@ -75,6 +75,14 @@ void procAlarm(byte alrmnum) {
       }
     }
     else if (alarmState[alrmnum] == AS_SOUNDING) {  // sounding the alarm?
+      if ((Settings.alarmProgVol[alrmnum]>0) && ((tNow - alarmProgTime[alrmnum]) > Settings.alarmProgVol[alrmnum])) { // is it time to change volume?
+        // Escalate alarm volume
+        if (alarmVol[alrmnum]<MAX_VOLUME) {
+          alarmVol[alrmnum]++;
+          setVol(alarmVol[alrmnum]);  // increase alarm volume
+        }
+        alarmProgTime[alrmnum] = tNow;  // restart progressive volume timer
+      }
       if ( (tNow - alarmTime[alrmnum]) > 60*60 ) {  // has alarm been sounding for 60 minutes?
         alarmState[alrmnum] = AS_OFF;  // stop sounding alarm
         alarmTime[alrmnum] = tNow;  // remember when state was changed
@@ -90,9 +98,12 @@ void procAlarm(byte alrmnum) {
         alarmState[alrmnum] = AS_SOUNDING;  // turn alarm back on
         alarmTime[alrmnum] = tNow;  // remember when state was changed
 //        Serial.print("alarmState: "); Serial.println(alarmState[alrmnum]);
-        if (Settings.alarmProgVol[alrmnum])  // progressive alarm volume?
-          alrmVol[alrmnum]=ALARM_STARTVOL; // Reset Alarm Volume
-        else  alrmVol[alrmnum]=MAX_VOLUME;  // alarm volume to max
+        if (Settings.alarmProgVol[alrmnum]) {  // progressive alarm volume?
+          alarmVol[alrmnum]=ALARM_STARTVOL; // Reset alarm volume
+          alarmProgTime[alrmnum]=tNow; // Reset alarm volume interval timer
+        }
+        else  alarmVol[alrmnum]=MAX_VOLUME;  // alarm volume to max
+        playAlarm(alrmnum);  // restart alarm sound
       }
     }
     // ==== End Snooze Check ====
@@ -110,8 +121,13 @@ void procAlarm(byte alrmnum) {
             alarmState[alrmnum] = AS_WAIT; // Alarm time reached, turn it off without sounding it
           else {
             alarmState[alrmnum] = AS_SOUNDING; // If it's time to sound alarm!
-            if (Settings.alarmProgVol[alrmnum]) alrmVol[alrmnum]=ALARM_STARTVOL; //Set low volume for escalating alarms (wbp)
-            else alrmVol[alrmnum]=MAX_VOLUME; // Set High volume for non-escalating alarms
+            if (Settings.alarmProgVol[alrmnum]) {
+              alarmVol[alrmnum]=ALARM_STARTVOL; //Set low volume for escalating alarms 
+              alarmProgTime[alrmnum]=tNow; // Reset alarm volume interval timer
+            }
+            else
+              alarmVol[alrmnum]=MAX_VOLUME; // Set High volume for non-escalating alarms
+            playAlarm(alrmnum);  // restart alarm sound
           }
           alarmTime[alrmnum] = tNow;  // remember when state was changed
 //          Serial.print("alarmState: "); Serial.println(alarmState[alrmnum]);

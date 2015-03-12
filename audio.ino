@@ -33,11 +33,14 @@ void sdErrorCheck(void) {
 /*
  * set volume on wave device
  */
-void setVol(byte vol) {
-  byte v1 = MAX_VOLUME-vol;  // volume on wave device is inverted - 0 = loudest
-  if (v1 != wave.volume) {
-    wave.volume=v1; // Set Playback Sound - 0 is loudest, 7 is lowest
+static byte waveVol = 99;
+void setVol(byte vol, byte force) {
+  byte vl = MAX_VOLUME-vol;  // volume on wave device is inverted - 0 = loudest
+  if (force || vl != waveVol) {
+    wave.volume = vl; // Set Playback Sound - 0 is loudest, 7 is lowest
     delay(100); // try to avoid clicks when volume changed ???
+//    Serial.print("setVol("); Serial.print(vol); Serial.print("), "); Serial.print(waveVol); Serial.print("->"); Serial.println(vl);
+    waveVol = vl;  // remember last volume (wave.volume is readonly)
   }
 }
 
@@ -127,14 +130,14 @@ void playalarmfile(char *name, byte alrmnum) {
 #endif
     return;
   }
-  // Check if Alarm should be escalated
-//  if (alrmToneNum[alrmnum]<=ALARM_PROGRESSIVE){ // wbp
-  if (Settings.alarmProgVol[alrmnum]) { // wbp
-    // Escalate alarm volume
-    if (alrmVol[alrmnum]<MAX_VOLUME)  alrmVol[alrmnum]++;
-    setVol(alrmVol[alrmnum]);
-  }
+  // Check if Alarm should be escalated - now done in alarm.ino
+//  if (Settings.alarmProgVol[alrmnum]) { // progressive alarm volume?
+//    // Escalate alarm volume
+//    if (alrmVol[alrmnum]<MAX_VOLUME)  alrmVol[alrmnum]++;
+//    setVol(alrmVol[alrmnum]);
+//  }
   // ok time to play! start playback
+  setVol(alarmVol[alrmnum], true);  // set volume for new file
   wave.play();
   //radio.Wakeup(); // Disable RF12B
 }
