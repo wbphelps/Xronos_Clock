@@ -34,14 +34,12 @@ void sdErrorCheck(void) {
  * set volume on wave device
  */
 static byte waveVol = 99;
-void setVol(byte vol, byte force) {
+void setVol(byte vol) {
   byte vl = MAX_VOLUME-vol;  // volume on wave device is inverted - 0 = loudest
-  if (force || vl != waveVol) {
-    wave.volume = vl; // Set Playback Sound - 0 is loudest, 7 is lowest
-    delay(100); // try to avoid clicks when volume changed ???
-//    Serial.print("setVol("); Serial.print(vol); Serial.print("), "); Serial.print(waveVol); Serial.print("->"); Serial.println(vl);
-    waveVol = vl;  // remember last volume (wave.volume is readonly)
-  }
+  wave.volume = vl; // Set Playback Sound - 0 is loudest, 7 is lowest
+//  delay(100); // try to avoid clicks when volume changed ???
+//  Serial.print("setVol("); Serial.print(vol); Serial.print("), "); Serial.print(waveVol); Serial.print("->"); Serial.println(vl);
+  waveVol = vl;  // remember last volume (wave.volume is apparently readonly)
 }
 
 // =======================================================================================
@@ -94,7 +92,7 @@ void playfile(char *name) {
 #endif
     return;
   }
-  setVol(Settings.soundVol);  // set volume if changed
+  setVol(Settings.soundVol);  // set volume for this file
   // ok time to play! start playback
   wave.play();
  
@@ -137,7 +135,7 @@ void playalarmfile(char *name, byte alrmnum) {
 //    setVol(alrmVol[alrmnum]);
 //  }
   // ok time to play! start playback
-  setVol(alarmVol[alrmnum], true);  // set volume for new file
+  setVol(alarmVol[alrmnum]);  // set volume for new file
   wave.play();
   //radio.Wakeup(); // Disable RF12B
 }

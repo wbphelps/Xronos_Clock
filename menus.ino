@@ -127,7 +127,7 @@ void setAlarm(byte alrmNum) {
     case 5: // Set Alarm minutes  
       if (decrement) Settings.alarmMM[alrmNum]--; 
       else Settings.alarmMM[alrmNum]++;
-      if (Settings.alarmMM[alrmNum] ==255) Settings.alarmMM[alrmNum] = 59; // Negative number (byte) will be 255
+      if (Settings.alarmMM[alrmNum] == 255) Settings.alarmMM[alrmNum] = 59; // Negative number (byte) will be 255
       else if (Settings.alarmMM[alrmNum] > 59) Settings.alarmMM[alrmNum] = 0;
       playSFX(6);  // tick
       break;
@@ -142,9 +142,10 @@ void setAlarm(byte alrmNum) {
       cls();
       break;
     case 7: // Alarm Progressive On/off
-//      Settings.alarmProgVol[alrmNum]=!Settings.alarmProgVol[alrmNum]; //Toggle Progressive Alarm Vol
-      Settings.alarmProgVol[alrmNum]+=5;  // add 5 seconds to progressive alarm interval
-      if (Settings.alarmProgVol[alrmNum]>60)  Settings.alarmProgVol[alrmNum]=0;  // wrap to Off at 30 seconds
+      if (decrement) Settings.alarmProgVol[alrmNum]-=5;  // subtract 5 seconds from progressive alarm interval
+      else Settings.alarmProgVol[alrmNum]+=5;  // add 5 seconds to progressive alarm interval
+      if (Settings.alarmProgVol[alrmNum]>60)  Settings.alarmProgVol[alrmNum]=0;  // wrap to Off at 60 seconds
+      if (Settings.alarmProgVol[alrmNum] == 255)  Settings.alarmProgVol[alrmNum]=60;  // wrap from Off to 60
       cls();
       playSFX(1);
       break;
@@ -512,8 +513,8 @@ void sysSetting(){
         cls();
         if (decrement) Settings.soundVol--;
         else Settings.soundVol++;
-        if (Settings.soundVol == 255)  Settings.soundVol=7;
-        else if (Settings.soundVol > 7)  Settings.soundVol=0;
+        if (Settings.soundVol == 255)  Settings.soundVol=MAX_VOLUME; // wrap
+        else if (Settings.soundVol > MAX_VOLUME)  Settings.soundVol=0;
 //        playSFX(1);  // play tone AFTER changing volume!
         snprintf(string1,10, "%d.WAV",Settings.soundVol+1); // Make Filename
         playfile(string1);  // play it
@@ -583,7 +584,7 @@ void showSys(){
   if (!isSettingSys) return; // Exit if not setting system
   byte color=clockColor;
   hhColor = color;
-  if (blinkDigit)  hhColor = BLACK;  // blink setting value
+  if (blinkDigit && !isAdjusting)  hhColor = BLACK;  // blink setting value
   switch (subMenu[3]){ 
     case 1: // We are setting 12/24 Hour mode
       showText(1,0,"Mode:",1,color);
@@ -821,17 +822,31 @@ void optSetting(){
        case 0: // Enter Menu
          cls();
          subMenu[9]=1;
+         isAdjusting=false;  // not adjusting anything, don't get trapped by Set button becoming Increment
          //putstring_nl ("Enter pcell Submenu");
          break;
        case 1:  // just displaying pcell reading, nothing to adjust
+         isAdjusting=false;  // not adjusting anything, don't get trapped by Set button becoming Increment
          break;
        case 2:
-         Settings.photoCellMin += 10;
-         if (Settings.photoCellMin > 100)  Settings.photoCellMin = 0;
+         if (decrement) {
+           if (Settings.photoCellMin>10) Settings.photoCellMin -=10;
+           else Settings.photoCellMin = 100;  // wrap around
+         }
+         else {
+           if (Settings.photoCellMin < 100) Settings.photoCellMin += 10;
+           else Settings.photoCellMin = 0;  // wrap around
+         }
          break;
        case 3:
-         Settings.photoCellMax += 50;
-         if (Settings.photoCellMax > 500)  Settings.photoCellMax = 100;
+         if (decrement) { 
+           if (Settings.photoCellMax>50) Settings.photoCellMax -=50;
+           else Settings.photoCellMax = 500;  // wrap around to 500
+         }
+         else {
+           if (Settings.photoCellMax < 500) Settings.photoCellMax += 50;
+           else Settings.photoCellMax = 100;  // wrap around to 100
+         }
          break;
        case 4:
          subMenu[9]=0;  // exit from pcell submenu
@@ -862,7 +877,7 @@ void showOpt(){
   int blinkDigDuration =500;
   int pcell;
   hhColor = color;  // assume normal color
-  if (blinkDigit)  hhColor = BLACK;  // blink setting value
+  if (blinkDigit && !isAdjusting)  hhColor = BLACK;  // blink setting value
   switch (subMenu[6]){ 
    case 1: // InfoDisplay
       if (subMenu[7]==0) { // Will skip showing this text if we are deeper in submenu
@@ -1147,7 +1162,7 @@ void userMenu () {
 // added for pcell sub menu
      else if (subMenu[6]==4) { // Do not increment this submenu (we are in Pcell Options menu)
        //putstring_nl ("In subMenu");
-       if (subMenu[9] == 0) subMenu[6]++; // Go to next item, we are not enterying this submenu tree
+       if (subMenu[9] == 0) subMenu[6]++; // Go to next item, we are not entering this submenu tree
        else {
          subMenu[9]++;
          if (subMenu[9] > 4) subMenu[9]=1; // Goes back to first item of this submenu 
@@ -1246,14 +1261,14 @@ void butSetAlarm (byte alrmNum) {
   if (!Settings.alarmCustom[alrmNum] && subMenu[alrmNum]==3) subMenu[alrmNum]=4; // Custom Alarm is not set so skip to 4th menu
   switch (subMenu[alrmNum]) {
     case 1: // Set Alarm on Off
-      cls();
+//      cls();
       isSettingDate = false;
       isSettingAlarm = true;
       isSettingAlrmHH = true;
       break;
    case 2: // SET: Alarm Dalily/Weekday/Custom
       //putstring_nl ("SET: Alarm OFF/Dalily/Weekday/Custom");
-      cls();
+//      cls();
       isSettingDate = false;
       isSettingAlarm = true;
       isSettingAlrmHH = true;
@@ -1269,7 +1284,7 @@ void butSetAlarm (byte alrmNum) {
       break;
     case 4: // Set Alarm Hrs
       //putstring_nl ("SET: Alarm HRS");
-      cls();
+//      cls();
       isSettingAlrmHH = true;
       isSettingAlrmMM = false;
       break;

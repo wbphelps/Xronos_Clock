@@ -23,6 +23,12 @@ int timeToNextAlarm(byte alrmnum) {
   return dAlrm;
 }
 
+void plotAlarm(byte alrmnum, byte alarmColor, byte alarmVol) {
+  for (int y=0;y<MAX_VOLUME+1;y++)  // y value, 0 to max volume level
+    if (y<alarmVol) plot(alrmnum*31,14-y,alarmColor); // show alarm status & volume
+    else plot(alrmnum*31,14-y,BLACK);
+}
+
 // =======================================================================================
 // ---- Process Alarm Function ----
 // By: LensDigital
@@ -37,20 +43,15 @@ void procAlarm(byte alrmnum) {
 
 // ==== Begin alarm LED indicator ====
 
+      alarmColor=BLACK;
       if (alarmState[alrmnum] == AS_SOUNDING) { // Alarm currently sounding?
-        if (blinkOn)
-          if (alarmState[alrmnum] == AS_SKIPPING)
-            alarmColor=ORANGE;  // blink alarm indicator
-          else
-            alarmColor=RED;  // blink alarm indicator
-        else alarmColor=BLACK;
-        plot (31*alrmnum,14,alarmColor); // Show blinking dot in Orange if snoozing  (wbp)
+        if (blinkOn) alarmColor=RED;  // blink alarm indicator
+        plotAlarm(alrmnum,alarmColor,alarmVol[alrmnum]);
       }
 
       else if ( alarmState[alrmnum] == AS_SNOOZING)  { // snoozing
         if (blinkOn)  alarmColor=ORANGE;  // use Yellow for snoozing alarm
-        else alarmColor=BLACK;  // and blink it
-        plot (31*alrmnum,14,alarmColor); // Show blinking dot in Orange if snoozing  (wbp)
+        plotAlarm(alrmnum,alarmColor,1);
       }
 
       else  { // not sounding and not snoozing...
@@ -63,10 +64,10 @@ void procAlarm(byte alrmnum) {
         }
         else
           alarmColor=RED;  // assume it won't
-        plot (alrmnum*31,14,alarmColor); // show alarm status
+        plotAlarm(alrmnum,alarmColor,1);
       } 
-//  }
-// ==== END alarm LED indicator ====
+
+// ==== End LED indicator section ====
 
     if (alarmState[alrmnum] == AS_WAIT) {  // waiting?  (set so alarm doesn't restart if cancelled in 1st minute
       if ( (tNow - alarmTime[alrmnum]) > 60 ) {  // wait for 1 minute to allow time to change
@@ -79,7 +80,9 @@ void procAlarm(byte alrmnum) {
         // Escalate alarm volume
         if (alarmVol[alrmnum]<MAX_VOLUME) {
           alarmVol[alrmnum]++;
+          cli();  // disable interrupts
           setVol(alarmVol[alrmnum]);  // increase alarm volume
+          sei(); // re-enable interrupts
         }
         alarmProgTime[alrmnum] = tNow;  // restart progressive volume timer
       }

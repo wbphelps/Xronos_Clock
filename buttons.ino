@@ -18,22 +18,22 @@ void checkButton(byte btn, byte idx) {
       lastButtonTime = millis();  // start button debounce timer (wbp)
       buttonState[idx] = BS_DEBOUNCE;  // button down, waiting for debounce
       buttonHoldTime = BUTTON_DEBOUNCE_TIME;  // first hold is just debounce
-//      Serial.println("b1 1");
+//      Serial.print("BS 1 "); Serial.println(idx);
     }
     else if (buttonState[idx] >= BS_PRESSED) {  // did we signal that button was pressed (4) or repeating (5)?
       buttonState[idx] = BS_HOLDING;  // do that once per interval
-//      Serial.println("b1 2");
+//      Serial.print("BS 2 "); Serial.println(idx);
     }
     if ((millis() - lastButtonTime) >= buttonHoldTime) {  // has debounce or hold time been reached?
       lastButtonTime = millis();  // restart button timer
       if (buttonState[idx] == BS_DEBOUNCE) {  // button just pressed
         buttonState[idx] = BS_PRESSED;  // signal button pressed once
-//        Serial.println("b1 4");
+//        Serial.print("BS 4 "); Serial.println(idx);
         buttonHoldTime = BUTTON_HOLD_TIME;  // longer hold before repeat
       }
       else if (buttonState[idx] == BS_HOLDING) { // button holding for repeat
         buttonState[idx] = BS_REPEATING;  // signal button repeat
-//        Serial.println("b1 5");
+//        Serial.print("BS 5 "); Serial.println(idx);
         buttonHoldTime = BUTTON_REPEAT_TIME;  // hold time = repeat time
       }
     }
@@ -41,7 +41,7 @@ void checkButton(byte btn, byte idx) {
   else {  // button not down
     if (buttonState[idx] == BS_HOLDING) {  // was it held for at least the debounce time?
       buttonState[idx] = BS_RELEASED;  // button released
-//      Serial.println("b1 3");
+//      Serial.print("BS 3 "); Serial.println(idx);
     }
     else {
       buttonState[idx] = BS_OFF;  // button not pressed
@@ -64,24 +64,43 @@ void buttonProc(){
   // check the buttons. Menu button takes priority, then Set, then Inc
   checkButton(MENU_BUTTON_PIN,0);  // check Menu button
   if (buttonState[0]==0) {
-     checkButton(SET_BUTTON_PIN,1);  // check Set button
-     if (buttonState[1]==0)
-       checkButton(INC_BUTTON_PIN,2);  // check Inc button
+    checkButton(SET_BUTTON_PIN,1);  // check Set button
+    if (buttonState[1]==0)
+      checkButton(INC_BUTTON_PIN,2);  // check Inc button
   }
 
   // check MENU button;
-  if (buttonState[0]>=BS_RELEASED)  processMenuButton(buttonState[0]);
+  if (buttonState[0]>=BS_RELEASED) {
+    if (isAdjusting) {
+      isAdjusting=false;  // Menu button cancels isAdjusting so Set button is Set again
+//      Serial.println("isAdj off 1");
+    }
+    else
+      processMenuButton(buttonState[0]);
+  }
+
   // Check Set button
-  if (buttonState[1]>BS_RELEASED)  processSetButton(buttonState[1]);
+  if (buttonState[1]>BS_RELEASED) {
+    if (isAdjusting) {  // if setting something, Set button becomes Decrement button
+      decrement=true;  
+      processIncButton(buttonState[2]);
+    }
+    else
+      processSetButton(buttonState[1]);
+  }
 
   // If in Menu, check INCR button, check for Menu timeout
   if (isInMenu) {
-    if (buttonState[2]>BS_RELEASED)  processIncButton(buttonState[2]);
+    if (buttonState[2]>BS_RELEASED) {
+      decrement=false;  // Inc button only increases
+      processIncButton(buttonState[2]);
+    }
     // display the menu option for 5 seconds after menu button was pressed;
     // start blinking again if no button pushed for 1 second
     if ((lastButtonTime > 0) && (millis() - lastButtonTime < 5000)) {  // wbp
-      if ( millis() - lastButtonTime > 1000 )  { // Start blinking if buttons not touched for a second
-        isIncrementing = false;
+      if ( isAdjusting && (millis() - lastButtonTime > 1000) )  { // Start blinking if buttons not touched for a second
+        isAdjusting = false;
+//        Serial.println("isAdj off 2");
         if (!isInQMenu) 
           startBlinking();
       }
@@ -223,7 +242,8 @@ void processIncButton(byte buttonState)
 {  
 //  Serial.print("Inc: "); Serial.println(buttonState);
   timeSettings();  // reset Settings timer
-  isIncrementing = true;
+  isAdjusting = true;
+//  Serial.println("isAdj on 1");
   stopBlinking();  
   switch (menuItem) {
     case 1: // Setting Alarm 1
@@ -266,7 +286,8 @@ void exitMenus() {
       subMenu[i]=0;
     }
     okClock=true; 
-    isIncrementing = false; 
+    isAdjusting = false; 
+//    Serial.println("isAdj off 3");
     wave.stop(); // Any sounds (in case Alarm Tone is playing and sFX are disabled)
     playSFX(3);
     cls();

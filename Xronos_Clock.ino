@@ -1,10 +1,12 @@
 //***********************************************************************
-#define FIRMWARE_VER 238 // Current Firmware version (wbp)
+#define FIRMWARE_VER 239 // Current Firmware version (wbp)
 /*
 * December 2014 - March 2015 - mods by William Phelps (wm@usa.net)
-* Ver 2.38 (03/10/2015)
+* Ver 2.39 (03/13/2015)
 *
 * CHANGES & BUG FIXES (Most recent first)
+* progressive alarm volume indicator
+* Set button becomes Decrement when adjusting time, date, etc.
 * progressive alarm: adjust vol at preset intervals; fix alarm skip bug
 * change auto bright Hi limits (100, 500)
 * Auto DST working, fix some typos, move DSTmode & DSToffset to Settings
@@ -100,13 +102,10 @@
 //#define DST_DEBUG
 //#define DBG_ALARM
 
-// function headers...
-void setVol(byte vol, byte force=false);
-
 // ============================================================================================
 // Important User Hardware config settings, modify as needed
 // ============================================================================================
-#define RFM12B_PRESENT  // Defines if RFM12B Chip present.  Set to true to enable. Must also have ATMega1284p! Will not work with ATMega644p chip
+//#define RFM12B_PRESENT  // Defines if RFM12B Chip present.  Set to true to enable. Must also have ATMega1284p! Will not work with ATMega644p chip
 #define IR_PRESENT  // Set to True if IR receiver is present. Must also have ATMega1284p! Will not work with ATMega644p chip
 #define GPS_PRESENT // Set to True if GPS receiver is present
 #define AUTO_BRIGHTNESS_ON 0  //Set to 1 to disable autobrightness menu feature, 0 to enable if photocell is present.
@@ -236,10 +235,10 @@ byte alarmVol[2]={7,7}; // Alarm Volume (0-12, smaller = louder)
 
 const byte weekdays[8]={0,1,64,32,16,8,4,2}; // Lookup table to convert Weekday number to my day code used for Custom Alarm schedule
 
-boolean isIncrementing = false;
+boolean isAdjusting = false;  // if on prevents blinking of digits during set
 boolean blinking=false;
-boolean buttonPressedInc=false; // Tracks High state of INC button
-boolean decrement; // Only used with IR remote to decrement digits (--)
+//boolean buttonPressedInc=false; // Tracks High state of INC button
+boolean decrement=false; // Set true to decrement settings instead of increment
 
 unsigned long blinkTime=0; // controls blinking of the dots
 unsigned long blinkDigitTime=0; // controls blinking of the digits
@@ -298,8 +297,6 @@ FatReader root;   // This holds the information for the filesystem on the card
 FatReader f;      // This holds the information for the file we're play
 
 WaveHC wave;      // This is the only wave (audio) object, since we will only play one at a time
-// we will track if a button is just pressed, just released, or 'pressed' (the current state
-//volatile byte pressed[2], justpressed[2], justreleased[2];
 
 /*
 void myDebug(){
@@ -341,6 +338,8 @@ void TempInit(){
   // Temperature sensor init
   //Serial.print("Locating DS18B20 temperature devices...");
   sensors.begin();
+  // find the thermometer
+  byte addr = sensors.getAddress(insideThermometer, 0);
 #ifdef PRT_DEBUG
   putstring("Found ");
   Serial.print(sensors.getDeviceCount(), DEC);
@@ -349,7 +348,7 @@ void TempInit(){
   putstring("DS18B20 parasite power is: "); 
   if (sensors.isParasitePowerMode())  putstring_nl("ON");
   else  putstring_nl("OFF");
-  if (!sensors.getAddress(insideThermometer, 0))  putstring_nl("Unable to find address for Device 0");
+  if (addr==0)  putstring_nl("Unable to find address for Device 0");
 #endif
   // set the resolution to 9 bit (Each Dallas/Maxim device is capable of several different resolutions)
   sensors.setResolution(insideThermometer, 9); 
@@ -513,7 +512,8 @@ tmElements_t tm;
 
 void setup ()  
 {
-  Serial.begin(9600); // for GPS(wbp)
+  Serial.begin(9600);
+  
   // ========= Read Settings from EEPROM ===============================
   loadSettings(); // load variables saved in EE (load defaults if needed)
   Settings.clockVer = FIRMWARE_VER;  // update clock firmware version
@@ -560,7 +560,6 @@ void setup ()
   //RTC.set(now()); // Write Time data to RTC Chip. Use with previous command
 
   WaveShieldInit();
-  setVol(Settings.soundVol); // Change System Sound Volume
   TempInit();
 
   // Set initial brightness
@@ -568,6 +567,9 @@ void setup ()
   else
     setBrightness(Settings.brightness);
 
+  delay(1000);
+//  Serial.print("Set vol "); Serial.println(Settings.soundVol);
+  setVol(Settings.soundVol); // Set System Sound Volume
   startup(); // Show welcoming screen
 
 #ifdef GPS_PRESENT
@@ -612,17 +614,17 @@ tmElements_t tm;
 #endif
 
 // Test breakTime/makeTime Year handling
-unsigned long tNow = now();
-  Serial.print("tNow "); Serial.println(tNow);
-  Serial.print("year "); Serial.println(year(tNow));
-//  tmElements_t tm;
-  breakTime(now(), tm);  // get the time and convert to structure tmElements_t
-  tm.Year = tmYearToY2k(tm.Year);  // convert (yyyy-1970) year to yy (subtract 30) 
-  Serial.print("yr "); Serial.println(tm.Year);
-  tm.Year = y2kYearToTm(tm.Year);  // convert yy year to (yyyy-1970) (add 30) // not for Xronos/Arduino clock
-  tNow = makeTime(tm);  // convert to time_t - seconds since 0/0/1970
-  Serial.print("tNow "); Serial.println(tNow);
-  Serial.print("year "); Serial.println(year(tNow));
+//unsigned long tNow = now();
+//  Serial.print("tNow "); Serial.println(tNow);
+//  Serial.print("year "); Serial.println(year(tNow));
+////  tmElements_t tm;
+//  breakTime(now(), tm);  // get the time and convert to structure tmElements_t
+//  tm.Year = tmYearToY2k(tm.Year);  // convert (yyyy-1970) year to yy (subtract 30) 
+//  Serial.print("yr "); Serial.println(tm.Year);
+//  tm.Year = y2kYearToTm(tm.Year);  // convert yy year to (yyyy-1970) (add 30) // not for Xronos/Arduino clock
+//  tNow = makeTime(tm);  // convert to time_t - seconds since 0/0/1970
+//  Serial.print("tNow "); Serial.println(tNow);
+//  Serial.print("year "); Serial.println(year(tNow));
 
 }
 

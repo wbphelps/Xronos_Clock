@@ -91,7 +91,6 @@ void infoDisplay() {
         else { // Sensor data hasn't been reiceved in a while
           showSmTime(0,clockColor); // Show Time on top
           snprintf(myString,sizeof(myString), "Sensor data not received in over 30 minutes (%2d)",second(last_RF));
-          Serial.println (last_RF);
           if (! scrolltextsizexcolor(8,myString,RED,5) ) return;
         }
         cls ();
@@ -355,7 +354,7 @@ void sayDate(){
   char dayofweek[4]; // Keeps day of week
   playcomplete("TODAY.WAV");
   playcomplete("IS.WAV");
-  Serial.println ("Say Date!");
+//  Serial.println ("Say Date!");
   switch (weekday()){
     case 1: //Sunday
     strcpy(dayofweek,"SUN");
@@ -830,7 +829,7 @@ byte talkingLogic (byte talkingItem) {
 }
 
 void startBlinking(){
-  blinking = !isIncrementing;
+  blinking = !isAdjusting;
 }
 
 void stopBlinking(){
