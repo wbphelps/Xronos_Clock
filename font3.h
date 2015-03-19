@@ -18,7 +18,7 @@
 
 
 // define all ascii characters starting with 32 (blank);
-unsigned char PROGMEM myfont[96][8] = {
+const unsigned char PROGMEM myfont[96][8] = {
   {
     0x00,    // ________   blank (ascii 32)
     0x00,    // ________

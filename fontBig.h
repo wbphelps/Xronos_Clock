@@ -24,7 +24,7 @@
 // define big digits 0-9 and space character;
 // The fourth font must be the inverse one, see displayBigTime() in WiseClock2.cpp
 
-unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) each;
+const unsigned char PROGMEM bigFont[55][12] = {		// 11 characters of 12 bytes (rows) each;
 
 // Font 0
 

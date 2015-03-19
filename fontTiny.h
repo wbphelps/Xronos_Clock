@@ -11,7 +11,7 @@
 // define all ascii characters starting with 32 (blank);
 // 4 column-wide font;
 //
-unsigned char PROGMEM tinyFont[95][8] = {
+const unsigned char PROGMEM tinyFont[95][8] = {
   {
     0x00,    // ____   blank (ascii 32)
     0x00,    // ____
