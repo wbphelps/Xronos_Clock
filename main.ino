@@ -786,7 +786,7 @@ byte talkingLogic (byte talkingItem) {
       talkingItem++;  // skip this one
     case 7:  // Alarms?
       if (Settings.sayOptions & SO_Alarms)  break;
-      talkingItem=1;  // wrap
+      talkingItem=++;  // skip this one
   }
   return talkingItem;
 }
