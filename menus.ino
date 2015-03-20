@@ -722,7 +722,7 @@ void optSetting(){
        case 0: // Enter Menu
          cls();
          subMenu[7]=1;
-         //putstring_nl ("Enter talk Submenu");
+         //putstring_nl ("Enter scroll Submenu");
          break;
        case 1: // Frequency
          if (decrement) Settings.infoFreq--;
@@ -733,37 +733,44 @@ void optSetting(){
        break;
        case 2: // Scroll Date
 //         putstring_nl ("Scroll Date");
-         Settings.infoOptions = Settings.infoOptions ^ 128; //Toggle
+         Settings.infoOptions = Settings.infoOptions ^ IO_Date; //Toggle
         break;
-       case 3: // Scroll inernal temp
+       case 3: // Scroll Internal temp
 //         putstring_nl ("Scroll Temp");
-         Settings.infoOptions = Settings.infoOptions ^ 64; //Toggle
+         Settings.infoOptions = Settings.infoOptions ^ IO_InTemp; //Toggle
          break;
-       case 4: // Scroll External Temp
-#ifdef RFM12B_PRESENT
-         Settings.infoOptions = Settings.infoOptions ^ 32; //Toggle
+       case 4: // Scroll Internal humidity
+#if defined DHT22
+         Settings.infoOptions = Settings.infoOptions ^ IO_InHum; //Toggle
 #else
          playSFX(5);  // no radio
 #endif
          break;
-       case 5: // Scroll  Alarm
-         Settings.infoOptions = Settings.infoOptions ^ 16; //Toggle
-         break;
-       case 6: // Scroll  Sensor Data
+       case 5: // Scroll External Temp
 #ifdef RFM12B_PRESENT
-         Settings.infoOptions = Settings.infoOptions ^ 8; //Toggle
+         Settings.infoOptions = Settings.infoOptions ^ IO_OutTemp; //Toggle
+#else
+         playSFX(5);  // no radio
+#endif
+         break;
+       case 6: // Scroll  Alarm
+         Settings.infoOptions = Settings.infoOptions ^ IO_Alarms; //Toggle
+         break;
+       case 7: // Scroll  Sensor Data
+#ifdef RFM12B_PRESENT
+         Settings.infoOptions = Settings.infoOptions ^ IO_Sensor; //Toggle
 #else
          playSFX(5);
 #endif
          break;
-       case 7: // Scroll  Humidity data
+       case 8: // Scroll  Humidity data
 #ifdef RFM12B_PRESENT
-         Settings.infoOptions = Settings.infoOptions ^ 4; //Toggle
+         Settings.infoOptions = Settings.infoOptions ^ IO_OutHum; //Toggle
 #else
          playSFX(5);
 #endif
          break;
-       case 8: // Exit
+       case 9: // Exit
          subMenu[7]=0;
        break;
      }
@@ -777,33 +784,36 @@ void optSetting(){
          //putstring_nl ("Enter talk Submenu");
          break;
        case 1: // Say Time
-         Settings.sayOptions = Settings.sayOptions ^ 64; //Toggle
+         Settings.sayOptions = Settings.sayOptions ^ SO_Time; //Toggle
          break;
       case 2: // Say Date
-         Settings.sayOptions = Settings.sayOptions ^ 32; //Toggle
+         Settings.sayOptions = Settings.sayOptions ^ SO_Date; //Toggle
          break;
       case 3: // Say Internal Temp
-         Settings.sayOptions = Settings.sayOptions ^ 16; //Toggle
+         Settings.sayOptions = Settings.sayOptions ^ SO_InTemp; //Toggle
          break;
-      case 4: // Say External Temp
+      case 4: // Say Internal Humidity
+         Settings.sayOptions = Settings.sayOptions ^ SO_InHum; //Toggle
+         break;
+      case 5: // Say External Temp
          //Serial.println ("Saving say Ext Temp");
 #ifdef RFM12B_PRESENT
-         Settings.sayOptions = Settings.sayOptions ^ 4; //Toggle
+         Settings.sayOptions = Settings.sayOptions ^ SO_OutTemp; //Toggle
 #else
          playSFX(5);
 #endif
          break;
-      case 5: // Say External Humidity
+      case 6: // Say External Humidity
 #ifdef RFM12B_PRESENT
-         Settings.sayOptions = Settings.sayOptions ^ 2; //Toggle
+         Settings.sayOptions = Settings.sayOptions ^ SO_OutHum; //Toggle
 #else
          playSFX(5);
 #endif
          break;
-      case 6: // Say  Alarm
-         Settings.sayOptions = Settings.sayOptions ^ 8; //Toggle
+      case 7: // Say  Alarm
+         Settings.sayOptions = Settings.sayOptions ^ SO_Alarms; //Toggle
          break;
-      case 7: // Exit
+      case 8: // Exit
          subMenu[8]=0;
          break;
      }
@@ -897,52 +907,62 @@ void showOpt(){
       case 2: // Scroll Date
        showText(0,0,"Displ",1,color);
        showText(0,8,"Date",1,color);
-       if (Settings.infoOptions & 128) showText(25,8,"Y",1,hhColor) ;
+       if (Settings.infoOptions & IO_Date) showText(25,8,"Y",1,hhColor) ;
        else showText(25,8,"N",1,hhColor); 
       break;
       case 3: // Scroll Inside Temp
        showText(0,0,"Displ",1,color);
        showText(0,8,"InTemp",3,color);
-       if (Settings.infoOptions & 64) showText(25,8,"Y",1,hhColor) ;
+       if (Settings.infoOptions & IO_InTemp) showText(25,8,"Y",1,hhColor) ;
        else showText(25,8,"N",1,hhColor);
       break;
-      case 4: // Scroll Outside Temp
+      case 4: // Scroll Inside Humidity
+#if defined DHT22 
+       showText(0,0,"Displ",1,color);
+       showText(0,8,"InHum",3,color);
+       if (Settings.infoOptions & IO_InHum) showText(25,8,"Y",1,hhColor) ;
+       else showText(25,8,"N",1,hhColor);
+#else
+       subMenu[7]++;  // skip inside humidity
+#endif
+      break;
+      case 5: // Scroll Outside Temp
        if (!Settings.RadioEnabled) { // Skip if Receiver is not enabled
          subMenu[7]++;
          break;
        }
        showText(0,0,"Displ",1,color);
        showText(0,8,"ExTemp",3,color);
-       if (Settings.infoOptions & 32) showText(25,8,"Y",1,hhColor) ;
-       else showText(25,8,"N",1,hhColor);
-       break;
-       case 5: // Scroll Alarm
-       showText(0,0,"Displ",1,color);
-       showText(0,8,"Alarm",3,color);
-       if (Settings.infoOptions & 16) showText(25,8,"Y",1,hhColor) ;
+       if (Settings.infoOptions & IO_OutTemp) showText(25,8,"Y",1,hhColor) ;
        else showText(25,8,"N",1,hhColor);
       break;
-      case 6: // Scroll receiver stats
+      case 6: // Scroll Alarm
+       showText(0,0,"Displ",1,color);
+       showText(0,8,"Alarm",3,color);
+       if (Settings.infoOptions & IO_Alarms) showText(25,8,"Y",1,hhColor) ;
+       else showText(25,8,"N",1,hhColor);
+      break;
+      case 7: // Scroll receiver stats
        if (!Settings.RadioEnabled) { // Skip if Receiver is not enabled
          subMenu[7]++;
          break;
        }
        showText(0,0,"Displ",1,color);
        showText(0,8,"RFStat",3,color);
-       if (Settings.infoOptions & 8) showText(25,8,"Y",1,hhColor) ;
-       else showText(25,8,"N",1,hhColor);
-       break;
-       case 7: // Scroll humidity
-      if (!Settings.RadioEnabled) { // Skip if Receiver is not enabled
-         subMenu[7]++;
-         break;
-       }
-       showText(0,0,"Displ",1,color);
-       showText(0,8,"Humid",3,color);
-       if (Settings.infoOptions & 4) showText(25,8,"Y",1,hhColor) ;
+       if (Settings.infoOptions & IO_Sensor) showText(25,8,"Y",1,hhColor) ;
        else showText(25,8,"N",1,hhColor);
       break;
-      case 8: // Exit
+      case 8: // Scroll humidity
+       if (!Settings.RadioEnabled) { // Skip if Receiver is not enabled
+         subMenu[7]++;
+         break;
+        }
+        showText(0,0,"Displ",1,color);
+        showText(0,8,"Humid",3,color);
+        if (Settings.infoOptions & IO_OutHum) showText(25,8,"Y",1,hhColor) ;
+        else showText(25,8,"N",1,hhColor);
+      break;
+      case 9: // Exit
        showText(0,0,"Exit",1,color);
       break;
      }
@@ -957,48 +977,54 @@ void showOpt(){
      case 1: // Say Time
        showText(0,0,"Say",1,color);
        showText(0,8,"Time",1,color);
-       if (Settings.sayOptions & 64) showText(25,8,"Y",1,hhColor) ;
+       if (Settings.sayOptions & SO_Time) showText(25,8,"Y",1,hhColor) ;
        else showText(25,8,"N",1,hhColor); 
      break;
      case 2: // Say Date
        showText(0,0,"Say",1,color);
        showText(0,8,"Date",1,color);
-       if (Settings.sayOptions & 32) showText(25,8,"Y",1,hhColor) ;
+       if (Settings.sayOptions & SO_Date) showText(25,8,"Y",1,hhColor) ;
        else showText(25,8,"N",1,hhColor); 
      break;
      case 3: // Say Inside Temperature
        showText(0,0,"Say",1,color);
        showText(0,8,"InTemp",3,color);
-       if (Settings.sayOptions & 16) showText(25,8,"Y",1,hhColor) ;
+       if (Settings.sayOptions & SO_InTemp) showText(25,8,"Y",1,hhColor) ;
        else showText(25,8,"N",1,hhColor); 
      break;
-     case 4: // Say Outside Temperature
+     case 4: // Say Inside Humidity
+       showText(0,0,"Say",1,color);
+       showText(0,8,"InHum",3,color);
+       if (Settings.sayOptions & SO_InHum) showText(25,8,"Y",1,hhColor) ;
+       else showText(25,8,"N",1,hhColor); 
+     break;
+     case 5: // Say Outside Temperature
        if (!Settings.RadioEnabled) { // Skip if Receiver is not enabled
          subMenu[8]++;
          break;
        }
        showText(0,0,"Say",1,color);
        showText(0,8,"ExTemp",3,color);
-       if (Settings.sayOptions & 4) showText(25,8,"Y",1,hhColor) ;
+       if (Settings.sayOptions & SO_OutTemp) showText(25,8,"Y",1,hhColor) ;
        else showText(25,8,"N",1,hhColor); 
        break;
-     case 5: // Say Humidity
+     case 6: // Say Humidity
        if (!Settings.RadioEnabled) { // Skip if Receiver is not enabled
          subMenu[8]++;
          break;
        }
        showText(0,0,"Say",1,color);
        showText(0,8,"Humid",3,color);
-       if (Settings.sayOptions & 2) showText(25,8,"Y",1,hhColor) ;
+       if (Settings.sayOptions & SO_OutHum) showText(25,8,"Y",1,hhColor) ;
        else showText(25,8,"N",1,hhColor); 
        break;
-     case 6: // Say Alarm
+     case 7: // Say Alarm
        showText(0,0,"Say",1,color);
        showText(0,8,"Alrm",1,color);
-       if (Settings.sayOptions & 8) showText(25,8,"Y",1,hhColor) ;
+       if (Settings.sayOptions & SO_Alarms) showText(25,8,"Y",1,hhColor) ;
        else showText(25,8,"N",1,hhColor); 
        break;
-     case 7: // Exit
+     case 8: // Exit
        showText(0,0,"Exit",1,color);
        break;
      }
@@ -1148,7 +1174,7 @@ void userMenu () {
        if (subMenu[7] == 0) subMenu[6]++; // Go to next item, we are not enterying this submenu tree
        else {
          subMenu[7]++;
-         if (subMenu[7] > 8) subMenu[7]=1; // Goes back to first item of this submenu 
+         if (subMenu[7] > 9) subMenu[7]=1; // Goes back to first item of this submenu 
        }
      }
      else if (subMenu[6]==2) { // Do not increment this submenu (we are in Talking Options menu)
@@ -1156,7 +1182,7 @@ void userMenu () {
        if (subMenu[8] == 0) subMenu[6]++; // Go to next item, we are not enterying this submenu tree
        else {
          subMenu[8]++;
-         if (subMenu[8] > 7) subMenu[8]=1; // Goes back to first item of this submenu 
+         if (subMenu[8] > 8) subMenu[8]=1; // Goes back to first item of this submenu 
        }
      } 
 // added for pcell sub menu

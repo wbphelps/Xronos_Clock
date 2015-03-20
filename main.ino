@@ -48,7 +48,7 @@ void showDivider(byte color){
 // ---------------------------------------------------------------------------------------
 void infoDisplay() {
   if (Settings.infoFreq == 0) return; // User choose to never show this screen
-  if (! ((Settings.infoOptions & 128) || (Settings.infoOptions & 64) || (Settings.infoOptions & 32) || (Settings.infoOptions & 16) || (Settings.infoOptions & 8) ) ) return; // All display options disabled
+  if (! (Settings.infoOptions & (IO_Date+IO_Alarms+IO_InTemp+IO_InHum+IO_OutTemp+IO_OutHum) ) ) return; // All display options disabled
   if ((alarmState[0]==AS_SOUNDING) || (alarmState[1]==AS_SOUNDING)) return; // Do not show if Alarm is playing
   if (isInMenu) return; // Do not show when in menu
   if (isInQMenu) return; // Do not show when in quick menu
@@ -58,29 +58,34 @@ void infoDisplay() {
     //if ( (minute()%10)==0) return; // Prevents showing during 0 digit time
     cls();
     showSmTime(0,clockColor); // Show Time on top
-    if (Settings.infoOptions & 128) // Option Enabled?
+    if (Settings.infoOptions & IO_Date) // Option Enabled?
       if (!showDate(clockColor)) return; // Scroll Date. Exit if scroll was interrupted by button press
-    if (Settings.infoOptions & 64) // Option Enabled?
+    if (Settings.infoOptions & IO_InTemp) { // Option Enabled?
       if (!showTemp(clockColor,false,true)) return; // Scroll Inside Temp. Exit if scroll was interrupted by button press
-    cls(); 
+      cls();
+    }
+    if (Settings.infoOptions & IO_InHum) { // Option Enabled?
+      if (!showHumidity(clockColor,false,true)) return; // Scroll Inside Humidity. Exit if scroll was interrupted by button press
+      cls();
+    }
     if (Settings.RadioEnabled) {
-        if (Settings.infoOptions & 32) {// Option Enabled?
+        if (Settings.infoOptions & IO_OutTemp) { // Option Enabled?
           if (!showTemp(clockColor,false,false)) return; // Scroll Outside Temp. Exit if scroll was interrupted by button press
-         cls();
+          cls();
         }
-        if (Settings.infoOptions & 4) {// Humidity Option Enabled?
-        if (!showHumidity(clockColor,false)) return; //Scroll Outside Humidity. Exit if scroll was interrupted by button press
-        cls ();
+        if (Settings.infoOptions & IO_OutHum) { // Humidity Option Enabled?
+          if (!showHumidity(clockColor,false,false)) return; //Scroll Outside Humidity. Exit if scroll was interrupted by button press
+          cls ();
         }
     }
-    if (Settings.infoOptions & 16) {// Option Enabled?
+    if (Settings.infoOptions & IO_Alarms) {// Option Enabled?
       if (!alarmInfo(0)) return; //Show info for alarm 1. Exit if scroll was interrupted by button press
       cls ();
       if (!alarmInfo(1)) return; //Show info for alarm 2. Exit if scroll was interrupted by button press
       cls();
     }
     if (Settings.RadioEnabled) 
-      if (Settings.infoOptions & 8) {// Option Enabled?
+      if (Settings.infoOptions & IO_Sensor) {// Option Enabled?
         if ( last_RF > 0 && ( (millis()-last_RF) < 1800000) )  { // Show sensor timestamp
           //Serial.println ("Sensor data receiveed recently");
           showSmTime(0,clockColor); // Show Time on top
@@ -313,10 +318,10 @@ void sayAlarm(byte alrmNum){
 }
 
 // =======================================================================================
-// ---- Announce Internal Temperature ----
+// ---- Announce Inside Temperature ----
 // By: LensDigital
 // ---------------------------------------------------------------------------------------
-void sayTemp(int temp, boolean location){
+void sayTemp(int temp, boolean inside){
   /*
   if (temp > 100 || temp < -50) {
     playcomplete ("ERR1.WAV");
@@ -324,8 +329,10 @@ void sayTemp(int temp, boolean location){
   } */
   char myString[8];
   playcomplete("TEMP.WAV");
-  if (location) playcomplete("INSIDE.WAV");
-  else playcomplete("OUTSIDE.WAV");
+  if (Settings.RadioEnabled) {  // if no radio, no need to qualify which temperature it is
+    if (inside) playcomplete("INSIDE.WAV");
+    else playcomplete("OUTSIDE.WAV");
+  }
   playcomplete("IS.WAV");
   if (temp<20) {
     snprintf(myString,sizeof(myString), "%d.WAV",temp); // Teen and single digits
@@ -560,20 +567,24 @@ void mainDate(byte color){
 // ---- location = true for inside, false for outside
 // By: LensDigital
 // =======================================================================================
-boolean showTemp(byte color,boolean speak, boolean location){
+boolean showTemp(byte color, boolean speak, boolean inside){
   char myString[32];
   char tempInOut[7];
   byte tmpOffset2=0; // will differ if getting temp from outside
-  if (location)  tmpOffset2=Settings.tempOffset; //Only for Inside temp Actual offset is used
+  if (inside)  tmpOffset2=Settings.tempOffset; //Only for Inside temp Actual offset is used
   boolean returnVal=true;// Return value
   float tempC;
-  if (location) { // Get temperature from attached sensor
+  if (inside) { // Get temperature from attached sensor
+#if defined DS18B20
     sensors.requestTemperatures(); // Send the command to get temperatures
     tempC = sensors.getTempC(insideThermometer);
+#elif defined DHT22
+    tempC = dht.readTemperature();
+#endif
     snprintf(tempInOut,sizeof(tempInOut), "In");
   }
   else { // Get Temperature from external sensor
-    if (!Settings.RadioEnabled) return true;
+    if (!Settings.RadioEnabled)  return true;
     tempC=extTemp; // External Temperature was requested
     snprintf(tempInOut,sizeof(tempInOut), "Out");
   }
@@ -598,12 +609,12 @@ boolean showTemp(byte color,boolean speak, boolean location){
     }
     returnVal=scrolltextsizexcolor(8,myString,color,20); 
   }
-  if (speak) {
+  else {  // speak
     if (Settings.tempUnit) snprintf(myString,sizeof(myString), "%dF ",tempFint); // Short Format String for Farenheight
     else  snprintf(myString,sizeof(myString), "%dC ",tempCint); // Short Format String for Farenheight
     showText(5,8,myString,1,color); // Show Static Temp string
-    if (Settings.tempUnit) sayTemp(tempFint,location);
-    else sayTemp(tempCint,location);
+    if (Settings.tempUnit) sayTemp(tempFint,inside);
+    else sayTemp(tempCint,inside);
   }
   return returnVal;
 }
@@ -657,14 +668,14 @@ void quickDisplay(boolean doAll)
 // ====================================================================================================
 void talkingMenu (boolean mmode) {
   isSettingAlarm=false;
-  if (talkingItem > 6) talkingItem=1; // Go back to beginning of the menu
+  if (talkingItem > 7) talkingItem=1; // Go back to beginning of the menu
   if (!mmode) { //Single item talk mode
     sayItem(talkingItem);
     talkingItem = talkingLogic(++talkingItem);
   }
   else { // Multiple items talk mode (say all of them)
     talkingItem=1;
-    while (talkingItem < 7) { // Go thru all 6 items
+    while (talkingItem < 8) { // Go thru all 7 items
       sayItem(talkingItem);
       talkingItem = talkingLogic(++talkingItem);
     } // End While
@@ -697,26 +708,33 @@ void sayItem (byte item) {
       mainDate(clockColor); // Show full screen date
       sayDate();
   break; 
-  case 3: // Say and show INdoor temperature
+  case 3: // Say and show Indoor temperature
       isSettingDate = false;
       okClock=false;
       cls();
       showSmTime(0,ORANGE);
       showTemp(ORANGE,true, true); // Scroll temperature on the bottom
   break; 
-  case 4: // Say and show Outdoor temperature
+  case 4: // Say and show Indoor humidity
+      isSettingDate = false;
+      okClock=false;
+      cls();
+      showSmTime(0,ORANGE);
+      showHumidity(ORANGE,true, true); // Scroll humidity on the bottom
+  break; 
+  case 5: // Say and show Outdoor temperature
       isSettingDate = false;
       okClock=false;
       cls();
       showSmTime(0,ORANGE);
       showTemp(ORANGE,true, false); // Scroll temperature on the bottom
   break; 
-  case 5: // Say and show Outdoor humidity
+  case 6: // Say and show Outdoor humidity
       cls();
       //showSmTime(0,ORANGE);
-      showHumidity(ORANGE,true);
+      showHumidity(ORANGE,true,false);
   break;
-  case 6: // Say Alarm
+  case 7: // Say Alarm
       if (! (Settings.alarmOn[0] & 128) && ! (Settings.alarmOn[1] & 128) ) { lastButtonTime = 0; break; }//Both Alarms are off
       if ( Settings.alarmOn[0] & 128) { // Alarm 1 is On
         isSettingDate = false;
@@ -747,85 +765,30 @@ void sayItem (byte item) {
 
 // Decide which item needs to be skipped in talking menu
 byte talkingLogic (byte talkingItem) {
-  
-    switch (talkingItem){ // Skip item if it's disabled in EEProm
-     case 1: 
-     if (!(Settings.sayOptions & 64)) {
-       talkingItem++;
-       if (!(Settings.sayOptions & 32)) {
-         talkingItem++; 
-         if (!(Settings.sayOptions & 16)) { 
-           talkingItem++;
-           if (!(Settings.sayOptions & 4)) {
-             talkingItem++;
-             if (!(Settings.sayOptions & 2)) {
-               talkingItem++;
-               if (!(Settings.sayOptions & 8)) {
-                 talkingItem++;
-                 return talkingItem;
-               }
-             }
-           }
-         }
-       }
-     }
-         
-     break;
-     case 2:
-     if (!(Settings.sayOptions & 32)) {
-       talkingItem++; 
-       if (!(Settings.sayOptions & 16)) { 
-           talkingItem++;
-           if (!(Settings.sayOptions & 4)) {
-             talkingItem++;
-             if (!(Settings.sayOptions & 2)) {
-               talkingItem++;
-               if (!(Settings.sayOptions & 8)) {
-                 talkingItem++;
-               }
-             }
-           }
-         }
-     }
-     break;
-     case 3:
-     if (!(Settings.sayOptions & 16)) {
-       talkingItem++; 
-       if (!(Settings.sayOptions & 4)) {
-             talkingItem++;
-             if (!(Settings.sayOptions & 2)) {
-               talkingItem++;
-               if (!(Settings.sayOptions & 8)) {
-                 talkingItem++;
-               }
-             }
-           }
-     }
-     break;
-     case 4:
-     if (!(Settings.sayOptions & 4)) {
-       talkingItem++;
-       if (!(Settings.sayOptions & 2)) {
-               talkingItem++;
-         if (!(Settings.sayOptions & 8)) {
-               talkingItem++;
-         }
-       }
-     }
-     break;
-     case 5:
-       if (!(Settings.sayOptions & 2)) {
-               talkingItem++;
-         if (!(Settings.sayOptions & 8)) {
-               talkingItem++;
-         }
-       }
-     break;
-     case 6:
-     if (!(Settings.sayOptions & 8)) talkingItem++;
-     break;
-    }
-  return talkingItem;    
+  switch (talkingItem) { // Skip item if it's disabled in EEProm
+    case 1:  // are we speaking the Time?
+      if (Settings.sayOptions & SO_Time)  break;
+      talkingItem++;  // skip this one
+    case 2:  // Date?
+      if (Settings.sayOptions & SO_Date)  break;
+      talkingItem++;  // skip this one
+    case 3:  // Inside Temp?
+      if (Settings.sayOptions & SO_InTemp)  break;
+      talkingItem++;  // skip this one
+    case 4:  // Inside Humidity
+      if (Settings.sayOptions & SO_InHum)  break;
+      talkingItem++;  // skip this one
+    case 5:  // Outside Temp
+      if (Settings.sayOptions & SO_OutTemp)  break;
+      talkingItem++;  // skip this one
+    case 6:  // Outside Humidity
+      if (Settings.sayOptions & SO_OutHum)  break;
+      talkingItem++;  // skip this one
+    case 7:  // Alarms?
+      if (Settings.sayOptions & SO_Alarms)  break;
+      talkingItem=1;  // wrap
+  }
+  return talkingItem;
 }
 
 void startBlinking(){
@@ -908,27 +871,37 @@ void autoBrightness () {
 // ---- speak = true if voice annoucment desired
 // By: LensDigital
 // =======================================================================================
-boolean showHumidity(byte color, boolean speak) {
-  if (!Settings.RadioEnabled) return false;
-  //if (extHum==300) return false; // Humidity did not update
+boolean showHumidity(byte color, boolean speak, boolean inside) {
   char myString[25];
-  showSmTime(0,color); // Show small digit time on top
-  if (extHum > 100 || extHum < 1) { // Humidity sensor is not working
-    //showSmTime(0,color); // Show small digit time on top
-    //playSFX(5);
-    return scrolltextsizexcolor(8,"Humidity Sensor ERROR",RED,10);
+  int humid;
+  if (inside) { // Get humidity from attached sensor
+#if defined DS18B20
+    return false;  // no humidity sensor
+#elif defined DHT22
+    showSmTime(0,color); // Show small digit time on top
+    humid = dht.readHumidity();
+#endif
   }
-  
+  else { // Get Temperature from external sensor
+    if (!Settings.RadioEnabled) return false;
+    //if (extHum==300) return false; // Humidity did not update
+    showSmTime(0,color); // Show small digit time on top
+    if (extHum > 100 || extHum < 1) { // Humidity sensor is not working
+      //showSmTime(0,color); // Show small digit time on top
+      //playSFX(5);
+      return scrolltextsizexcolor(8,"Humidity Sensor ERROR",RED,10);
+    }
+    humid = extHum;
+  }
   if(!speak) { //Scroll
-    snprintf(myString,sizeof(myString), "Humidity %2d%%",extHum); // Scroll Outside Humidity
+    snprintf(myString,sizeof(myString), "Humidity %2d%%",humid); // Scroll Humidity
     return scrolltextsizexcolor(8,myString,clockColor,20);
   }
   else {
-    snprintf(myString,sizeof(myString), "%d%%",extHum); // Make string for Outside Humidity  
+    snprintf(myString,sizeof(myString), "%d%%",humid); // Make string for Humidity
     showText(5,8,myString,1,color); // Show Static string
-    sayHumidity();
+    sayHumidity(humid, inside);
   }
-  
 }
 
 // =======================================================================================
@@ -936,23 +909,28 @@ boolean showHumidity(byte color, boolean speak) {
 // ---- Called from showHumidity 
 // By: LensDigital
 // =======================================================================================
-void sayHumidity() {
-    char myString[8];
-    //Serial.println ("Say Humidity");
-    playcomplete("HUMIDITY.WAV");
-    playcomplete("OUTSIDE.WAV");
-    playcomplete("IS.WAV");
-    if (extHum < 20) { // Say it as is
-      snprintf(myString,sizeof(myString), "%d.WAV",extHum); // Scroll Outside Humidity  
-      playcomplete (myString);
-    }
-    else { // Say 20,30, etc
-     snprintf(myString,sizeof(myString), "%d0.WAV",(extHum/10)%10); // Scroll Outside Humidity  
-     playcomplete (myString);
-     if ((extHum%10)!=0) { // Don't say if last digit is 0
-           snprintf(myString,sizeof(myString), "%d.WAV",extHum%10); // Make 2nd digit
-           playcomplete(myString); // Play   
-     } // end If
-    } // end Else
-    playcomplete ("PERCENT.WAV");
+void sayHumidity(int hum, byte inside) {
+  char myString[8];
+  //Serial.println ("Say Humidity");
+  playcomplete("HUMIDITY.WAV");
+  if (Settings.RadioEnabled) {  // if no radio, no need to qualify which temperature it is
+    if (inside)
+      playcomplete("INSIDE.WAV");
+    else
+      playcomplete("OUTSIDE.WAV");
+  }
+  playcomplete("IS.WAV");
+  if (hum < 20) { // Say it as is
+    snprintf(myString,sizeof(myString), "%d.WAV",hum); // Scroll Outside Humidity  
+    playcomplete (myString);
+  }
+  else { // Say 20,30, etc
+    snprintf(myString,sizeof(myString), "%d0.WAV",(hum/10)%10); // Scroll Outside Humidity  
+    playcomplete (myString);
+    if ((hum%10)!=0) { // Don't say if last digit is 0
+      snprintf(myString,sizeof(myString), "%d.WAV",hum%10); // Make 2nd digit
+      playcomplete(myString); // Play   
+    } // end If
+  } // end Else
+  playcomplete ("PERCENT.WAV");
 }

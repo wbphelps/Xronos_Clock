@@ -27,6 +27,25 @@
 #include "WProgram.h"
 #endif
 
+// infoOptions values
+const byte IO_Date    = B10000000;  // Scroll Date
+const byte IO_Alarms  = B01000000;  // Scroll Alarms
+const byte IO_InTemp  = B00100000;  // Scroll Inside Temp
+const byte IO_InHum   = B00010000;  // Scroll Inside Humidity
+const byte IO_Sensor  = B00001000;  // Scroll Sensor status
+const byte IO_OutTemp = B00000100;  // Scroll Outside Temp
+const byte IO_OutHum  = B00000010;  // Scroll Outside Humidity
+//const byte IO_???    = B00000001;  // 
+
+// sayOptions values
+const byte SO_Time    = B10000000;  // Speak Time
+const byte SO_Date    = B01000000;  // Speak Date
+const byte SO_InTemp  = B00100000;  // Speak Inside Temp
+const byte SO_InHum   = B00010000;  // Speak Inside Humidity
+const byte SO_Alarms  = B00001000;  // Speak Alarms
+const byte SO_OutTemp = B00000100;  // Speak External Temp (Radio)
+const byte SO_OutHum  = B00000010;  // Speak External Humidity (Radio)
+
 struct __Settings
 {
   byte EEcheck1; // EE version check

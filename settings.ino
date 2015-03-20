@@ -74,12 +74,14 @@ void saveSettings(uint8_t quiet) {
     if (b1 != b2) {
       eeprom_write_byte((uint8_t *)EE_Address + p, *((uint8_t*)&Settings + p));
       c1++;
+//      Serial.print("ee write "); Serial.println(p);
     }
   }
   if (c1) {  // did anything change?
     if (quiet==0)
     //tone(PinMap::piezo, 1760, 25);  // short beep (almost a tick)
-    playSFX(4);  // play a little tone to show EE memory saved
+      playSFX(4);  // play a little tone to show EE memory saved
+//    Serial.print("ee "); Serial.print(c1); Serial.println(" written");
   }
 }
 

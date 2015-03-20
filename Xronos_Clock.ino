@@ -1,10 +1,11 @@
 //***********************************************************************
-#define FIRMWARE_VER 239 // Current Firmware version (wbp)
+#define FIRMWARE_VER 240 // Current Firmware version (wbp)
 /*
 * December 2014 - March 2015 - mods by William Phelps (wm@usa.net)
-* Ver 2.39 (03/13/2015)
+* Ver 2.40 (03/20/2015)
 *
 * CHANGES & BUG FIXES (Most recent first)
+* add support for DHT22 temp/humidity sensor
 * progressive alarm volume indicator
 * Set button becomes Decrement when adjusting time, date, etc.
 * progressive alarm: adjust vol at preset intervals; fix alarm skip bug
@@ -57,11 +58,8 @@
 * logarithmic brightness levels
 *
 *** TODO ***
-* progressive alarm: display alarm volume graphically (vertical bar) 
-* decrement settings using some button logic/trick
-*
 * Add TZ Hr & TZ Mn to settings?
-*
+* Add night/quiet modes
 ***********************************************************************/
 /***********************************************************************
 * July 11, 2013 LensDigital 
@@ -80,6 +78,11 @@
  *   Copyrighted and distributed under the terms of the Berkely license
  *   (copy freely, but include this notice of original author.)
  ***********************************************************************/
+
+// Which temperature sensor?
+//#define DS18B20  // DS18B20 one wire temperature sensor
+#define DHT22  // DHT22 one wire temperature & humidity sensor
+
 #include <Wire.h>
 #include "HT1632.h"
 //#include <avr/pgmspace.h> - not used
@@ -90,8 +93,12 @@
 #include "WaveUtil.h" // Used by wave shield
 #include "WaveHC.h" // Used by wave shield (library modified by LensDigital to accomodate ATMega644p/ATMega1284p)
 //#include <EEPROM.h> - not used, see settings.h, settings.ino
+#if defined  DS18B20
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#elif defined DHT22
+#include "DHT.h"
+#endif
 
 // EE version - change this to force reset of EE memory
 #define EE_VERSION 13
@@ -269,11 +276,15 @@ byte lastStatusInc=LOW; // Last Status of Incremental button
 boolean buttonReleased=false; 
 
 //Temperature chip i/o
+#if defined DS18B20
 OneWire ds(tempPin); // Connect Temperature Sensor
 // Pass our oneWire reference to Dallas Temperature. 
 DallasTemperature sensors(&ds);
 // arrays to hold device address
 DeviceAddress insideThermometer;
+#elif defined DHT22
+DHT dht(tempPin,DHT22);  // define the temperature/humidity sensor
+#endif
 
 byte hours;
 byte myhours; // used for 12/24 conversion
@@ -330,31 +341,35 @@ void StreamPrint_progmem(Print &out,PGM_P format,...)
 */
 
 
+#if defined DS18B20
 // ===================================================================
 // * DS18B20 Temperature sensor iniitialization *
 // ===================================================================
-void TempInit(){
+void TempInit() {
  // ===================================================================
   // Temperature sensor init
   //Serial.print("Locating DS18B20 temperature devices...");
   sensors.begin();
   // find the thermometer
   byte addr = sensors.getAddress(insideThermometer, 0);
-#ifdef PRT_DEBUG
-  putstring("Found ");
-  Serial.print(sensors.getDeviceCount(), DEC);
-  putstring_nl(" devices.");
-  // report parasite power requirements
-  putstring("DS18B20 parasite power is: "); 
-  if (sensors.isParasitePowerMode())  putstring_nl("ON");
-  else  putstring_nl("OFF");
-  if (addr==0)  putstring_nl("Unable to find address for Device 0");
-#endif
+//#ifdef PRT_DEBUG
+//  putstring("Found ");
+//  Serial.print(sensors.getDeviceCount(), DEC);
+//  putstring_nl(" devices.");
+//  // report parasite power requirements
+//  putstring("DS18B20 parasite power is: "); 
+//  if (sensors.isParasitePowerMode())  putstring_nl("ON");
+//  else  putstring_nl("OFF");
+//  if (addr==0)  putstring_nl("Unable to find address for Device 0");
+//#endif
   // set the resolution to 9 bit (Each Dallas/Maxim device is capable of several different resolutions)
   sensors.setResolution(insideThermometer, 9); 
-  
 }
-
+#elif defined DHT22
+void TempInit() {
+  dht.begin();
+}
+#endif
 
 // ===================================================================
 // * Decode IR Codes *
@@ -521,11 +536,14 @@ void setup ()
 
 #ifdef RFM12B_PRESENT
   if (!Settings.RadioEnabled) { // Disable saying ext temperature/humidity
-    if (Settings.sayOptions & 4) Settings.sayOptions = Settings.sayOptions ^ 4;
-    if (Settings.sayOptions & 2) Settings.sayOptions = Settings.sayOptions ^ 2;
+    Settings.sayOptions = Settings.sayOptions & (255-(SO_OutTemp+SO_OutHum));
   }
 #else
   Settings.RadioEnabled=false;
+  Settings.sayOptions = Settings.sayOptions & (255-(SO_OutTemp+SO_OutHum));
+#endif
+#ifdef DS18B20
+  Settings.sayOptions = Settings.sayOptions & (255-SO_InHum);  // DS18B20 doesn't have humidity
 #endif
 #ifndef IR_PRESENT
   Settings.IRenabled=false;
