@@ -786,7 +786,7 @@ byte talkingLogic (byte talkingItem) {
       talkingItem++;  // skip this one
     case 7:  // Alarms?
       if (Settings.sayOptions & SO_Alarms)  break;
-      talkingItem=++;  // skip this one
+      talkingItem++;  // skip this one
   }
   return talkingItem;
 }
@@ -894,7 +894,7 @@ boolean showHumidity(byte color, boolean speak, boolean inside) {
     humid = extHum;
   }
   if(!speak) { //Scroll
-    snprintf(myString,sizeof(myString), "Humidity %2d%%",humid); // Scroll Humidity
+    snprintf(myString,sizeof(myString), "Humid %2d%%",humid); // Scroll Humidity
     return scrolltextsizexcolor(8,myString,clockColor,20);
   }
   else {

@@ -173,11 +173,11 @@ void parseGPSdata(char *gpsBuffer) {
 //  char gpsCKS[2];  // Checksum without asterisk
   char *ptr;
   uint32_t tmp;
-  plot(31,3,BLACK);  // clear checksum error LED
-  plot(31,4,BLACK);  // clear parse error LED
-  plot(31,5,BLACK);  // clear time error LED
 //  Serial.print("GPS: "); Serial.println(gpsBuffer);
   if ( strncmp( gpsBuffer, "$GPRMC,", 7 ) == 0 ) {
+    plot(31,2,BLACK);  // clear checksum error LED
+    plot(31,3,BLACK);  // clear parse error LED
+    plot(31,4,BLACK);  // clear time error LED
 //    Serial.print("GPS: ");  Serial.println(gpsBuffer);
 //    alarm_status = true;  // wbp - debugging
     //beep(1000, 1);
@@ -267,11 +267,11 @@ void parseGPSdata(char *gpsBuffer) {
     }
     return;
 GPSerrorC:
-    plot(31,3,RED);  // show checksum error
+    plot(31,2,RED);  // show checksum error
     g_gps_cks_errors++;  // increment error count
     goto GPSerror2;
 GPSerrorP:
-    plot(31,4,RED);  // show parse error
+    plot(31,3,RED);  // show parse error
     g_gps_parse_errors++;  // increment error count
     goto GPSerror2;
 GPSerrorT:
@@ -281,7 +281,7 @@ GPSerrorT:
     Serial.print(", tDelta="); Serial.print(tDelta);
     Serial.println(" ");
 #endif
-    plot(31,5,RED);  // show time error
+    plot(31,4,RED);  // show time error
     g_gps_time_errors++;  // increment error count
     tLast = tNow;  // save new time
 GPSerror2:
