@@ -1,10 +1,11 @@
 //***********************************************************************
-#define FIRMWARE_VER 240 // Current Firmware version (wbp)
+#define FIRMWARE_VER 241 // Current Firmware version (wbp)
 /*
-* December 2014 - March 2015 - mods by William Phelps (wm@usa.net)
-* Ver 2.40 (03/20/2015)
+* December 2014 - April 2015 - mods by William Phelps (wm@usa.net)
+* Ver 2.41 (04/29/2015)
 *
 * CHANGES & BUG FIXES (Most recent first)
+* add setting for TZ Hour & Minute
 * add support for DHT22 temp/humidity sensor
 * progressive alarm volume indicator
 * Set button becomes Decrement when adjusting time, date, etc.
@@ -173,7 +174,7 @@ RFM12B radio;
 // ===================================================================================
 #define MAX_MENUS 5 // Maximum number of menus
 #define MAX_SUBMENUS 10 // Maximum number of submenus
-#define MAX_SETTINGS 6 // Maximum number of settings menu items
+#define MAX_SETTINGS 8 // Maximum number of time settings menu items
 #define MAX_SYSSETTINGS 12 // Maximum number of System menu items
 #define MAX_OPTIONS 5 // Max number of options menu items 
 
@@ -211,7 +212,9 @@ boolean isSettingMinutes = false;
 boolean isSettingMonth   = false;
 boolean isSettingDay   = false;
 boolean isSettingYear   = false;
-boolean isSettingDST = false; 
+boolean isSettingDST = false;
+boolean isSettingTZ = false;
+boolean isSettingTZMinute = false;
 boolean isSettingAlrmMM   = false;
 boolean isSettingAlrmHH   = false;
 boolean isSettingOptions = false;

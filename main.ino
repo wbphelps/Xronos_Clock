@@ -531,7 +531,7 @@ void showSmTime (byte location,byte color){
 // By: LensDigital
 // ---------------------------------------------------------------------------------------
 void mainDate(byte color){
-  if (!isSettingDate) return; // Not setting Date
+//  if (!isSettingDate) return; // Not setting Date
   char dateString[5]; // Var will hold generated string
   if (color==4)color=random(3)+1; // Select random color
   // Blink processor (used to blink text, number during date setting
@@ -624,7 +624,7 @@ boolean showTemp(byte color, boolean speak, boolean inside){
 // By: LensDigital
 // =======================================================================================
 boolean showDate(byte color){
-  if (isInMenu) return true; // Do not sound alarm if changing settings
+  if (isInMenu) return true; // Do not display date if changing settings
   char dateString[14]; // stores formatted date
   //showSmTime(0,color); // Show small digit time on top
   // Format Date and store in dateString array
@@ -697,33 +697,33 @@ void sayItem (byte item) {
    case 1: // Show/Say Time
       cls();
       okClock=true; 
-      isSettingDate=false;
+//      isSettingDate=false;
       showBigTime(clockColor);
       sayTime();
       break; 
   case 2: // Show/Say Date
-      isSettingDate = true;
+//      isSettingDate = true;
       okClock=false;
       cls();
       mainDate(clockColor); // Show full screen date
       sayDate();
   break; 
   case 3: // Say and show Indoor temperature
-      isSettingDate = false;
+//      isSettingDate = false;
       okClock=false;
       cls();
       showSmTime(0,ORANGE);
       showTemp(ORANGE,true, true); // Scroll temperature on the bottom
   break; 
   case 4: // Say and show Indoor humidity
-      isSettingDate = false;
+//      isSettingDate = false;
       okClock=false;
       cls();
       showSmTime(0,ORANGE);
       showHumidity(ORANGE,true, true); // Scroll humidity on the bottom
   break; 
   case 5: // Say and show Outdoor temperature
-      isSettingDate = false;
+//      isSettingDate = false;
       okClock=false;
       cls();
       showSmTime(0,ORANGE);
@@ -737,22 +737,21 @@ void sayItem (byte item) {
   case 7: // Say Alarm
       if (! (Settings.alarmOn[0] & 128) && ! (Settings.alarmOn[1] & 128) ) { lastButtonTime = 0; break; }//Both Alarms are off
       if ( Settings.alarmOn[0] & 128) { // Alarm 1 is On
-        isSettingDate = false;
+//        isSettingDate = false;
         okClock=false;
-        isSettingAlarm=true;
+//        isSettingAlarm=true;  wbp - not setting the alarm now
         cls();
         menuItem=1;
         subMenu[0]=4; // Enable display of Alarm 1
         showAlarm(clockColor);
         sayAlarm(0);
-        
       }
+      // wbp: what happens if alarm 2 is on but not alarm 1? no cls, etc ???
       if ( Settings.alarmOn[1] & 128) { // Alarm 2 is on
         menuItem=2;
         subMenu[1]=4; // Enable display of Alarm 2
         showAlarm(clockColor);
         sayAlarm(1);
-     
       }
    break; 
    default: // failsafe

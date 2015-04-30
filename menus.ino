@@ -158,7 +158,7 @@ void setAlarm(byte alrmNum) {
 // By: LensDigital
 // =======================================================================================
 void showAlarm(byte color){
-  if (!isSettingAlarm) return; // Exit if not setting alarm
+//  if (!isSettingAlarm) return; // Exit if not setting alarm - caller checks now
   byte alrmNum;
   char myString[11];
 //  alrmBlink(color);
@@ -307,7 +307,7 @@ void showAlarm(byte color){
 // ---- by wbphelps
 // =======================================================================================
 void showDST(byte color) {
-  if (!isSettingDST) return; // Exit if not setting DST
+//  if (!isSettingDST) return; // Exit if not setting DST
   showText(6,0,"DST",1,color);
   hhColor = color; 
   if (blinkDigit)  hhColor = BLACK;  // blink setting value
@@ -323,6 +323,23 @@ void showDST(byte color) {
     break;
    }
 }
+
+// =======================================================================================
+// ---- Show  TZ Hour or Minute ----
+// ---- by wbphelps
+// =======================================================================================
+void showTZ(byte color) {
+  char myString[11];
+  showText(4,0,"Zone",1,color);
+  hhColor = color;
+  if (isSettingTZMinute)
+    snprintf(myString,sizeof(myString), "Mn %d ",g_TZ_minute);
+  else
+    snprintf(myString,sizeof(myString), "Hr%+0.02d ",g_TZ_hour);
+  if (blinkDigit)  hhColor = BLACK;  // blink setting value
+  showText(0,8,myString,1,hhColor);
+}
+
 
 bool isLeapYear(int year)
 {
@@ -392,18 +409,6 @@ void setTimeDate() {
       else if (years > 40) years = 10; // Default to 2010
       playSFX(6); // tick
       break;
-//    case 6: // Set DST +1 hours 
-//      playSFX(1);
-//      hours++;
-//      if (hours == 255) hours = 23;
-//      else if (hours > 23) hours = 0;
-//      break;
-//   case 7: // Set DST -1 hours 
-//      playSFX(1);
-//      hours--;
-//      if (hours == 255) hours = 23;
-//      else if (hours > 23) hours = 0;
-//      break;
     case 6: // DST
       playSFX(1);
       Settings.DSTmode = ++Settings.DSTmode % 3;  // off, on, Auto
@@ -420,6 +425,18 @@ void setTimeDate() {
       if (hours == 255)  hours = 23;  // handle wrap
       else if (hours > 23)  hours = 0;
 //      g_DST_updated = false; // re-init & re-calc DST for today
+      break;
+    case 7: // TZ Hour
+      if (decrement) g_TZ_hour--;
+      else g_TZ_hour++;
+      if (g_TZ_hour>13)  g_TZ_hour = -12; // wrap
+      if (g_TZ_hour<-12)  g_TZ_hour = 13; // wrap
+      break;
+    case 8: // TZ Minute
+      if (decrement) g_TZ_minute-=15;
+      else g_TZ_minute+=15;
+      if (g_TZ_minute>45)  g_TZ_minute = 0; // wrap
+      if (g_TZ_minute<0)  g_TZ_minute = 45; // wrap
       break;
     }  
    // IMPORTANT! This will keep track of seconds for better time setting! 
@@ -581,7 +598,7 @@ void sysSetting(){
 // By: LensDigital
 // =======================================================================================
 void showSys(){
-  if (!isSettingSys) return; // Exit if not setting system
+//  if (!isSettingSys) return; // Exit if not setting system
   byte color=clockColor;
   hhColor = color;
   if (blinkDigit && !isAdjusting)  hhColor = BLACK;  // blink setting value
@@ -881,7 +898,7 @@ void optSetting(){
 // By: LensDigital
 // =======================================================================================
 void showOpt(){
-  if (!isSettingOptions) return; // Exit if not setting options
+//  if (!isSettingOptions) return; // Exit if not setting options
   byte color=clockColor;
   char myString[2]; 
   int blinkDigDuration =500;
@@ -1226,6 +1243,8 @@ void butSetClock() {
       isSettingDay   = false;
       isSettingYear   = false;
       isSettingDST = false;
+      isSettingTZ = false;
+      isSettingTZMinute = false;
       break;
     case 2: // Set Minutes
       //putstring_nl ("SET: Mins");
@@ -1266,6 +1285,15 @@ void butSetClock() {
       isSettingDST = true;
       isSettingDate = false;
       isSettingYear   = false;
+      break;
+    case 7: // TZ hour
+      isSettingDST = false;
+      isSettingTZ = true;
+      isSettingTZMinute = false;
+      break;
+    case 8: // TZ minute
+//      isSettingTZHour = false;
+      isSettingTZMinute = true;
       break;
     }
 }

@@ -55,11 +55,12 @@ void checkButton(byte btn, byte idx) {
 // =======================================================================================
 void buttonProc(){
   // check a few things first
-  showAlarm(clockColor); // Display Alarm setting screen
-  if (!isInQMenu) mainDate(clockColor); // Show date setting screen, but only if we are not in QMenu
-  showSys();
-  showOpt();
-  showDST(clockColor);
+  if (isSettingAlarm)  showAlarm(clockColor); // If setting Alarm, display Alarm setting screen
+  if ((isSettingDate) && (!isInQMenu))  mainDate(clockColor); // Show date setting screen, but only if we are not in QMenu
+  if (isSettingSys)  showSys(); // If setting Sys values, show that
+  if (isSettingOptions)  showOpt(); // if setting Option values, show that
+  if (isSettingDST)  showDST(clockColor); // If setting DST, show that
+  if (isSettingTZ)  showTZ(clockColor);
 
   // check the buttons. Menu button takes priority, then Set, then Inc
   checkButton(MENU_BUTTON_PIN,0);  // check Menu button
@@ -274,6 +275,8 @@ void exitMenus() {
     isSettingSys=false;
     isSettingOptions=false;
     isSettingDST=false; // wbp
+    isSettingTZ = false;
+    isSettingTZMinute = false;
     blinking = false;
     isSettingHours   = false;
     isSettingMinutes = false;
