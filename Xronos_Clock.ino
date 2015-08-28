@@ -1,10 +1,12 @@
 //***********************************************************************
-#define FIRMWARE_VER 241 // Current Firmware version (wbp)
+#define FIRMWARE_VER 242 // Current Firmware version (wbp)
 /*
 * December 2014 - April 2015 - mods by William Phelps (wm@usa.net)
-* Ver 2.41 (04/29/2015)
+* Ver 2.42 (08/28/2015)
 *
 * CHANGES & BUG FIXES (Most recent first)
+* move TZ to Settings
+* smaller increments for photocell max
 * add setting for TZ Hour & Minute
 * add support for DHT22 temp/humidity sensor
 * progressive alarm volume indicator
@@ -186,8 +188,8 @@ RFM12B radio;
 
 //#ifdef HAVE_GPS
 ///volatile uint8_t g_gps_enabled = 2;  // zero: off, 1: 4800 bps, 2: 9600 bps
-volatile int8_t g_TZ_hour = -8;
-volatile int8_t g_TZ_minute = 0;
+//volatile int8_t g_TZ_hour = -8;
+//volatile int8_t g_TZ_minute = 0;
 volatile bool g_gps_updating = false;  // for signalling GPS update on some displays
 volatile unsigned long g_gps_timer = 0;  // for tracking how long since GPS last updated
 volatile bool g_DST_updated = false;  // DST update flag = allow update only once per day

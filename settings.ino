@@ -54,6 +54,9 @@ __Settings Settings = {
   400, // photocell maximum
   9, // alarm snooze time
 
+  -8, // TZ hour
+  0, // TZ minute
+
   EE_VERSION, // EE version;
 };
 

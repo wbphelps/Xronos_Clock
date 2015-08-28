@@ -81,6 +81,9 @@ struct __Settings
   unsigned int photoCellMin; // Photocell minimum value
   unsigned int photoCellMax; // Photocell maximum value
   byte alarmSnoozeTime;  // how long to snooze for, in minutes
+	
+  int8_t TZ_hour;
+  int8_t TZ_minute;
 
   byte EEcheck2; // EE version check
 };

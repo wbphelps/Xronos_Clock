@@ -1,6 +1,6 @@
 /*
- * GPS support for The Akafugu Nixie Clock
- * (C) 2012-2014 William B Phelps
+ * GPS support for The Xronos clock
+ * (C) 2012-2015 William B Phelps
  *
  * This program is free software; you can redistribute it and/or modify it under the
  * terms of the GNU General Public License as published by the Free Software
@@ -42,8 +42,8 @@ volatile char *gpsLastBuffer;
 volatile uint8_t gpsDataReady_;
 
 extern uint8_t g_gps_enabled;
-extern int8_t g_TZ_hour;
-extern int8_t g_TZ_minute;
+//extern int8_t g_TZ_hour;
+//extern int8_t g_TZ_minute;
 extern int8_t g_DST_offset;  // DST offset in Hours
 extern bool g_DST_updated;  // DST update flag = allow update only once per day
 extern bool g_gps_updating;  // for signalling GPS update on some displays
@@ -245,11 +245,11 @@ void parseGPSdata(char *gpsBuffer) {
             //beep(1000, 1);  // debugging
             g_gps_updating = true;  // time is being set from GPS data
             tGPSupdate = tNow;  // remember time of this update
-            tNow = tNow + (long)(g_TZ_hour + Settings.DSToffset) * SECS_PER_HOUR;  // add time zone hour offset & DST offset
-            if (g_TZ_hour < 0)  // add or subtract time zone minute offset
-              tNow = tNow - (long)g_TZ_minute * SECS_PER_HOUR;
+            tNow = tNow + (long)(Settings.TZ_hour + Settings.DSToffset) * SECS_PER_HOUR;  // add time zone hour offset & DST offset
+            if (Settings.TZ_hour < 0)  // add or subtract time zone minute offset
+              tNow = tNow - (long)Settings.TZ_minute * SECS_PER_HOUR;
             else
-              tNow = tNow + (long)g_TZ_minute * SECS_PER_HOUR;
+              tNow = tNow + (long)Settings.TZ_minute * SECS_PER_HOUR;
             setRTCtime(tNow);  // set RTC from adjusted GPS time & date
 //            Serial.println("GPS: Time set");
           }

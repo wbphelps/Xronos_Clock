@@ -333,9 +333,9 @@ void showTZ(byte color) {
   showText(4,0,"Zone",1,color);
   hhColor = color;
   if (isSettingTZMinute)
-    snprintf(myString,sizeof(myString), "Mn %d ",g_TZ_minute);
+    snprintf(myString,sizeof(myString), "Mn %d ",Settings.TZ_minute);
   else
-    snprintf(myString,sizeof(myString), "Hr%+0.02d ",g_TZ_hour);
+    snprintf(myString,sizeof(myString), "Hr%+0.02d ",Settings.TZ_hour);
   if (blinkDigit)  hhColor = BLACK;  // blink setting value
   showText(0,8,myString,1,hhColor);
 }
@@ -427,16 +427,16 @@ void setTimeDate() {
 //      g_DST_updated = false; // re-init & re-calc DST for today
       break;
     case 7: // TZ Hour
-      if (decrement) g_TZ_hour--;
-      else g_TZ_hour++;
-      if (g_TZ_hour>13)  g_TZ_hour = -12; // wrap
-      if (g_TZ_hour<-12)  g_TZ_hour = 13; // wrap
+      if (decrement) Settings.TZ_hour--;
+      else Settings.TZ_hour++;
+      if (Settings.TZ_hour>13)  Settings.TZ_hour = -12; // wrap
+      if (Settings.TZ_hour<-12)  Settings.TZ_hour = 13; // wrap
       break;
     case 8: // TZ Minute
-      if (decrement) g_TZ_minute-=15;
-      else g_TZ_minute+=15;
-      if (g_TZ_minute>45)  g_TZ_minute = 0; // wrap
-      if (g_TZ_minute<0)  g_TZ_minute = 45; // wrap
+      if (decrement) Settings.TZ_minute-=15;
+      else Settings.TZ_minute+=15;
+      if (Settings.TZ_minute>45)  Settings.TZ_minute = 0; // wrap
+      if (Settings.TZ_minute<0)  Settings.TZ_minute = 45; // wrap
       break;
     }  
    // IMPORTANT! This will keep track of seconds for better time setting! 
@@ -867,12 +867,14 @@ void optSetting(){
          break;
        case 3:
          if (decrement) { 
-           if (Settings.photoCellMax>50) Settings.photoCellMax -=50;
+           if (Settings.photoCellMax>100) Settings.photoCellMax -=50;
+           else if (Settings.photoCellMax>50) Settings.photoCellMax -=10;
            else Settings.photoCellMax = 500;  // wrap around to 500
          }
-         else {
-           if (Settings.photoCellMax < 500) Settings.photoCellMax += 50;
-           else Settings.photoCellMax = 100;  // wrap around to 100
+         else {  // increment
+           if (Settings.photoCellMax < 100) Settings.photoCellMax += 10;
+           else if (Settings.photoCellMax < 500) Settings.photoCellMax += 50;
+           else Settings.photoCellMax = 50;  // wrap around to 50
          }
          break;
        case 4:
