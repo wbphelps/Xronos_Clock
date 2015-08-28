@@ -359,7 +359,7 @@ void ht1632_clear()
     plot(31,1,RED); //Plot Indicator dot (GPS signal was received)
 
   if (g_IR_receive == 1)
-    plot(31,2,GREEN); //Plot Indicator dot (IR signal was received)
+    plot(31,0,GREEN); //Plot Indicator dot (IR signal was received)
   
 }
 

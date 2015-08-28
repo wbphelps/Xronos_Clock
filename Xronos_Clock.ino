@@ -80,8 +80,8 @@
  ***********************************************************************/
 
 // Which temperature sensor?
-//#define DS18B20  // DS18B20 one wire temperature sensor
-#define DHT22  // DHT22 one wire temperature & humidity sensor
+#define DS18B20  // DS18B20 one wire temperature sensor
+//#define DHT22  // DHT22 one wire temperature & humidity sensor
 
 #include <Wire.h>
 #include "HT1632.h"
@@ -381,11 +381,11 @@ void IR_process () {
   if ((millis()-g_IR_timer) > 1000) { // leave IR signal indicator on for 1 second
     g_IR_timer = millis();  // reset timer
     g_IR_receive = 0;  // no signal
-    plot(31,2,BLACK); // clear IR signal indicator
+    plot(31,0,BLACK); // clear IR signal indicator
   }
   if (irrecv.decode(&results)) {
 //    Serial.print("IR "); Serial.println(results.value, HEX);
-    plot(31,2,GREEN); //Plot Indicator dot (IR signal was received)
+    plot(31,0,GREEN); //Plot Indicator dot (IR signal was received)
     g_IR_receive = 1;  // IR signal received
     g_IR_timer = millis();  // reset timer
     switch (results.value) {
