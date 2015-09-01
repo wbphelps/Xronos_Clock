@@ -60,6 +60,7 @@ void infoDisplay() {
     showSmTime(0,clockColor); // Show Time on top
     if (Settings.infoOptions & IO_Date) // Option Enabled?
       if (!showDate(clockColor)) return; // Scroll Date. Exit if scroll was interrupted by button press
+      cls();  // 28Aug15/wbp
     if (Settings.infoOptions & IO_InTemp) { // Option Enabled?
       if (!showTemp(clockColor,false,true)) return; // Scroll Inside Temp. Exit if scroll was interrupted by button press
       cls();

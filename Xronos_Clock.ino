@@ -5,6 +5,7 @@
 * Ver 2.42 (08/28/2015)
 *
 * CHANGES & BUG FIXES (Most recent first)
+* fix Info display bug & defaults
 * move TZ to Settings
 * smaller increments for photocell max
 * add setting for TZ Hour & Minute

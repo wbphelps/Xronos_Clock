@@ -29,13 +29,13 @@ __Settings Settings = {
   0, // brightness (auto)
   GREEN, // clock color
   true, // auto color
-  1, // clock font
+  4, // clock font
   true, // blinking colon
   true, // SFX
   true, // temperature units
   6, // sound volume - default 1 less than max
-  2, // info freq
-  2, // info options
+  1, // info freq - default every 1 minutes
+  IO_Date, // info options - default is show IO_Date
   255, // say options
   true, // do startup
   2, // temperature offset
