@@ -1,8 +1,8 @@
 # Xronos_Clock
 Custom firmware for the Xronos Clock from LensDigital
 
-Latest update March 13, 2015 - William Phelps - wm (at) usa.net 
-* Ver 2.39
+Latest update August 28, 2015 - William Phelps - wm (at) usa.net 
+* Ver 2.42
  
 ## **Includes the following modifications:** ##
 
@@ -59,3 +59,9 @@ Latest update March 13, 2015 - William Phelps - wm (at) usa.net
 * progressive alarm: adjust vol at preset intervals; fix alarm skip bug
 * Set button becomes Decrement when adjusting time, date, etc.
 * progressive alarm volume indicator
+
+* add support for DHT22 temp/humidity sensor
+* add setting for TZ Hour & Minute
+* smaller increments for photocell max
+* move TZ to Settings
+* fix Info display bug & defaults
